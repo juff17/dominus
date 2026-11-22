@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import { type TestContext, test } from 'node:test'
 
-import { DIACRITICS, deleteImage, gridRow, placeGrid, transmitFile } from './kitty.ts'
-import { MAX_GRID } from '../view.ts'
+import { DIACRITICS, MAX_GRID, deleteImage, gridRow, placeGrid, transmitFile } from './kitty.ts'
 
 // The commands wrap themselves for tmux by $TMUX at the time of the call.
 const inTmux = (t: TestContext, on: boolean) => {

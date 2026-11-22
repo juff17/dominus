@@ -25,6 +25,7 @@ import {
   where,
 } from './board.ts'
 import type { Peek } from './peek.ts'
+import { type GearCells, centredRow } from '../tui/gear.ts'
 import { type Agent, type Lane, type Lanes, type Monitor, cardHeights, counts, lanes, monitorsOf, scrollTo, watches } from '../agents/model.ts'
 import type { Counts } from '../agents/model.ts'
 import { pipelineResult } from '../agents/transcript.ts'
@@ -55,6 +56,9 @@ export type HubUi = {
   note: Note | null
   win: number
   now: number
+  // The gear the board shows when nothing's running (hub.ts); null until it
+  // can be drawn.
+  splash?: GearCells | null
 }
 // From Settings. `broke` and `attention` are the monitor event tags that mean
 // broke and need you.
@@ -248,7 +252,7 @@ function filterSpans(ui: HubUi): Span[] {
   return [['/', fg(ACCENT)], ...typed, [' '.repeat(fw - spanWidth(typed) + 2), '']]
 }
 
-function summary(b: Board, c: Counts, W: number) {
+function summary(b: Pick<Board, 'ui' | 'hits' | 'acts'>, c: Counts, W: number) {
   const { ui } = b
   const tasks = t('hub.summary.tasks', { n: c.needs + c.working + c.done + c.idle })
   const left: Span[] = [
@@ -380,7 +384,50 @@ const boardKeys = (focus: Focus, agents: readonly Agent[]): Hint[] => [
   ['/', t('hints.filter')],
 ]
 
-export function boardFrame(ui: HubUi, prefs: HubPrefs, { w: W, h: H }: Size, acts: ClickActs): HubFrame {
+// ------------------------------------------------------------ nothing running
+
+// No agent at all, and no filter hiding any: the board shows the gear.
+export const quiet = (ui: Pick<HubUi, 'agents' | 'filter'>): boolean => ui.agents.length === 0 && !ui.filter
+
+const SPLASH_KEYS: Hint[] = [
+  ['n', t('hub.keys.new')],
+  ['q', t('hub.keys.workspace')],
+]
+
+// In place of the lanes and the monitors: the gear (left out until hub.ts
+// can draw it, or when it won't fit), the name, and a way to start an agent.
+function splashFrame(ui: HubUi, { w: W, h: H }: Size, acts: ClickActs): HubFrame {
+  const hits: Hit[] = []
+  const foot = footer(ui, SPLASH_KEYS, W)
+  // Under the summary and its blank row, over a blank row and the footer.
+  const panel = Math.max(0, H - 3 - foot.length)
+  const blank = render([], W, LANE_BG)
+  const centred = (spans: Span[]) => render([[' '.repeat(Math.max(0, Math.floor((W - spanWidth(spans)) / 2)))], ...spans], W, LANE_BG)
+  const button = newButton(t('hub.newAgent'))
+  const choice: Span[] = [...button.spans, [`  ${t('hub.splash.or')}   `, fg(P.sub)], ['q', BOLD + fg(P.text)], [` ${t('hub.splash.back')}`, fg(P.sub)]]
+  const words = [
+    centred([[[...t('hub.splash.name')].join(' '), BOLD + fg(P.text)]]),
+    blank,
+    centred([[t('hub.splash.quiet'), ITALIC + fg(P.sub)]]),
+    blank,
+    centred(choice),
+  ]
+  const gear = ui.splash && ui.splash.rows.length + 1 + words.length <= panel ? ui.splash : null
+  const block = gear ? [...gear.rows.map(cells => centredRow(cells, gear.cols, W, LANE_BG)), blank, ...words] : words
+  const top = Math.max(0, Math.floor((panel - block.length) / 2))
+  const body = Array.from({ length: panel }, (_, r) => block[r - top] ?? blank)
+  const lines = [summary({ ui, hits, acts }, counts(ui.agents), W), render([], W), ...body, render([], W)]
+  // The choice is the block's last row; rows count from 1, under two above.
+  const x1 = Math.max(0, Math.floor((W - spanWidth(choice)) / 2)) + 1
+  if (top + block.length <= panel) hits.push({ x1, x2: x1 + button.cells - 1, y1: top + block.length + 2, y2: top + block.length + 2, act: acts.newAgent })
+  return { lines: [...lines.slice(0, H - foot.length), ...foot], hits, focus: ui.focus, selected: { ...ui.selected }, scroll: { ...ui.scroll }, listSel: ui.listSel }
+}
+
+// ------------------------------------------------------------ the board
+
+export function boardFrame(ui: HubUi, prefs: HubPrefs, size: Size, acts: ClickActs): HubFrame {
+  if (quiet(ui)) return splashFrame(ui, size, acts)
+  const { w: W, h: H } = size
   const l = lanes(ui.agents)
   const strip = monitorsOf(ui.agents)
   const selected = { ...ui.selected }

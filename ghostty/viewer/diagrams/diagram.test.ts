@@ -32,7 +32,7 @@ import {
   truncate,
 } from './diagram.ts'
 import type { Diagram, PaneState } from './diagram.ts'
-import { deleteImage, placeGrid, transmitFile } from './kitty.ts'
+import { deleteImage, placeGrid, transmitFile } from '../../tui/kitty.ts'
 
 const tmp = (t: TestContext) => {
   const dir = mkdtempSync(join(tmpdir(), 'diagram-test-'))

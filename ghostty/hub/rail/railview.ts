@@ -4,6 +4,7 @@
 import type { Lane } from '../../agents/model.ts'
 import { t } from '../../core/text.ts'
 import { type Mouse, leftPress } from '../../tui/input.ts'
+import { type GearCells, centredRow } from '../../tui/gear.ts'
 import { ACCENT, BOLD, P, type Span, bg, fg, render } from '../../tui/term.ts'
 
 const BG = bg(P.crust)
@@ -14,6 +15,13 @@ export type RailButton = 'work' | 'hub' | 'newAgent' | 'help' | 'settings'
 export type RailActs<A> = Record<RailButton, A>
 // Rows counted from 1.
 export type Pressable<A> = { y1: number; y2: number; act: A }
+export type Mark = GearCells
+
+// The rows the rail takes without the gear: a blank row, work, hub, the rule
+// and the counts at the top, + new, ? help and ⚙ set at the bottom. The gear
+// takes the blank row's place and has no row of its own under it: its cells'
+// own margin is space enough.
+const WITHOUT_MARK = 21
 
 function button(icon: string, label: string, on: boolean, w: number, dot = false) {
   const fill = on ? bg(P.surface0) : BG
@@ -25,10 +33,12 @@ function button(icon: string, label: string, on: boolean, w: number, dot = false
   ]
 }
 
-// Work and hub at the top, the counts `c` under them, and + new, ? help and
+// The gear at the top when there's room for it beside everything else, work
+// and hub under it, the counts `c` under them, and + new, ? help and
 // ⚙ set kept to the bottom.
-export function frame<A>(w: number, h: number, view: RailView, c: Record<Lane, number>, acts: RailActs<A>): { lines: string[]; buttons: Pressable<A>[] } {
-  const lines = [render([], w, BG)]
+export function frame<A>(w: number, h: number, view: RailView, c: Record<Lane, number>, acts: RailActs<A>, mark: Mark | null = null): { lines: string[]; buttons: Pressable<A>[] } {
+  const gear = mark && h >= WITHOUT_MARK - 1 + mark.rows.length
+  const lines = gear ? mark.rows.map(cells => centredRow(cells, mark.cols, w, BG)) : [render([], w, BG)]
   const buttons: Pressable<A>[] = []
   const add = (act: A, ls: string[]) => {
     buttons.push({ y1: lines.length + 1, y2: lines.length + ls.length, act })

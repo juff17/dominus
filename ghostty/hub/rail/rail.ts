@@ -13,11 +13,13 @@ import { type Counts, counts } from '../../agents/model.ts'
 import { logCrashes } from '../../core/crash.ts'
 import { NEW_AGENT_KEY } from '../keys.ts'
 import { tmuxOf } from '../tmux.ts'
-import { type Pressable, type RailActs, type RailView, frame, pressed } from './railview.ts'
+import { type Mark, type Pressable, type RailActs, type RailView, frame, pressed } from './railview.ts'
 import { load as settings } from '../../settings/settings.ts'
-import { enter, leave, paint, tokens } from '../../tui/term.ts'
+import { type Cell, RAIL_IDS, fit, gearFile, gearRow, sendGear } from '../../tui/gear.ts'
+import { RAIL_REST, RAIL_TURNED } from '../../tui/gear-art.ts'
+import { ACCENT, enter, leave, paint, tokens } from '../../tui/term.ts'
 import { logger } from '../../core/log.ts'
-import { conf } from '../../core/paths.ts'
+import { RUN, conf } from '../../core/paths.ts'
 import { run } from '../../core/proc.ts'
 
 const log = logger('rail')
@@ -74,10 +76,72 @@ const acts: RailActs<Act> = {
   settings: pressedAs('settings', openSettings),
 }
 
+// ------------------------------------------------------------ the gear
+
+// The gear tops the rail (tui/gear.ts) and turns a few times as the window
+// opens, then rests: turning while agents worked, it hardly ever stopped.
+// Its PNGs are shared by every window's rails.
+const GEARS = join(RUN, 'gear')
+const FRAMES = [RAIL_REST, RAIL_TURNED] as const
+const TURN_MS = 300
+// Even, so it comes to rest the way it started.
+const TURNS = 8
+// Tall enough that the rail's width decides the gear's size.
+const GEAR_MAX_ROWS = 8
+// tmux knows the cell size once a client is attached: until then there's no
+// gear, and a rail drawn before Ghostty attached would send it to nowhere.
+let cell: Cell | null = null
+// What was last sent to the terminal, so it's sent again only when the size
+// or the theme colour changes.
+let sent = ''
+let turned = 0
+// Sent ahead of the next frame.
+let setup = ''
+
+async function readCell() {
+  const r = await tmux('display', '-p', '#{client_cell_width} #{client_cell_height}')
+  const [cw, ch] = r.out.trim().split(' ').map(Number)
+  if (!r.ok || !cw || !ch || (cw === cell?.cw && ch === cell?.ch)) return
+  const opening = !cell
+  cell = { cw, ch }
+  draw()
+  if (opening) spin()
+}
+
+function spin() {
+  let left = TURNS
+  const timer = setInterval(() => {
+    left--
+    turned = left % 2
+    if (!left) clearInterval(timer)
+    draw()
+  }, TURN_MS)
+}
+
+function gear(): Mark | null {
+  const f = cell && fit(RAIL_REST, cell, cols(), GEAR_MAX_ROWS)
+  if (!cell || !f) return null
+  const spec = `${f.scale} ${f.cols} ${f.rows} ${cell.cw} ${cell.ch} ${ACCENT}`
+  if (spec !== sent) {
+    sent = spec
+    try {
+      setup = FRAMES.map((art, i) => sendGear(RAIL_IDS[i], gearFile(GEARS, `rail-${i}`, art, f, cell as Cell), f)).join('')
+      log.debug('gear sent', { scale: f.scale, cols: f.cols, rows: f.rows, cw: cell.cw, ch: cell.ch })
+    } catch (err) {
+      log.warn('gear not drawn', { dir: GEARS, err })
+      return null
+    }
+  }
+  return { cols: f.cols, rows: Array.from({ length: f.rows }, (_, r) => gearRow(RAIL_IDS[turned], f, r)) }
+}
+
+// ------------------------------------------------------------ main
+
 function draw() {
-  const f = frame(cols(), rows(), VIEW, c, acts)
+  const f = frame(cols(), rows(), VIEW, c, acts, gear())
   buttons = f.buttons
-  paint(f.lines)
+  paint(f.lines, { before: setup })
+  setup = ''
 }
 
 if (!process.stdin.isTTY) {
@@ -96,11 +160,11 @@ process.stdin.on('data', data => {
 // Settings shows within a second. On 'resize' rather than SIGWINCH, since a
 // SIGWINCH handler can run before the new size is read.
 const want = () => Number(process.env.GHOSTTY_RAIL_COLS) || settings()['layout.railCols']
-function fit() {
+function fitWidth() {
   if (cols() !== want() && process.env.TMUX_PANE) void tmux('resize-pane', '-t', process.env.TMUX_PANE, '-x', String(want()))
 }
 process.stdout.on('resize', () => {
-  fit()
+  fitWidth()
   draw()
 })
 const bye = () => {
@@ -112,7 +176,10 @@ process.on('SIGHUP', bye)
 enter()
 follow(s => {
   c = counts(s.agents)
-  fit()
+  fitWidth()
   draw()
 })
 draw()
+void readCell()
+// Picks up Ghostty attaching and a font size change.
+setInterval(() => void readCell(), 3000)

@@ -7,10 +7,10 @@ import { t } from '../../core/text.ts'
 import type { Box } from '../../tui/backdrop.ts'
 import type { Hint } from '../../tui/chrome.ts'
 import { closeLabel, compose } from '../../tui/overlay.ts'
+import { gridRow } from '../../tui/kitty.ts'
 import { ACCENT, BOLD, CAP_L, CAP_R, ITALIC, P, type Span, bg, clean, fg, pill, render, spanWidth, split, width } from '../../tui/term.ts'
 import { type View, clampView, fitChips, home, placement } from '../view.ts'
 import { type Diagram, dropPicture, fitHints, hints, placeIn, showFile, truncate } from './diagram.ts'
-import { gridRow } from './kitty.ts'
 import { type ChipHit, type DiagramState, type Size, box, diagram, inner, region } from './state.ts'
 
 const PANEL = bg(P.mantle)

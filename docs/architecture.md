@@ -40,7 +40,9 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │                            complete (path completion for path fields),
 │                            controls (the shared radio, select, field, chips, button,
 │                            confirm, header and frame), overlay (every popup's frame,
-│                            keys and clicks), backdrop (the window behind it, dimmed)
+│                            keys and clicks), backdrop (the window behind it, dimmed),
+│                            kitty (the graphics protocol), png, gear and gear-art (the
+│                            Dominus gear the rail and the empty board draw)
 ├── agents/                  agentd (the process), tick (one tick), daemon (scan helpers),
 │                            transcript, classify, board (lanes), launch, client, text, warn,
 │                            stop (stopping one monitor, for the hub and Monitors),
@@ -57,7 +59,7 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
     ├── todo/                todo-view (entry), state, draw, effects, todo-ui (keys), todo (store)
     ├── diff/                diff-view (entry), effects, diff (parsing), diff-rows (drawing)
     ├── diagrams/            diagram-view (entry), state, draw, effects, diagram (pane file,
-    │                        keys), kitty (the graphics protocol)
+    │                        keys)
     ├── approvals/           approvals (state and keys), draw, effects: the approvals panel
     │                        Monitors opens beside Running
     ├── help/                help-view (entry), state, draw, help (the sections)
