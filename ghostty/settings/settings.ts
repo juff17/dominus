@@ -277,7 +277,7 @@ const DEFINED = [
     bool('tray.desktop', false),
     number('tray.messageSecs', 6, { min: 2, max: 30 }),
     number('tray.inboxWidth', 600, { min: 400, max: 1200, step: 50 }),
-    number('tray.inboxHeight', 1440, { min: 300, max: 2400, step: 60 }),
+    number('tray.inboxHeight', 540, { min: 300, max: 2400, step: 60 }),
     head('sounds'),
     bool('tray.soundYou', false),
     bool('tray.soundBroke', false),

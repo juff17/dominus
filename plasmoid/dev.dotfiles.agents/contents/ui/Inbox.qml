@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as QQC
 import QtQuick.Layouts
 import "palette.js" as M
 import "reply.js" as R
@@ -18,7 +19,7 @@ Rectangle {
     // Rows whose act is still running take no keys or buttons, so a second
     // press can't answer whatever the agent shows next.
     property var busy: ({})
-    property int maxHeight: 1440
+    property int maxHeight: 540
     property int boxWidth: 600
 
     signal act(string action, string id)
@@ -297,9 +298,23 @@ Rectangle {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
+        // Shown only once the rows outgrow the most height Settings allow,
+        // in its own lane so it never covers a row's buttons.
+        QQC.ScrollBar.vertical: QQC.ScrollBar {
+            id: bar
+            policy: flick.contentHeight > flick.height + 1 ? QQC.ScrollBar.AlwaysOn : QQC.ScrollBar.AlwaysOff
+            padding: 0
+            background: null
+            contentItem: Rectangle {
+                implicitWidth: 6
+                radius: 3
+                color: bar.pressed || bar.hovered ? M.overlay1 : M.surface1
+            }
+        }
+
         ColumnLayout {
             id: col
-            width: parent.width
+            width: flick.width - (bar.policy === QQC.ScrollBar.AlwaysOn ? bar.width + 6 : 0)
             spacing: 9
 
             RowLayout {
