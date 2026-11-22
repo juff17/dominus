@@ -116,7 +116,13 @@ test('every hex the tmux configs and the popup scripts use is a term.ts P colour
   assert.match(layout, /^set -g pane-border-format ".*#\[fg=#\{@accent\}\]#\{R:━,#\{pane_width\}\}/m)
   // lib/core.sh's overlay opens its borderless popup on crust, the dimmed window's
   // background, which paint_backdrop then draws the window on.
-  assert.match(readFileSync(join(BIN, 'lib', 'core.sh'), 'utf8'), /display-popup .*-B .*-s "bg=#0a0b0b"/)
+  const core = readFileSync(join(BIN, 'lib', 'core.sh'), 'utf8')
+  assert.match(core, /display-popup .*-B .*-s "bg=#0a0b0b"/)
+  // paint_backdrop clears the screen to tui/overlay.ts's DIM, surface1 on
+  // crust, as decimal escapes the hex scan above can't see; New agent's
+  // popup flashed the old palette when these drifted.
+  const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(';')
+  assert.ok(core.includes(`\\e[38;2;${rgb(P.surface1)}m\\e[48;2;${rgb(P.crust)}m\\e[2J`), 'paint_backdrop DIM')
   // A ringing tab is red, the colour of broke.
   assert.match(readFileSync(join(CONF, 'tmux.conf'), 'utf8'), /window-status-bell-style "bg=#f2647e,/)
 })

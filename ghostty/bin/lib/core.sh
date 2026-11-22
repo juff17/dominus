@@ -149,7 +149,7 @@ paint_backdrop() {
   panes=$(layout list-panes -t "$win" -F '#{pane_id} #{pane_left} #{pane_top} #{pane_width} #{pane_height}' 2>/dev/null) || return 0
   # Synchronized output, the alternate screen, no cursor, then the screen
   # cleared to tui/overlay.ts's DIM: surface1 on crust.
-  out=$'\e[?2026h\e[?1049h\e[?25l\e[38;2;69;71;90m\e[48;2;17;17;27m\e[2J'
+  out=$'\e[?2026h\e[?1049h\e[?25l\e[38;2;55;61;60m\e[48;2;10;11;11m\e[2J'
   while read -r id left top width height; do
     [[ -n $id ]] || continue
     # The dividers tmux draws left of and above the pane, the top one from
