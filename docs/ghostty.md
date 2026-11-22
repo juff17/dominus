@@ -156,6 +156,7 @@ Diagrams come from the diagram-pane mod (`diagram-plugin/`, the `diagram-pane@do
 | `ctrl+s`, `esc` in New agent | Start, cancel (`↑`/`↓` fields, `←`/`→` choices, `tab` completes the folder) |
 | `ctrl+v` in New agent's Task | Paste an image from the clipboard as `[Image #n]` (see [Images](#images)) |
 | `alt+s` anywhere in the window, or **⚙ set** on the rail | Settings in a popup, keys only (it takes no clicks): `↑` / `↓` (or `j` / `k`) a setting, `tab` / `shift+tab` a section, `←` / `→` change it, `space` turns it on or off (on a row of flags, `←` / `→` pick one), `r` puts it back to its default; on a Keybinds row `↵` waits for the new key and `backspace` unbinds it; on a path row (Sound file, Default repo) `↵` types the path as in a shell: `tab` completes it and then steps through the matches shown above it (`shift+tab` back), `→` takes the dim suggestion, `ctrl+w` removes one part of the path, and the arrows, `ctrl+a` / `ctrl+e` and `ctrl+u` edit it; in Workspace's viewer modes, `J` / `K` move a mode, `a` adds one (a name, then a command) and `x` removes one you added; `alt+s`, `esc` or `q` close it |
+| drag, double or triple click on Claude Code | Select text with tmux, in its grey, and copy it on release; a session in the hub and Claude in a tab both, so the selection doesn't take Claude Code's own colour |
 | `shift`+drag | Select text with Ghostty instead of tmux |
 | click a pane | Focus btop, the viewer or the tabs |
 

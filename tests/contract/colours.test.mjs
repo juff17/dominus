@@ -112,7 +112,15 @@ test('every hex the tmux configs and the popup scripts use is a term.ts P colour
     // Selected text looks the same in the hub as in the workspace; unset,
     // the layout's tmux drew it in its default yellow.
     assert.match(text, /^set -g mode-style "bg=#373d3c,fg=#d9e9e3"$/m, conf)
+    // On Claude Code, tmux selects, so the selection shows in mode-style:
+    // Claude Code's own is #264f78 or #5f8787, by when it worked it out.
+    assert.match(text, /^set -g @claude_pane ".*"$/m, conf)
+    for (const key of ['MouseDrag1Pane', 'DoubleClick1Pane', 'TripleClick1Pane']) {
+      assert.match(text, new RegExp(`^bind -n ${key} .*#\\{E:@(claude_pane|tmux_selects)\\}" \\{ copy-mode -[MH]\\b`, 'm'), `${conf} ${key}`)
+    }
   }
+  assert.match(readFileSync(join(CONF, 'layout.conf'), 'utf8'), /^set -g @claude_pane ".*#\{m:\*ghostty-hub attach \*,#\{pane_start_command\}\}/m)
+  assert.match(readFileSync(join(CONF, 'tmux.conf'), 'utf8'), /^set -g @claude_pane ".*#\{==:#\{pane_current_command\},claude\}/m)
   assert.match(readFileSync(join(CONF, 'tmux.conf'), 'utf8'), /^set -g pane-active-border-style "fg=#\{@accent\}"$/m)
   const layout = readFileSync(join(CONF, 'layout.conf'), 'utf8')
   assert.match(layout, /^set -g pane-active-border-style "#\{\?#\{==:#\{window_name\},hub\},fg=#373d3c,fg=#\{@accent\}\}"$/m)
