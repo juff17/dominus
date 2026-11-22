@@ -1,0 +1,73 @@
+[
+  {
+    "id": 11512,
+    "iid": 512,
+    "project_id": 11,
+    "title": "Rate-limit the export endpoint",
+    "web_url": "https://gitlab.example.com/platform/api/-/merge_requests/512",
+    "draft": false,
+    "source_branch": "jl/rate-limit",
+    "target_branch": "main",
+    "created_at": "@-2d",
+    "author": {
+      "username": "jl"
+    },
+    "references": {
+      "full": "platform/api!512"
+    },
+    "reviewers": [
+      {
+        "username": "raj"
+      },
+      {
+        "username": "mei"
+      }
+    ],
+    "has_conflicts": true,
+    "detailed_merge_status": "conflict"
+  },
+  {
+    "id": 12128,
+    "iid": 128,
+    "project_id": 12,
+    "title": "Cache the test image",
+    "web_url": "https://gitlab.example.com/jl/ci-playground/-/merge_requests/128",
+    "draft": false,
+    "source_branch": "jl/cache-image",
+    "target_branch": "main",
+    "created_at": "@-6h",
+    "author": {
+      "username": "jl"
+    },
+    "references": {
+      "full": "jl/ci-playground!128"
+    },
+    "reviewers": [
+      {
+        "username": "raj"
+      }
+    ],
+    "has_conflicts": false,
+    "detailed_merge_status": "need_rebase"
+  },
+  {
+    "id": 13088,
+    "iid": 88,
+    "project_id": 13,
+    "title": "Draft: theme tokens",
+    "web_url": "https://gitlab.example.com/platform/web/-/merge_requests/88",
+    "draft": true,
+    "source_branch": "jl/tokens",
+    "target_branch": "main",
+    "created_at": "@-9d",
+    "author": {
+      "username": "jl"
+    },
+    "references": {
+      "full": "platform/web!88"
+    },
+    "reviewers": [],
+    "has_conflicts": false,
+    "detailed_merge_status": "draft_status"
+  }
+]

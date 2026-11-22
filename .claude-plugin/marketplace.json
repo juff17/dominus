@@ -1,0 +1,17 @@
+{
+  "name": "dominus",
+  "description": "Agent Hub's own Claude Code plugins, installed by ./install.sh. They load in place from this checkout, so edits apply at the next session.",
+  "owner": { "name": "dominus" },
+  "plugins": [
+    {
+      "name": "dominus",
+      "source": "./hub-plugin",
+      "description": "The hub's skills (pr-babysit, pipeline-watch, log-watcher, todo), its start and notify hooks, and the fetch before a new worktree."
+    },
+    {
+      "name": "diagram-pane",
+      "source": "./diagram-plugin",
+      "description": "The diagram pane and the make-diagram skill; the hub's Side panel shows what it draws (Diagrams)."
+    }
+  ]
+}

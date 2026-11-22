@@ -1,0 +1,19 @@
+{
+  "jobs": [
+    {
+      "name": "build",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "deploy:staging",
+      "status": "waiting",
+      "conclusion": null
+    }
+  ]
+}

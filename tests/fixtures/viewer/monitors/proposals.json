@@ -1,0 +1,69 @@
+{
+  "proposals": [
+    {
+      "id": "1001-push-gad",
+      "kind": "push",
+      "status": "pending",
+      "at": "@-9.5m",
+      "title": "Push 2 commits to jl/sync-retry",
+      "claude_session": "s-gad",
+      "pr": { "url": "https://github.com/jl/gad/pull/77", "project": "jl/gad", "forge": "github", "repo": "gad", "ref": "#77" },
+      "local": "jl/sync-retry",
+      "remote": "origin",
+      "branch": "jl/sync-retry",
+      "lease": "1111111aaaaaaa",
+      "head": "2222222bbbbbbb",
+      "remote_head": "1111111aaaaaaa",
+      "commits": [
+        { "sha": "3333333ccccccc", "subject": "Retry the sync once", "added": 12, "removed": 3 },
+        { "sha": "2222222bbbbbbb", "subject": "Log the retry", "added": 2, "removed": 0 }
+      ],
+      "checks": [{ "name": "lint", "ok": true }, { "name": "tests", "ok": true }],
+      "removes": [],
+      "command": "git push --force-with-lease=jl/sync-retry:1111111 origin jl/sync-retry"
+    },
+    {
+      "id": "1002-reply-ci",
+      "kind": "reply",
+      "status": "pending",
+      "at": "@-6.5m",
+      "title": "Reply to @amy on .gitlab-ci.yml:12",
+      "claude_session": "s-ci",
+      "pr": { "url": "https://gitlab.example.com/jl/ci-playground/-/merge_requests/128", "project": "jl/ci-playground", "forge": "gitlab", "repo": "ci-playground", "ref": "!128" },
+      "thread": { "id": "note:12", "author": "amy", "where": ".gitlab-ci.yml:12", "body": "Cache it per branch?" },
+      "body": "Done: the image is cached per branch."
+    },
+    {
+      "id": "1003-retry-ci",
+      "kind": "retry",
+      "status": "pending",
+      "at": "@-3.5m",
+      "title": "Retry test:unit",
+      "claude_session": "s-ci",
+      "pr": { "url": "https://gitlab.example.com/jl/ci-playground/-/merge_requests/128", "project": "jl/ci-playground", "forge": "gitlab", "repo": "ci-playground", "ref": "!128" },
+      "job": { "id": "99812", "name": "test:unit", "reason": "runner lost", "stage": "test" }
+    },
+    {
+      "id": "1004-reply-dot",
+      "kind": "reply",
+      "status": "pending",
+      "at": "@-4.5m",
+      "title": "Reply to @amy on README.md:3",
+      "claude_session": "s-dot",
+      "pr": { "url": "https://github.com/jl/dotfiles/pull/41", "project": "jl/dotfiles", "forge": "github", "repo": "dotfiles", "ref": "#41" },
+      "thread": { "id": "rc:41", "author": "amy", "where": "README.md:3", "body": "Typo here." },
+      "body": "Fixed, thanks."
+    },
+    {
+      "id": "1005-retry-gone",
+      "kind": "retry",
+      "status": "failed",
+      "at": "@-30.5m",
+      "title": "Retry lint",
+      "claude_session": "s-gone",
+      "pr": { "url": "https://github.com/jl/notes/pull/3", "project": "jl/notes", "forge": "github", "repo": "notes", "ref": "#3" },
+      "job": { "id": "77", "name": "lint", "reason": "", "stage": "check" },
+      "result": { "message": "runner gone", "at": "@-20.5m" }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "user": {"id": 1, "username": "me", "name": "Me"},
+  "projects/grp%2Fsub%2Fgad/merge_requests/91?include_diverged_commits_count=true": {
+    "id": 4091, "iid": 91, "state": "opened",
+    "web_url": "https://gitlab.com/grp/sub/gad/-/merge_requests/91",
+    "title": "Add pagination to the list endpoint",
+    "source_branch": "feat/pagination", "target_branch": "main",
+    "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c",
+    "source_project_id": 77, "target_project_id": 77,
+    "detailed_merge_status": "need_rebase", "has_conflicts": false,
+    "diverged_commits_count": 4,
+    "head_pipeline": {"id": 555, "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c", "status": "running",
+                      "web_url": "https://gitlab.com/grp/sub/gad/-/pipelines/555"}
+  },
+  "projects/grp%2Fsub%2Fgad/pipelines/555/jobs": [
+    {"id": 11, "name": "compile", "stage": "build", "status": "success", "allow_failure": false,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/11",
+     "started_at": "2026-11-09T10:00:00.000Z", "finished_at": "2026-11-09T10:04:00.000Z", "queued_duration": 1.2},
+    {"id": 12, "name": "lint", "stage": "test", "status": "failed", "allow_failure": true,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/12",
+     "started_at": "2026-11-09T10:04:10.000Z", "finished_at": "2026-11-09T10:05:00.000Z", "queued_duration": 0.5},
+    {"id": 13, "name": "unit", "stage": "test", "status": "running", "allow_failure": false,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/13",
+     "started_at": "2026-11-09T10:04:10.000Z", "finished_at": null, "queued_duration": 3.0},
+    {"id": 14, "name": "e2e", "stage": "test", "status": "pending", "allow_failure": false,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/14",
+     "started_at": null, "finished_at": null, "queued_duration": 2400.5},
+    {"id": 15, "name": "deploy:staging", "stage": "deploy", "status": "manual", "allow_failure": false,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/15",
+     "started_at": null, "finished_at": null, "queued_duration": null},
+    {"id": 16, "name": "notify", "stage": "post", "status": "created", "allow_failure": false,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/16",
+     "started_at": null, "finished_at": null, "queued_duration": null},
+    {"id": 17, "name": "cleanup", "stage": "post", "status": "skipped",
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/17",
+     "started_at": null, "finished_at": null}
+  ],
+  "projects/grp%2Fsub%2Fgad/pipelines/555/bridges": [
+    {"id": 18, "name": "qa-suite", "stage": "qa", "status": "running", "allow_failure": false,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/18",
+     "started_at": "2026-11-09T10:04:30.000Z", "finished_at": null,
+     "downstream_pipeline": {"id": 777, "status": "running", "web_url": "https://gitlab.com/grp/sub/qa/-/pipelines/777"}},
+    {"id": 19, "name": "docs-trigger", "stage": "qa", "status": "manual", "allow_failure": true,
+     "web_url": "https://gitlab.com/grp/sub/gad/-/jobs/19",
+     "started_at": null, "finished_at": null, "downstream_pipeline": null}
+  ],
+  "projects/grp%2Fsub%2Fgad/merge_requests/91/discussions": [
+    {"id": "d1", "individual_note": false, "notes": [
+      {"id": 301, "type": "DiffNote", "system": false, "author": {"username": "alice"},
+       "body": "This loads every row before slicing.",
+       "position": {"new_path": "src/api/list.py", "old_path": "src/api/list.py", "new_line": 42, "old_line": null},
+       "resolvable": true, "resolved": false},
+      {"id": 302, "type": "DiffNote", "system": false, "author": {"username": "me"},
+       "body": "Will do.", "position": {"new_path": "src/api/list.py", "old_path": "src/api/list.py", "new_line": 42, "old_line": null},
+       "resolvable": true, "resolved": false}
+    ]},
+    {"id": "d2", "individual_note": true, "notes": [
+      {"id": 303, "type": null, "system": true, "author": {"username": "me"},
+       "body": "added 1 commit", "position": null, "resolvable": false, "resolved": false}
+    ]},
+    {"id": "d3", "individual_note": false, "notes": [
+      {"id": 304, "type": "DiffNote", "system": false, "author": {"username": "bob"},
+       "body": "typo", "position": {"new_path": null, "old_path": "src/old.py", "new_line": null, "old_line": 5},
+       "resolvable": true, "resolved": true}
+    ]},
+    {"id": "d4", "individual_note": true, "notes": [
+      {"id": 305, "type": null, "system": false, "author": {"username": "carol"},
+       "body": "Can this land before Friday?", "position": null, "resolvable": false, "resolved": true}
+    ]},
+    {"id": "d5", "individual_note": false, "notes": [
+      {"id": 306, "type": "DiffNote", "system": false, "author": {"username": "dave"},
+       "body": "Document the page size.", "position": {"new_path": "README.md", "old_path": "README.md", "new_line": null, "old_line": null},
+       "resolvable": true, "resolved": false}
+    ]}
+  ],
+  "projects/grp%2Fsub%2Fgad/merge_requests/91/approvals": {
+    "approved": true,
+    "approved_by": [{"user": {"username": "bob"}}, {"user": {"username": "me"}}]
+  }
+}

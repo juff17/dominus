@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Claude Code Stop and permission_prompt hook: when Claude finishes or asks for
+# permission in the Ghostty layout, rings the bell in its tmux pane, which
+# turns that tab red if you're on another one.
+
+[[ ${TMUX:-} == */"${AGENT_HUB_TABS_SOCKET:-ghostty},"* && -n ${TMUX_PANE:-} ]] || exit 0
+
+# log.sh is found only when there's something to log: finding it runs two
+# programs, too many for every turn.
+warn() {
+  {
+    source "$(dirname "$(readlink -f "$0")")/lib/log.sh" &&
+      ah_log warn claude-ping "$@"
+  } 2>/dev/null
+}
+
+# Settings › Tray › Tab bell. Read with jq (install/walkthrough/plan.ts installs it), not
+# ghostty-lib.sh's node, since this runs at the end of every turn.
+settings=${AGENT_HUB_SETTINGS:-${XDG_STATE_HOME:-$HOME/.local/state}/agent-hub/settings.json}
+if hash jq 2>/dev/null; then
+  bell=$(jq -r 'if has("tray.tabBell") then ."tray.tabBell" else true end' "$settings" 2>/dev/null)
+  [[ $bell == false ]] && exit 0
+else
+  warn "jq not found" key tray.tabBell
+fi
+
+tty=$(tmux display -p -t "$TMUX_PANE" '#{pane_tty}')
+if [[ -w $tty ]]; then
+  printf '\a' >"$tty"
+else
+  warn "pane tty not writable" pane "$TMUX_PANE" path "$tty"
+fi
+exit 0

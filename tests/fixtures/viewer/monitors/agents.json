@@ -1,0 +1,227 @@
+{
+  "at": "@-0m",
+  "agents": [
+    {
+      "id": "s-gad",
+      "pid": 4101,
+      "kind": "bg",
+      "title": "monitor #77",
+      "repo": "gad",
+      "worktree": "",
+      "cwd": "/home/jl/projects/gad",
+      "branch": "main",
+      "state": "needs",
+      "need": "monitor",
+      "via": "",
+      "cmd": "",
+      "since": "@-10m",
+      "stateSince": "@-10m",
+      "prompt": "/pr-babysit https://github.com/jl/gad/pull/77",
+      "ctx": 0,
+      "model": "claude-sonnet-5-5",
+      "jobId": "job-s-gad",
+      "pane": null,
+      "monitor": true,
+      "monitors": [
+        {
+          "key": "s-gad:t1",
+          "task": "t1",
+          "description": "PR #77 pipeline, rebase state, comments",
+          "kind": "pr-babysit",
+          "command": "python3 -u /home/jl/.claude/skills/pr-babysit/scripts/watch_pr.py https://github.com/jl/gad/pull/77 -C /home/jl/projects/gad --session 20261111-090000",
+          "state": "action",
+          "busy": false,
+          "event": {
+            "line": "[manual] deploy:staging waits for you",
+            "tag": "manual",
+            "at": "@-9.5m"
+          },
+          "startedAt": "@-72.5m",
+          "ended": null
+        }
+      ]
+    },
+    {
+      "id": "s-ci",
+      "pid": 4102,
+      "kind": "bg",
+      "title": "monitor !128",
+      "repo": "ci-playground",
+      "worktree": "",
+      "cwd": "/home/jl/projects/ci-playground",
+      "branch": "main",
+      "state": "needs",
+      "need": "monitor",
+      "via": "",
+      "cmd": "",
+      "since": "@-10m",
+      "stateSince": "@-10m",
+      "prompt": "/pr-babysit https://gitlab.example.com/jl/ci-playground/-/merge_requests/128",
+      "ctx": 0,
+      "model": "claude-sonnet-5-5",
+      "jobId": "job-s-ci",
+      "pane": null,
+      "monitor": true,
+      "monitors": [
+        {
+          "key": "s-ci:t1",
+          "task": "t1",
+          "description": "MR !128 pipeline, rebase state, comments",
+          "kind": "pr-babysit",
+          "command": "python3 -u /home/jl/.claude/skills/pr-babysit/scripts/watch_pr.py https://gitlab.example.com/jl/ci-playground/-/merge_requests/128 -C /home/jl/projects/ci-playground --session 20261111-090000",
+          "state": "action",
+          "busy": false,
+          "event": {
+            "line": "[failed] test:unit \u00b7 retry proposed",
+            "tag": "failed",
+            "at": "@-3.5m"
+          },
+          "startedAt": "@-50.5m",
+          "ended": null
+        }
+      ]
+    },
+    {
+      "id": "s-jstack",
+      "pid": 4103,
+      "kind": "bg",
+      "title": "monitor #9",
+      "repo": "jstack",
+      "worktree": "",
+      "cwd": "/home/jl/projects/jstack",
+      "branch": "main",
+      "state": "idle",
+      "need": null,
+      "via": "",
+      "cmd": "",
+      "since": "@-10m",
+      "stateSince": "@-10m",
+      "prompt": "/pr-babysit https://github.com/jl/jstack/pull/9",
+      "ctx": 0,
+      "model": "claude-sonnet-5-5",
+      "jobId": "job-s-jstack",
+      "pane": null,
+      "monitor": true,
+      "monitors": [
+        {
+          "key": "s-jstack:t1",
+          "task": "t1",
+          "description": "PR #9 pipeline, rebase state, comments",
+          "kind": "pr-babysit",
+          "command": "python3 -u /home/jl/.claude/skills/pr-babysit/scripts/watch_pr.py https://github.com/jl/jstack/pull/9 -C /home/jl/projects/jstack --session 20261111-090000",
+          "state": "watching",
+          "busy": false,
+          "event": {
+            "line": "[comment] 2 new comments \u00b7 1 fixed locally",
+            "tag": "comment",
+            "at": "@-1.5m"
+          },
+          "startedAt": "@-30.5m",
+          "ended": null
+        }
+      ]
+    },
+    {
+      "id": "s-logs",
+      "pid": 4104,
+      "kind": "tab",
+      "title": "watch payments",
+      "repo": "payments",
+      "worktree": "",
+      "cwd": "/home/jl/projects/payments",
+      "branch": "main",
+      "state": "idle",
+      "need": null,
+      "via": "",
+      "cmd": "",
+      "since": "@-10m",
+      "stateSince": "@-10m",
+      "prompt": "/logger watch staging-eu payments",
+      "ctx": 0,
+      "model": "claude-sonnet-5-5",
+      "jobId": "job-s-logs",
+      "pane": {
+        "session": "ghostty-1",
+        "window": "@3",
+        "pane": "%7",
+        "tab": 3,
+        "win": 1,
+        "hub": false
+      },
+      "monitor": true,
+      "monitors": [
+        {
+          "key": "s-logs:t1",
+          "task": "t1",
+          "description": "staging-eu payments 500s on /v2/export",
+          "kind": "logger",
+          "command": "python3 -u /home/jl/.claude/skills/logger/scripts/watch_logs.py --kube staging-eu payments",
+          "state": "watching",
+          "busy": false,
+          "event": {
+            "line": "[match] 2 matches \u00b7 req 9f1c, req 77ab",
+            "tag": "match",
+            "at": "@-2.5m"
+          },
+          "startedAt": "@-20.5m",
+          "ended": null
+        },
+        {
+          "key": "s-logs:t2",
+          "task": "t2",
+          "description": "prod-eu worker OOM kills",
+          "kind": "logger",
+          "command": "python3 -u /home/jl/.claude/skills/logger/scripts/watch_logs.py --kube prod-eu worker",
+          "state": "stale",
+          "busy": false,
+          "event": null,
+          "startedAt": "@-18.5m",
+          "ended": null
+        }
+      ]
+    },
+    {
+      "id": "s-dot",
+      "pid": 4105,
+      "kind": "bg",
+      "title": "monitor #41",
+      "repo": "dotfiles",
+      "worktree": "",
+      "cwd": "/home/jl/projects/dotfiles",
+      "branch": "main",
+      "state": "idle",
+      "need": null,
+      "via": "",
+      "cmd": "",
+      "since": "@-10m",
+      "stateSince": "@-10m",
+      "prompt": "/pr-babysit https://github.com/jl/dotfiles/pull/41",
+      "ctx": 0,
+      "model": "claude-sonnet-5-5",
+      "jobId": "job-s-dot",
+      "pane": null,
+      "monitor": false,
+      "monitors": [
+        {
+          "key": "s-dot:t1",
+          "task": "t1",
+          "description": "PR #41 pipeline, rebase state, comments",
+          "kind": "pr-babysit",
+          "command": "python3 -u /home/jl/.claude/skills/pr-babysit/scripts/watch_pr.py https://github.com/jl/dotfiles/pull/41 -C /home/jl/projects/dotfiles --session 20261111-090000",
+          "state": "ended",
+          "busy": false,
+          "event": {
+            "line": "[merged] merged by @amy \u00b7 worktree removed",
+            "tag": "merged",
+            "at": "@-3.5m"
+          },
+          "startedAt": "@-125.5m",
+          "ended": {
+            "reason": "merged",
+            "at": "@-3.5m"
+          }
+        }
+      ]
+    }
+  ]
+}

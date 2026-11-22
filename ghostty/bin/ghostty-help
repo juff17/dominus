@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# The keys overlay (viewer/help/help-view.ts), from Alt+H (layout.conf) or the
+# rail's help button (hub/rail/rail.ts), sized by Settings' layout.helpPercent.
+#   ghostty-help <client> <window name>   open it on that tmux client; the
+#                                         window (work, hub, diagrams) picks
+#                                         the section it opens on
+#   ghostty-help --panel <window name>    what runs inside the overlay
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+if [[ $1 == --panel ]]; then
+  run_panel Help "$GHOSTTY_CONF/viewer/help/help-view.ts" "$2"
+fi
+
+overlay "$1" ghostty-help --panel "$2"

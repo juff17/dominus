@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# Ghostty's `command`: runs in every new split, tab and window and picks what
+# it runs.
+#   - The first split of a new window starts the window's outer tmux: btop on
+#     top and the tab session below.
+#   - Anything else, like a split or tab you open yourself, gets your shell.
+# The outer tmux runs it again for its panes: `ghostty-surface top` for btop
+# and `ghostty-surface tabs <window> <dir>` for the tab session.
+# Any failure falls through to your shell, so a terminal always opens.
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+SELF="$GHOSTTY_CONF/bin/ghostty-surface"
+
+run_shell() { exec "${SHELL:-/bin/sh}"; }
+
+# Builds the window's session detached, at the terminal's own size so nothing
+# resizes when it attaches, then attaches to it.
+run_layout() {
+  local win=$1 session="layout-$1" rows cols tabs top top_height
+  read -r rows cols < <(stty size </dev/tty) || return
+  top_height=$(top_rows)
+  # Settings › Layout: the btop header and the side panel can be left out.
+  local header panel
+  header=$(setting layout.header '' true)
+  panel=$(setting layout.sidePanel '' true)
+  # One with a client is a live window's, which two surfaces claiming the same
+  # number would otherwise close; leave it be and give this one a shell.
+  if [[ -n $(layout list-clients -t "=$session" 2>/dev/null) ]]; then
+    ah_log error "$AH_COMPONENT" "window already laid out" win "$win"
+    return 1
+  fi
+  # Left over from an earlier Ghostty process that reused the window number,
+  # as is the folder Files was to open in next.
+  layout kill-session -t "=$session" 2>/dev/null
+  rm -f "$(viewer_dir_file "$win")"
+  layout new-session -d -s "$session" -x "$cols" -y "$rows" -c "$PWD" \
+    "$SELF" tabs "$win" "$PWD" || { pane_failed "$?" tabs "$win"; return; }
+  tabs=$(layout display -p -t "$session" '#{pane_id}')
+  layout set -t "$session" @tabs "$tabs"
+  if [[ $header != false ]]; then
+    top=$(layout split-window -d -v -b -f -l "$top_height" -t "$tabs" \
+      -P -F '#{pane_id}' "$SELF" top) || { pane_failed "$?" top "$win"; return; }
+    layout set -p -t "$top" @top 1
+    # tmux shares a window resize out between the panes, so this puts btop
+    # back to its height after one. The window resizes on attach too, when the
+    # window manager has maximized it since the size above was read.
+    layout set-hook -t "$session" window-resized "resize-pane -t $top -y $top_height"
+  fi
+  # The rail and the hub window; this replaces the hook above with one that
+  # also keeps the rails' width.
+  add_hub "$win"
+  [[ $panel != false && $(setting workspace.viewerShown '' hidden) == shown ]] &&
+    setsid -f "$SELF" viewer "$win" "$PWD" >/dev/null 2>&1
+  exec tmux -L "$LAYOUT_SOCKET" attach-session -t "$session"
+}
+
+# Opens the viewer once the window's session is attached: yazi needs Ghostty
+# there to answer its questions. Doing it now, before Claude starts, keeps
+# Claude's start from taking focus away while you type.
+run_viewer() {
+  local i
+  for ((i = 0; i < 100; i++)); do
+    [[ -n $(layout list-clients -t "=layout-$1" 2>/dev/null) ]] && break
+    sleep 0.05
+  done
+  open_viewer "$1" "$2"
+  exit
+}
+
+# btop, started again whenever it exits, so quitting it by accident doesn't
+# take its pane away.
+run_top() {
+  local state
+  if command -v btop >/dev/null && state=$(state_dir); then
+    mkdir -p "$state/btop/btop"
+    while :; do
+      # btop saves its settings on exit, so it gets a fresh copy of ours.
+      cp "$GHOSTTY_CONF/btop.conf" "$state/btop/btop/btop.conf"
+      XDG_CONFIG_HOME=$state/btop btop
+      sleep 1
+    done
+  fi
+  if command -v htop >/dev/null; then
+    while :; do
+      htop
+      sleep 1
+    done
+  fi
+  run_shell
+}
+
+# The tab session, nested in the outer tmux. When it ends (its last tab
+# closed), the window closes with it, and so do the tabs opened from its hub
+# (hub_tabs in lib/tabs.sh). tmux.conf's session-closed hook does the same
+# (run_closed), for when this pane is hung up before it gets here.
+run_tabs() {
+  unset TMUX TMUX_PANE
+  tab_server new-session -A -s "ghostty-$1" -c "$2"
+  tab_server kill-session -t "=hubtabs-$1" 2>/dev/null
+  layout kill-session -t "=layout-$1"
+  exit
+}
+
+# A tab session ended (tmux.conf's session-closed hook). When it was window
+# <n>'s workspace, ghostty-<n>, its hub tabs and its layout go too: closing
+# the window through Ghostty kills run_tabs before it can, which would leave
+# hubtabs-<n>, and every Claude in it, running unseen, for the next
+# window <n> to take on.
+run_closed() {
+  session_window "$1" ghostty- || exit 0
+  tab_server kill-session -t "=hubtabs-$WIN" 2>/dev/null &&
+    ah_log info "$AH_COMPONENT" "hub tabs closed" win "$WIN"
+  layout kill-session -t "=layout-$WIN" 2>/dev/null
+  exit 0
+}
+
+# The first split of a window that no earlier split has claimed. Two
+# surfaces starting together would both read the list before either adds to
+# it and claim the same window, so reading and claiming hold a lock.
+new_window() {
+  local state known win
+  state=$(state_dir) || return 1
+  {
+    flock -w 5 9 2>/dev/null || ah_log warn "$AH_COMPONENT" "window claim not locked" path "$state/known.lock"
+    touch "$state/known"
+    known=$(cat "$state/known")
+    for win in $(windows); do
+      if ! grep -qx "$win" <<<"$known"; then
+        echo "$win" >>"$state/known"
+        echo "$win"
+        return 0
+      fi
+    done
+    return 1
+  } 9>"$state/known.lock"
+}
+
+case ${1:-} in
+  top) run_top ;;
+  tabs) run_tabs "$2" "$3" ;;
+  viewer) run_viewer "$2" "$3" ;;
+  closed) run_closed "$2" ;;
+esac
+if win=$(new_window); then
+  run_layout "$win"
+fi
+run_shell

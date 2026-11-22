@@ -1,0 +1,76 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { set } from '../settings/settings.ts'
+import { MAX_GRID, type Placement, clampView, fitChips, home, panBy, placement, zoomAt } from './view.ts'
+
+// Its own settings file, so the defaults hold until a test changes one.
+process.env.AGENT_HUB_SETTINGS = join(mkdtempSync(join(tmpdir(), 'view-')), 'settings.json')
+
+const image = { width: 1200, height: 2000 }
+const region = { cols: 60, rows: 40, cw: 10, ch: 20 }
+
+test('at zoom 1 the whole image fits, centered across', () => {
+  const at = placement(image, region, home(image))
+  assert.deepEqual([at.x, at.y, at.w, at.h], [0, 0, 1200, 2000])
+  assert.equal(at.rows, 40)
+  assert.equal(at.col, Math.floor((60 - at.cols) / 2))
+})
+
+test('zooming keeps the point under the pointer in place', () => {
+  const view = zoomAt(image, region, home(image), 2, 300, 400)
+  const before = placement(image, region, home(image))
+  const after = placement(image, region, view)
+  const pointAt = (at: Placement, px: number, py: number): [number, number] => [
+    at.x + ((px - at.col * region.cw) / (at.cols * region.cw)) * at.w,
+    at.y + ((py - at.row * region.ch) / (at.rows * region.ch)) * at.h,
+  ]
+  const [bx, by] = pointAt(before, 300, 400)
+  const [ax, ay] = pointAt(after, 300, 400)
+  assert.ok(Math.abs(ax - bx) < 15 && Math.abs(ay - by) < 15, `${bx},${by} moved to ${ax},${ay}`)
+})
+
+test('panning stops at the image edge', () => {
+  const zoomed = clampView(image, region, { zoom: 4, cx: 600, cy: 1000 })
+  const far = panBy(image, region, zoomed, 100000, 100000)
+  const at = placement(image, region, far)
+  assert.equal(at.x, 0)
+  assert.equal(at.y, 0)
+})
+
+test('the grid keeps the image shape and shows the cells the view is on', () => {
+  const at = placement(image, region, clampView(image, region, { zoom: 2, cx: 900, cy: 1000 }))
+  assert.equal(at.gridCols / at.gridRows, (image.width * region.ch) / (image.height * region.cw))
+  assert.equal(at.cols, region.cols)
+  assert.equal(at.gridCol, at.gridCols - at.cols)
+})
+
+test('zoom stops where the grid would outgrow the diacritics', () => {
+  const at = placement(image, region, clampView(image, region, { zoom: 16, cx: 600, cy: 1000 }))
+  assert.ok(at.gridCols <= MAX_GRID && at.gridRows <= MAX_GRID)
+  assert.equal(Math.max(at.gridCols, at.gridRows), MAX_GRID)
+})
+
+test('the chips start at the first one while the current one fits', () => {
+  assert.deepEqual(fitChips([10, 10, 10, 10], 1, 25), { start: 0, end: 2 })
+  assert.deepEqual(fitChips([10, 10], 0, 100), { start: 0, end: 2 })
+})
+
+test('the chips scroll just far enough to show the current one', () => {
+  assert.deepEqual(fitChips([10, 10, 10, 10], 3, 25), { start: 2, end: 4 })
+})
+
+test('a current chip wider than the row still shows', () => {
+  assert.deepEqual(fitChips([10, 40, 10], 1, 25), { start: 1, end: 2 })
+})
+
+test('zoom stops at Settings’ most zoom', () => {
+  const small = { width: 200, height: 200 }
+  set('viewer.maxZoom', 4)
+  assert.equal(clampView(small, region, { zoom: 10, cx: 100, cy: 100 }).zoom, 4)
+  set('viewer.maxZoom', 16)
+})

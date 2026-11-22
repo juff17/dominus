@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# What runs inside an overlay that isn't a bin/ script's --panel: the hub's
+# New agent form (hub/actions.ts) and the diagrams window (ghostty-diagrams).
+# It draws the window under it ($OV_UNDER) dimmed straight away, so the
+# overlay isn't blank while Node loads the view, then runs the view.
+#   ghostty-backdrop <program> [arg]...
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+paint_backdrop "${OV_UNDER:-}"
+exec "$@"

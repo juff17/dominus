@@ -1,0 +1,11 @@
+[
+  {
+    "id": 77,
+    "ref": "main",
+    "sha": "77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd",
+    "status": "manual",
+    "source": "push",
+    "web_url": "https://gitlab.example.com/infra/terraform/-/pipelines/77",
+    "created_at": "@-1d"
+  }
+]

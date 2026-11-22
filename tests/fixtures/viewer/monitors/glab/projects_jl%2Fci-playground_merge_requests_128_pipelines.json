@@ -1,0 +1,11 @@
+[
+  {
+    "id": 902,
+    "ref": "refs/merge-requests/128/head",
+    "sha": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+    "status": "failed",
+    "source": "merge_request_event",
+    "web_url": "https://gitlab.example.com/jl/ci-playground/-/pipelines/902",
+    "created_at": "@-3m"
+  }
+]

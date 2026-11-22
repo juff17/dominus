@@ -1,0 +1,106 @@
+{
+  "user": {"login": "me", "id": 1, "type": "User"},
+  "repos/u/gad/pulls/91": {
+    "number": 91,
+    "state": "open",
+    "merged": false,
+    "mergeable": true,
+    "mergeable_state": "behind",
+    "html_url": "https://github.com/u/gad/pull/91",
+    "title": "Add pagination to the list endpoint",
+    "user": {"login": "me"},
+    "head": {"ref": "feat/pagination", "sha": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0", "repo": {"full_name": "u/gad"}},
+    "base": {"ref": "main", "sha": "1111111111111111111111111111111111111111", "repo": {"full_name": "u/gad"}}
+  },
+  "repos/u/gad/compare/main...a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0": {
+    "status": "diverged", "ahead_by": 2, "behind_by": 3, "total_commits": 2
+  },
+  "repos/u/gad/commits/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0/check-runs": {
+    "total_count": 7,
+    "check_runs": [
+      {"id": 101, "name": "CI / lint", "status": "completed", "conclusion": "success",
+       "html_url": "https://github.com/u/gad/actions/runs/1/job/101", "details_url": "https://github.com/u/gad/actions/runs/1/job/101",
+       "started_at": "2026-11-09T10:00:00Z", "completed_at": "2026-11-09T10:03:00Z"},
+      {"id": 102, "name": "CI / unit", "status": "completed", "conclusion": "failure",
+       "html_url": "https://github.com/u/gad/actions/runs/1/job/102", "details_url": "https://github.com/u/gad/actions/runs/1/job/102",
+       "started_at": "2026-11-09T10:00:00Z", "completed_at": "2026-11-09T10:12:00Z"},
+      {"id": 103, "name": "QA / e2e", "status": "in_progress", "conclusion": null,
+       "html_url": "https://github.com/u/gad/actions/runs/2/job/103", "details_url": null,
+       "started_at": "2026-11-09T10:12:30Z", "completed_at": null},
+      {"id": 104, "name": "QA / smoke", "status": "queued", "conclusion": null,
+       "html_url": null, "details_url": "https://ci.example.com/smoke/104",
+       "started_at": null, "completed_at": null},
+      {"id": 105, "name": "Deploy / staging", "status": "waiting", "conclusion": null,
+       "html_url": "https://github.com/u/gad/actions/runs/3/job/105", "details_url": null,
+       "started_at": null, "completed_at": null},
+      {"id": 106, "name": "docs", "status": "completed", "conclusion": "skipped",
+       "html_url": "https://github.com/u/gad/actions/runs/4/job/106", "details_url": null,
+       "started_at": "2026-11-09T10:00:00Z", "completed_at": "2026-11-09T10:00:00Z"},
+      {"id": 107, "name": "CI / build", "status": "completed", "conclusion": "cancelled",
+       "html_url": "https://github.com/u/gad/actions/runs/1/job/107", "details_url": null,
+       "started_at": "2026-11-09T10:00:00Z", "completed_at": "2026-11-09T10:01:00Z"}
+    ]
+  },
+  "repos/u/gad/commits/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0/status": {
+    "state": "failure",
+    "sha": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+    "statuses": [
+      {"context": "ci/jenkins", "state": "error", "target_url": "https://jenkins.example.com/job/9",
+       "created_at": "2026-11-09T10:01:00Z", "updated_at": "2026-11-09T10:05:00Z"},
+      {"context": "coverage", "state": "pending", "target_url": null,
+       "created_at": null, "updated_at": "2026-11-09T10:02:00Z"},
+      {"context": "license/cla", "state": "success", "target_url": "https://cla.example.com/u/gad/91",
+       "created_at": "2026-11-09T09:59:00Z", "updated_at": "2026-11-09T09:59:30Z"}
+    ]
+  },
+  "repos/u/gad/actions/runs?head_sha=a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0&per_page=100": {
+    "total_count": 2,
+    "workflow_runs": [
+      {"id": 900, "name": "Fork CI", "status": "action_required", "conclusion": null,
+       "html_url": "https://github.com/u/gad/actions/runs/900"},
+      {"id": 901, "name": "CI", "status": "in_progress", "conclusion": null,
+       "html_url": "https://github.com/u/gad/actions/runs/901"}
+    ]
+  },
+  "graphql": {"data": {"repository": {"pullRequest": {"reviewThreads": {
+    "pageInfo": {"hasNextPage": false, "endCursor": "Y3Vyc29yOnYyOpHOAAAAAw=="},
+    "nodes": [
+      {"isResolved": false, "path": "src/api/list.py", "line": 42, "originalLine": 40,
+       "comments": {"nodes": [
+         {"databaseId": 2001, "author": {"login": "alice", "__typename": "User"},
+          "body": "This loads every row before slicing.\n\nUse LIMIT/OFFSET.",
+          "url": "https://github.com/u/gad/pull/91#discussion_r2001"},
+         {"databaseId": 2002, "author": {"login": "me", "__typename": "User"},
+          "body": "Will do.", "url": "https://github.com/u/gad/pull/91#discussion_r2002"}
+       ]}},
+      {"isResolved": true, "path": "src/api/list.py", "line": null, "originalLine": 7,
+       "comments": {"nodes": [
+         {"databaseId": 2003, "author": {"login": "bob", "__typename": "User"},
+          "body": "typo", "url": "https://github.com/u/gad/pull/91#discussion_r2003"}
+       ]}},
+      {"isResolved": false, "path": "README.md", "line": null, "originalLine": null,
+       "comments": {"nodes": [
+         {"databaseId": 2004, "author": {"login": "coderabbitai", "__typename": "Bot"},
+          "body": "Consider documenting the page size.", "url": "https://github.com/u/gad/pull/91#discussion_r2004"},
+         {"databaseId": 2005, "author": null,
+          "body": "deleted user", "url": "https://github.com/u/gad/pull/91#discussion_r2005"}
+       ]}}
+    ]
+  }}}}},
+  "repos/u/gad/issues/91/comments": [
+    {"id": 5001, "user": {"login": "github-actions[bot]", "type": "Bot"}, "body": "Coverage: 81%",
+     "html_url": "https://github.com/u/gad/pull/91#issuecomment-5001"},
+    {"id": 5002, "user": {"login": "carol", "type": "User"}, "body": "Can this land before Friday?",
+     "html_url": "https://github.com/u/gad/pull/91#issuecomment-5002"}
+  ],
+  "repos/u/gad/pulls/91/reviews": [
+    {"id": 7001, "user": {"login": "bob"}, "state": "APPROVED", "body": "",
+     "html_url": "https://github.com/u/gad/pull/91#pullrequestreview-7001"},
+    {"id": 7002, "user": {"login": "carol"}, "state": "CHANGES_REQUESTED", "body": "Please add tests for page 2.",
+     "html_url": "https://github.com/u/gad/pull/91#pullrequestreview-7002"},
+    {"id": 7003, "user": {"login": "dave"}, "state": "COMMENTED", "body": "",
+     "html_url": "https://github.com/u/gad/pull/91#pullrequestreview-7003"},
+    {"id": 7004, "user": {"login": "erin"}, "state": "DISMISSED", "body": "Superseded.",
+     "html_url": "https://github.com/u/gad/pull/91#pullrequestreview-7004"}
+  ]
+}

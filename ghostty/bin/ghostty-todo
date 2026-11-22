@@ -1,0 +1,377 @@
+#!/usr/bin/env node
+// The todo list the viewer's Todo mode shows, from the command line. The
+// /todo skill has Claude call it; it works the same typed by hand.
+//   ghostty-todo add [--cat C] [--type T] [--note N] [--dir D] [--by claude|you] title…
+//   ghostty-todo file [--dir D] [--image P]… message…  |  file --retry id
+//   ghostty-todo list [--all] [--done] [--json]
+//   ghostty-todo repos                 the git repos an item can go in
+//   ghostty-todo done|undo|rm id…
+//   ghostty-todo edit id [--title T] [--cat C] [--type T] [--note N] [--dir D]
+// add records the repo, branch and worktree of D (default: here; none for no
+// repo), and, when run from a tab of the Ghostty layout, that tab's tmux pane
+// and the Claude session it runs under, so the viewer can go back to it. file
+// has Claude, with the filing model from Settings, write the title, category,
+// type and note from a message: the message shows as a filing item until
+// Claude's add --filing id replaces it, or as failed. list shows this repo's open items; --all every repo's. Categories:
+// bug, feature, follow-up (the default), docs, question, other (alias misc).
+// Types, which are optional: research, decide, action, review, chore;
+// --type none clears one. Outside a git repo the item's repo is none.
+// edit --dir moves an item to D's repo, or to none. file --image attaches
+// an image the message calls [Image #n], n counting from 1 in the order given.
+
+import { execFileSync, spawn } from 'node:child_process'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { basename, dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// The modules below are TypeScript, which some builds of Node can't run
+// (Ubuntu's own has no type stripping); say so rather than fail on import.
+if (!process.features.typescript) {
+  process.stderr.write(`ghostty-todo needs a Node.js that runs TypeScript (24 or later); ${process.execPath} is ${process.version} without it.\n`)
+  process.exit(1)
+}
+
+// Through the link install.sh makes, to find viewer/ beside bin/.
+const here = dirname(realpathSync(fileURLToPath(import.meta.url)))
+const todo = await import(join(here, '../viewer/todo/todo.ts'))
+todo.moveOldStoreOnce()
+const { errorMessage, logger } = await import(join(here, '../core/log.ts'))
+const { pluginInstalled, pluginMissing } = await import(join(here, '../core/hub-skills.ts'))
+// stdout is what Claude reads back, so what goes wrong quietly goes to the
+// todo log.
+const log = logger('todo')
+
+const TABS_SOCKET = process.env.AGENT_HUB_TABS_SOCKET || 'ghostty'
+const CLAUDE_DIR = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')
+// Where ghostty-claude-start saved claude: Ghostty's own PATH often lacks it.
+const CLAUDE_FILE = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'ghostty-layout/claude')
+// What the filer runs: this same script, as it was started (the installed
+// link, or a worktree's copy), so the filer's add matches this file.
+const CLI = process.argv[1]
+const settings = (await import(join(here, '../settings/settings.ts'))).load()
+const { model } = await import(join(here, '../settings/models.ts'))
+const FILER = {
+  model: model(settings['todo.filing.model'])?.api,
+  effort: settings['todo.filing.effort'],
+  limitMs: settings['todo.filing.limit'] * 60 * 1000,
+}
+
+function fail(message) {
+  console.error(`ghostty-todo: ${message}`)
+  process.exit(1)
+}
+
+// Flags anywhere among the words; the rest are positional, and so is
+// everything after --. A 'list' flag may be given more than once.
+function parse(argv, flags) {
+  const opts = {}
+  const rest = []
+  for (let i = 0; i < argv.length; i++) {
+    const word = argv[i]
+    if (word === '--') {
+      rest.push(...argv.slice(i + 1))
+      break
+    }
+    const name = word.startsWith('--') ? word.slice(2).split('=')[0] : ''
+    if (!name) rest.push(word)
+    else if (flags[name] === 'bool') opts[name] = true
+    else if (flags[name] === 'value' || flags[name] === 'list') {
+      const value = word.includes('=') ? word.slice(word.indexOf('=') + 1) : argv[++i]
+      if (value === undefined) fail(`--${name} needs a value`)
+      opts[name] = flags[name] === 'list' ? [...(opts[name] ?? []), value] : value
+    } else fail(`unknown flag --${name}`)
+  }
+  return { opts, rest }
+}
+
+function pickCategory(input) {
+  if (input === undefined) return undefined
+  const cat = todo.category(input)
+  if (!cat) fail(`unknown category "${input}"; use ${todo.CATEGORIES.map(c => c.name).join(', ')}`)
+  return cat
+}
+
+// The tab this runs in, when that's a tab of the layout's tab session. Only
+// the pane: its window shows in several sessions, so the viewer looks up the
+// window's own when it goes there. The tab server's start time goes with it
+// (Item's paneServer), as pane ids start again from %0 on a new server.
+function tab() {
+  const pane = process.env.TMUX_PANE
+  const socket = (process.env.TMUX ?? '').split(',')[0]
+  if (!pane || basename(socket) !== TABS_SOCKET) return {}
+  let paneServer = ''
+  try {
+    paneServer = execFileSync('tmux', ['-S', socket, 'display', '-p', '-t', pane, '#{start_time}'], { encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  } catch (error) {
+    log.warn('tab server unreadable', { pane, err: errorMessage(error) })
+  }
+  return paneServer ? { pane, paneServer } : { pane }
+}
+
+// The Claude session this runs under: the nearest parent process Claude keeps
+// a session file for.
+function claudeSession() {
+  let pid = process.ppid
+  for (let depth = 0; pid > 1 && depth < 20; depth++) {
+    const file = join(CLAUDE_DIR, 'sessions', `${pid}.json`)
+    try {
+      const { sessionId, name } = JSON.parse(readFileSync(file, 'utf8'))
+      if (sessionId) return { session: sessionId, agent: name || '' }
+    } catch (error) {
+      // Most processes up the tree aren't Claude, so have no file.
+      if (error.code !== 'ENOENT') log.warn('claude session unreadable', { path: file, err: errorMessage(error) })
+    }
+    try {
+      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
+      pid = Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1])
+    } catch (error) {
+      // The process exited meanwhile; the item goes in without a session.
+      log.debug('parent process unreadable', { pid, err: errorMessage(error) })
+      break
+    }
+  }
+  return {}
+}
+
+// null for none, which clears the type.
+function pickType(input) {
+  if (input === undefined) return undefined
+  const type = todo.taskType(input)
+  if (type === undefined) fail(`unknown type "${input}"; use ${todo.TYPES.map(t => t.name).join(', ')} or none`)
+  return type
+}
+
+function claudeBin() {
+  let saved = ''
+  try {
+    saved = readFileSync(CLAUDE_FILE, 'utf8').trim()
+  } catch (error) {
+    // Not saved yet: the other places stand in.
+    log.debug('claude path unreadable', { path: CLAUDE_FILE, err: errorMessage(error) })
+  }
+  return [process.env.AGENT_HUB_CLAUDE, saved, join(homedir(), '.local/bin/claude')].find(c => c && existsSync(c)) || 'claude'
+}
+// Whether item is still filing under this process, not filed, dropped or
+// handed to a later filer by a retry.
+const ownFiling = item => item.filing?.pid === process.pid
+
+// Runs Claude on a filing item and waits. Resolves to '' once the item is
+// filed or was dropped meanwhile, or to what went wrong.
+function runFiler(item) {
+  if (!pluginInstalled()) {
+    log.error('filer not started', { id: item.id, err: 'plugin missing' })
+    return Promise.resolve(pluginMissing())
+  }
+  const repos = todo.knownRepos(todo.load())
+  const roots = [...new Set(repos.map(r => dirname(r.root)))]
+  const dir = [item.worktree, item.cwd, item.root].find(d => d && existsSync(d)) || homedir()
+  // The message goes first: --allowedTools and --disallowedTools take every
+  // word after them, up to the next flag.
+  const cli = [...new Set([CLI, todo.INSTALLED_CLI, '~/.config/ghostty/bin/ghostty-todo'])]
+  const args = [
+    '-p', todo.filerMessage(item, CLI),
+    '--model', FILER.model, '--effort', FILER.effort, '--permission-mode', 'dontAsk',
+    // dontAsk denies every tool but these: the read-only search and the CLI's
+    // add and repos.
+    '--allowedTools', ...cli.flatMap(c => [`Bash(${c} add *)`, `Bash(${c} repos*)`]), 'Bash(ls *)', 'Grep', 'Glob', 'Read',
+    // The todo skill comes in through the message; no other skill does.
+    '--disallowedTools', 'Skill',
+    ...roots.flatMap(r => ['--add-dir', r]),
+    // So Read can look at the images the message names.
+    ...(todo.imagesOf(item).length ? ['--add-dir', todo.IMAGES_DIR] : []),
+  ]
+  return new Promise(done => {
+    let output = ''
+    let late = false
+    const child = spawn(claudeBin(), args, { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
+    const timer = setTimeout(() => {
+      late = true
+      child.kill()
+    }, FILER.limitMs)
+    const keep = chunk => (output = (output + chunk).slice(-4000))
+    child.stdout.on('data', keep)
+    child.stderr.on('data', keep)
+    // Dropping a filing item in the viewer stops this process.
+    process.on('SIGTERM', () => {
+      child.kill()
+      process.exit(1)
+    })
+    child.on('error', error => {
+      clearTimeout(timer)
+      done(`couldn't start claude: ${error.message}`)
+    })
+    child.on('close', code => {
+      clearTimeout(timer)
+      // Still this filer's: a retry (r) hands the item to a new filer, whose
+      // pid replaces this one's, and what this one says is no longer news.
+      const still = todo.load().find(i => i.id === item.id && ownFiling(i))
+      if (!still) return done('')
+      const said = output.trim().split('\n').filter(Boolean).pop()?.slice(0, 200) ?? ''
+      if (late) return done(`Claude took longer than ${FILER.limitMs / 60000} minutes`)
+      if (code) return done(`claude exited with code ${code}${said ? `: ${said}` : ''}`)
+      done(`Claude finished without filing it${said ? `: ${said}` : ''}`)
+    })
+  })
+}
+
+function show(item, now = Date.now()) {
+  const cat = todo.CATEGORIES.find(c => c.name === item.cat)?.short ?? item.cat
+  const mark = item.done ? '[x]' : '[ ]'
+  const where = `${item.type ? `${item.type} · ` : ''}${item.repo}${item.branch ? `@${item.branch}` : ''} · ${todo.age(now - item.created)}`
+  const lines = [`${item.id}  ${mark} ${cat.padEnd(6)}  ${item.title}  (${where})`]
+  if (item.note) lines.push(...item.note.split('\n').map(l => `        ${l}`))
+  for (const image of todo.imagesOf(item)) lines.push(`        [Image #${image.n}] ${image.path}`)
+  return lines.join('\n')
+}
+
+const [command, ...args] = process.argv.slice(2)
+
+switch (command) {
+  case 'add': {
+    const { opts, rest } = parse(args, { cat: 'value', type: 'value', note: 'value', dir: 'value', by: 'value', filing: 'value' })
+    const title = rest.join(' ').trim()
+    if (!title) fail('add needs a title')
+    const type = pickType(opts.type)
+    // From the filer: fills in the item the viewer shows, which already has
+    // the repo it was sent from; --dir moves it to the repo the message is
+    // about, or to none when it's about no repo. No tab or session: the
+    // filer's is gone once it's done.
+    if (opts.filing) {
+      let moved
+      if (opts.dir === 'none') {
+        // Outside git the folder stays the item's root, as add does; a repo's
+        // root would list it as that repo's, so home stands in.
+        const sent = todo.load().find(i => i.id === opts.filing && i.filing)
+        moved = { repo: 'none', worktree: '', branch: '', ...(sent?.repo !== 'none' && { root: homedir() }) }
+      } else if (opts.dir) {
+        if (!existsSync(opts.dir)) fail(`--dir ${opts.dir} doesn't exist`)
+        moved = { cwd: opts.dir, ...(await todo.repoOf(opts.dir)) }
+        if (moved.repo === 'none') fail(`--dir ${opts.dir} isn't in a git repo; use --dir none for no repo`)
+      }
+      const item = todo.fill(opts.filing, {
+        title,
+        cat: pickCategory(opts.cat) ?? todo.DEFAULT_CATEGORY,
+        ...(type ? { type } : {}),
+        note: opts.note ?? '',
+        by: 'claude',
+        ...moved,
+      })
+      if (!item) fail(`nothing is filing as ${opts.filing}: it was dropped or filed already`)
+      console.log(`Filed ${item.id}: ${item.title} (${[item.cat, item.type, item.repo].filter(Boolean).join(', ')})`)
+      break
+    }
+    const dir = opts.dir === 'none' ? homedir() : opts.dir || process.cwd()
+    if (!existsSync(dir)) fail(`--dir ${opts.dir} doesn't exist`)
+    const claude = claudeSession()
+    const by = opts.by ?? (claude.session ? 'claude' : 'you')
+    if (by !== 'claude' && by !== 'you') fail('--by is claude or you')
+    const item = todo.add({
+      title,
+      cat: pickCategory(opts.cat) ?? todo.DEFAULT_CATEGORY,
+      ...(type ? { type } : {}),
+      note: opts.note ?? '',
+      by,
+      cwd: dir,
+      ...(await todo.repoOf(dir)),
+      ...tab(),
+      ...claude,
+    })
+    console.log(`Added ${item.id}: ${item.title} (${[item.cat, item.type, item.repo].filter(Boolean).join(', ')})`)
+    break
+  }
+  case 'file': {
+    const { opts, rest } = parse(args, { dir: 'value', retry: 'value', image: 'list' })
+    const filing = { started: Date.now(), pid: process.pid }
+    let item
+    if (opts.retry) {
+      // Not from a filer still at work: two would both file it, and the first
+      // to finish would take the other's record.
+      item = todo.change(opts.retry, it => (it.filing && !todo.filerAlive(it.filing.pid) ? { filing } : {}))
+      if (!item?.filing) fail(`no filing todo matches "${opts.retry}"`)
+      if (item.filing.pid !== process.pid) fail(`${item.id} is still being filed by process ${item.filing.pid}; wait for it to finish or fail`)
+    } else {
+      const message = rest.join(' ').trim()
+      if (!message) fail('file needs a message')
+      const dir = opts.dir || process.cwd()
+      const missing = (opts.image ?? []).find(p => !existsSync(p))
+      if (missing) fail(`--image ${missing} doesn't exist`)
+      const images = (opts.image ?? []).map((path, i) => ({ n: i + 1, path: resolve(path) }))
+      item = todo.add({ title: message, by: 'claude', cwd: dir, ...(await todo.repoOf(dir)), filing, ...(images.length ? { images } : {}) })
+    }
+    console.log(`Filing ${item.id} with Claude: ${item.title}`)
+    const error = await runFiler(item)
+    if (error) {
+      // Only onto this filer's own record, and without its pid: this process
+      // is about to exit, and dropping the item later signals whatever pid
+      // the record holds.
+      todo.change(item.id, it => (ownFiling(it) ? { filing: { started: it.filing.started, error } } : {}))
+      fail(error)
+    }
+    const filed = todo.load().find(i => i.id === item.id)
+    if (!filed) console.log(`Dropped ${item.id}`)
+    else if (filed.filing) console.log(`Retried ${item.id}: a later filer has it`)
+    else console.log(`Filed ${filed.id}: ${filed.title} (${filed.cat}, ${filed.repo})`)
+    break
+  }
+  case 'repos': {
+    const repos = todo.knownRepos(todo.load())
+    console.log(repos.length ? repos.map(r => `${r.repo}\t${r.root}`).join('\n') : 'No git repos known yet: none are on the list.')
+    break
+  }
+  case 'list': {
+    const { opts } = parse(args, { all: 'bool', done: 'bool', json: 'bool' })
+    const { root } = await todo.repoOf(process.cwd())
+    const items = todo
+      .load()
+      .filter(i => !i.filing && (opts.all || i.root === root) && (opts.done || !i.done))
+      .sort((a, b) => todo.CATEGORIES.findIndex(c => c.name === a.cat) - todo.CATEGORIES.findIndex(c => c.name === b.cat) || a.created - b.created)
+    if (opts.json) console.log(JSON.stringify(items, null, 1))
+    else if (!items.length) console.log(opts.all ? 'No open todos.' : `No open todos in ${basename(root)}.`)
+    else console.log(items.map(i => show(i)).join('\n'))
+    break
+  }
+  case 'done':
+  case 'undo':
+  case 'rm': {
+    if (!args.length) fail(`${command} needs an id`)
+    for (const id of args) {
+      const item = command === 'rm' ? todo.remove(id) : todo.change(id, { done: command === 'done' ? Date.now() : null })
+      if (!item) fail(`no single todo matches "${id}"`)
+      console.log(`${{ done: 'Done', undo: 'Reopened', rm: 'Removed' }[command]} ${item.id}: ${item.title}`)
+    }
+    break
+  }
+  case 'edit': {
+    const { opts, rest } = parse(args, { title: 'value', cat: 'value', type: 'value', note: 'value', dir: 'value' })
+    if (rest.length !== 1) fail('edit needs one id')
+    const fields = {}
+    if (opts.title !== undefined) fields.title = opts.title
+    if (opts.cat !== undefined) fields.cat = pickCategory(opts.cat)
+    if (opts.type !== undefined) fields.type = pickType(opts.type)
+    if (opts.note !== undefined) fields.note = opts.note
+    // Moves the item as the viewer's edit form does: to the repo's main
+    // checkout with no branch or worktree, and without the Claude session,
+    // which can only resume where it ran. No repo goes under home.
+    if (opts.dir === 'none') {
+      Object.assign(fields, { repo: 'none', root: homedir(), cwd: homedir(), worktree: '', branch: '', session: '' })
+    } else if (opts.dir !== undefined) {
+      if (!existsSync(opts.dir)) fail(`--dir ${opts.dir} doesn't exist`)
+      const { repo, root } = await todo.repoOf(opts.dir)
+      if (repo === 'none') fail(`--dir ${opts.dir} isn't in a git repo; use --dir none for no repo`)
+      Object.assign(fields, { repo, root, cwd: root, worktree: '', branch: '', session: '' })
+    }
+    if (!Object.keys(fields).length) fail('edit needs --title, --cat, --type, --note or --dir')
+    const item = todo.change(rest[0], fields)
+    if (!item) fail(`no single todo matches "${rest[0]}"`)
+    console.log(`Edited ${item.id}: ${item.title} (${[item.cat, item.type, item.repo].filter(Boolean).join(', ')})`)
+    break
+  }
+  default:
+    {
+      // The comment at the top, up to the first blank line.
+      const lines = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1)
+      console.log(lines.slice(0, lines.indexOf('')).map(l => l.slice(3)).join('\n'))
+    }
+    process.exit(command && command !== 'help' && command !== '--help' ? 1 : 0)
+}

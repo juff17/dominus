@@ -1,0 +1,17 @@
+# installer backups (files in the way, moved here during install)
+.install-backup/
+*.bak.*
+
+# your instructions for agents, copied from prompts/*.md.example at install
+ghostty/prompts/*.md
+
+# python runtime artifacts
+__pycache__/
+*.pyc
+.ruff_cache/
+
+# the type checker (npm install)
+node_modules/
+
+# type declarations Claude Code writes beside a loaded mod
+diagram-plugin/.claude-plugin/types/

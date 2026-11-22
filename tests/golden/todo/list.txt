@@ -1,0 +1,30 @@
+ Todo
+7 open · all repos                                                                      by category
+▾ filing 1
+  ✕ rename the sidebar thing                                                            alpha · 1m
+     Claude couldn't file this: claude exited with code 1: rate limited
+     r retry  shift+a add by hand  x drop
+
+▾ bug 2
+  ☐ Crash when saving an empty file                                          research · alpha · 2m
+  ☐ Login button misaligned on narrow screens                                   action · beta · 3h
+
+▾ feature 1
+  ☐ Add a dark mode toggle to the settings page                                         alpha · 1d
+
+▾ follow-up 1
+  ☐ Follow up on the review comments                                         ✻ review · gamma · 5m
+
+▾ docs 1
+  ☐ Document the install steps                                                   chore · beta · 2d
+
+▾ question 1
+  ☐ Should we drop Node 18?                                                    decide · alpha · 4h
+
+▾ other 1
+  ☐ Buy more coffee                                                                     none · 30m
+
+▸ done today 1
+
+
+ TODO   space done  a add  shift+a by hand  m mark  w hand off  f this repo                     1/8

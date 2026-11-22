@@ -1,0 +1,68 @@
+[
+  {
+    "id": 9003,
+    "name": "notify",
+    "stage": "notify",
+    "status": "created",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/platform/api/-/jobs/9003",
+    "commit": {
+      "id": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+    }
+  },
+  {
+    "id": 9002,
+    "name": "deploy:prod-us",
+    "stage": "deploy",
+    "status": "manual",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/platform/api/-/jobs/9002",
+    "commit": {
+      "id": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+    }
+  },
+  {
+    "id": 9001,
+    "name": "deploy:prod-eu",
+    "stage": "deploy",
+    "status": "manual",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/platform/api/-/jobs/9001",
+    "commit": {
+      "id": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+    }
+  },
+  {
+    "id": 9000,
+    "name": "scan",
+    "stage": "scan",
+    "status": "success",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/platform/api/-/jobs/9000",
+    "commit": {
+      "id": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+    }
+  },
+  {
+    "id": 8999,
+    "name": "test",
+    "stage": "test",
+    "status": "success",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/platform/api/-/jobs/8999",
+    "commit": {
+      "id": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+    }
+  },
+  {
+    "id": 8998,
+    "name": "build",
+    "stage": "build",
+    "status": "success",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/platform/api/-/jobs/8998",
+    "commit": {
+      "id": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+    }
+  }
+]

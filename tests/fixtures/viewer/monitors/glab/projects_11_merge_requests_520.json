@@ -1,0 +1,9 @@
+{
+  "head_pipeline": {
+    "id": 903,
+    "status": "running"
+  },
+  "diverged_commits_count": 0,
+  "has_conflicts": false,
+  "detailed_merge_status": "mergeable"
+}

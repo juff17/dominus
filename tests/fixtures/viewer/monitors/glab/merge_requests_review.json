@@ -1,0 +1,26 @@
+[
+  {
+    "id": 11520,
+    "iid": 520,
+    "project_id": 11,
+    "title": "Bump the client",
+    "web_url": "https://gitlab.example.com/platform/api/-/merge_requests/520",
+    "draft": false,
+    "source_branch": "raj/bump",
+    "target_branch": "main",
+    "created_at": "@-1d",
+    "author": {
+      "username": "raj"
+    },
+    "references": {
+      "full": "platform/api!520"
+    },
+    "reviewers": [
+      {
+        "username": "jl"
+      }
+    ],
+    "has_conflicts": false,
+    "detailed_merge_status": "mergeable"
+  }
+]

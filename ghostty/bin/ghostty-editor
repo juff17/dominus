@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Alt+E runs this: opens a folder's repo in the editor Settings › Editor
+# picks. A folder in a git worktree opens that worktree, not the main
+# checkout, since --show-toplevel names it.
+#   ghostty-editor <tabs>        the active tab of tab session <tabs>, from
+#                                the workspace (layout.conf)
+#   ghostty-editor --dir <dir>   that folder, from the hub (hub/peek.ts
+#                                openEditor): an agent's, background ones too
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+editor=$(setting editor.app '' code)
+window=$(setting editor.window '' default)
+open=$(setting editor.open '' root)
+case $editor in
+  code) name='VS Code' ;;
+  zed) name=Zed ;; *) name=$editor ;;
+esac
+
+# From the hub, the hub shows what went wrong in its footer, so it goes to
+# stderr; from a key in the workspace, to tmux's message line.
+say() {
+  if [[ -n $from_hub ]]; then printf '%s\n' "$1" >&2; else layout display-message "$1"; fi
+}
+
+from_hub=
+if [[ ${1:-} == --dir ]]; then
+  from_hub=1
+  dir=${2:-}
+  if [[ ! -d $dir ]]; then
+    ah_log warn editor "no folder to open" dir "$dir"
+    say "$(words shell.editor.noFolder dir="$dir")"
+    exit 1
+  fi
+else
+  dir=$(tab_server display -p -t "=$1:" '#{pane_current_path}' 2>/dev/null)
+  if [[ -z $dir ]]; then
+    ah_log warn editor "no tab to open" session "$1"
+    say "$(words shell.editor.noTab editor="$name")"
+    exit 1
+  fi
+fi
+target=$dir
+[[ $open == root ]] && target=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || echo "$dir")
+if ! command -v "$editor" >/dev/null; then
+  ah_log warn editor "editor not installed" editor "$editor"
+  say "$(words shell.editor.notInstalled editor="$name" command="$editor")"
+  exit 1
+fi
+# Each editor's flag for a new window or reusing one.
+args=()
+case $window in
+  new) args=(-n) ;;
+  reuse) args=(-r) ;;
+esac
+# Its own session, so the editor outlives the tmux job that started it.
+setsid -f "$editor" "${args[@]}" "$target" >/dev/null 2>&1

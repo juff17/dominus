@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+# The left-hand viewer: its modes take turns in one pane. Settings ›
+# Workspace (viewer/modes.ts) says which are on, their order, which is the
+# order of the header's tabs and of Tab's cycle, and which one it opens in.
+#   - Files: the yazi file manager. q goes to Diagrams.
+#   - Diff: the uncommitted changes of the repository (viewer/diff/diff-view.ts).
+#     q goes to Files.
+#   - Todo: every repo's todos, from bin/ghostty-todo (viewer/todo/todo-view.ts).
+#     q goes to Files.
+#   - Diagrams: Claude's diagrams (viewer/diagrams/diagram-view.ts, dv). q closes the
+#     pane.
+#   - A mode you added: your command, run in the folder Files was in. When it
+#     exits the pane goes to Files.
+# Where q would go to a mode that's off, it closes the pane instead (Files'
+# q), or goes to the next mode (the rest). A mode that crashes, or a command
+# that fails, says so and waits for a key, then goes where its q would.
+#   ghostty-viewer [dir] [node]
+# node is the Node.js binary for Diff, Todo and Diagrams. Ghostty's own PATH usually
+# lacks it, so without one it uses the one ghostty-claude-start last saw.
+# VIEWER_ID is yazi's client id, which ghostty-claude-start sends `cd` to.
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+dir=${1:-$PWD}
+node_arg=${2:-}
+NODE=$node_arg
+[[ -n $NODE ]] || find_node
+conf=$GHOSTTY_CONF
+# Where ghostty-claude-start leaves Claude's folder for Files when yazi isn't
+# running to be sent there. It's taken once and removed, so it moves the
+# viewer once, not back to Claude's folder at every switch.
+dir_file=${VIEWER_ID:+${XDG_RUNTIME_DIR:-/tmp}/ghostty-layout/viewer-$VIEWER_ID.dir}
+modes_js="$conf/viewer/modes.ts"
+dv="$conf/viewer/diagrams/diagram-view.ts"
+gv="$conf/viewer/diff/diff-view.ts"
+tv="$conf/viewer/todo/todo-view.ts"
+
+# A mode exits with FIRST_EXIT + i to switch to mode i (viewer/modes.ts);
+# any other code closes the pane.
+FIRST_EXIT=10
+# yazi can't pick an exit code, but it writes its folder to this file when it
+# quits plainly: Tab and a click on another mode's tab do that, q doesn't. A
+# click also leaves that mode's number in GV_NEXT_MARK (yazi/init.lua).
+next="${XDG_RUNTIME_DIR:-/tmp}/ghostty-viewer-$$"
+next_mark="$next.mode"
+trap 'rm -f "$next" "$next_mark"' EXIT
+
+# ids, names and cmds: the modes that are on and can run here, in order.
+# Files needs yazi and the rest Node.js, which also reads the list; without
+# it there's only Files.
+load_modes() {
+  local id name cmd
+  ids=() names=() cmds=()
+  if [[ -n $NODE ]]; then
+    while IFS=$'\t' read -r id name cmd; do
+      [[ $id == files ]] && ! command -v yazi >/dev/null && continue
+      ids+=("$id") names+=("$name") cmds+=("$cmd")
+    done < <("$NODE" "$modes_js" list 2>/dev/null)
+  fi
+  if ((${#ids[@]} == 0)) && command -v yazi >/dev/null; then
+    ids=(files) names=(Files) cmds=('')
+  fi
+}
+
+index_of() {
+  local i
+  for i in "${!ids[@]}"; do
+    [[ ${ids[i]} == "$1" ]] && echo "$i" && return
+  done
+}
+
+# The code that switches to mode <id>, or nothing when it's off.
+code_of() {
+  local i
+  i=$(index_of "$1")
+  [[ -n $i ]] && echo $((FIRST_EXIT + i))
+}
+
+# exited <status>: says the mode at $at exited with <status>, and waits for a
+# key, so a crash's stack trace stays on screen to be read, and a command
+# that fails straight away doesn't come round again and again.
+exited() {
+  # A view killed by a signal never gave the terminal back: its mouse, focus
+  # and paste modes would still be on, and their reports, or ones already
+  # waiting, would be the "any key" that dismisses this unread. Only on a
+  # terminal: piped input is keys someone meant to send.
+  if [[ -t 0 && -t 1 ]]; then
+    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1004l\e[?1006l\e[?1016l\e[?2004l\e[?25h'
+    while read -rsn1 -t 0.05; do :; done
+  fi
+  printf '\n%s exited with %d. Press any key to go on.' "${names[at]}" "$1"
+  read -rsn1
+}
+
+load_modes
+if ((${#ids[@]} == 0)); then
+  # With Node.js the list was read, so only modes that need yazi are on.
+  if [[ -n $NODE ]]; then
+    echo "No mode that is on can run here: Files needs yazi, which isn't installed."
+  else
+    echo "Neither yazi nor Node.js is installed."
+  fi
+  read -rsn1 -p "Press any key to close."
+  exit 1
+fi
+mode=$([[ -n $NODE ]] && "$NODE" "$modes_js" start 2>/dev/null)
+
+while :; do
+  # Found again each time too, as the node found at the start may have gone
+  # (an upgrade) or a newer one been saved since.
+  [[ -n $node_arg ]] || find_node
+  # Read again each time, so a change in Settings shows at the next switch.
+  load_modes
+  ((${#ids[@]})) || exit 0
+  at=$(index_of "$mode")
+  at=${at:-0}
+  mode=${ids[at]}
+  count=${#ids[@]}
+  next_code=$((count > 1 ? FIRST_EXIT + (at + 1) % count : 0))
+  case $mode in
+    files) quit_code=$(code_of diagrams) quit_code=${quit_code:-0} ;;
+    diagrams) quit_code=0 ;;
+    *) quit_code=$(code_of files) quit_code=${quit_code:-$next_code} ;;
+  esac
+  GV_MODES=$(
+    IFS=$'\t'
+    echo "${names[*]}"
+  )
+  export GV_MODES GV_AT=$at GV_QUIT=$quit_code
+  if [[ -n $dir_file && -s $dir_file ]]; then
+    dir=$(<"$dir_file")
+    rm -f "$dir_file"
+  fi
+
+  case $mode in
+    files)
+      rm -f "$next" "$next_mark"
+      YAZI_CONFIG_HOME="$conf/yazi" GV_NEXT_MARK="$next_mark" yazi ${VIEWER_ID:+--client-id "$VIEWER_ID"} \
+        --cwd-file="$next" "$dir"
+      status=$?
+      if [[ -s $next ]]; then
+        # The folder Files was in, for the modes that run in it and for
+        # Files when it comes back. A Claude that started while yazi ran
+        # sent it there already, so this is where you went after that.
+        dir=$(<"$next")
+        [[ -n $dir_file ]] && rm -f "$dir_file"
+        if [[ -s $next_mark ]]; then
+          code=$((FIRST_EXIT + $(<"$next_mark")))
+        else
+          code=$next_code
+        fi
+      else
+        # q quits without the cwd file; so do a yazi that fails to start
+        # (a config it can't load, a flag it rejects) and one that crashes,
+        # which say so as any mode does rather than skip Files unseen.
+        if ((status != 0)); then
+          ah_log error viewer "mode failed" mode files exit "$status"
+          exited "$status"
+        fi
+        code=$quit_code
+      fi
+      ;;
+    diff)
+      "$NODE" "$gv" "$dir"
+      code=$?
+      ;;
+    todo)
+      "$NODE" "$tv" "$dir"
+      code=$?
+      ;;
+    diagrams)
+      "$NODE" "$dv"
+      code=$?
+      ;;
+    *)
+      (cd "$dir" 2>/dev/null || cd "$HOME" && exec bash -c "${cmds[at]}")
+      status=$?
+      if ((status != 0)); then
+        ah_log warn viewer "mode command failed" mode "$mode" exit "$status"
+        exited "$status"
+      fi
+      code=$quit_code
+      ;;
+  esac
+  # 0 is a mode closing the pane; any other code that isn't a switch is a
+  # crash, a kill or a bad code, which goes where q would once it's been read.
+  if ((code != 0 && (code < FIRST_EXIT || code - FIRST_EXIT >= count))); then
+    ah_log error viewer "mode failed" mode "$mode" exit "$code"
+    exited "$code"
+    code=$quit_code
+  fi
+  ((code >= FIRST_EXIT && code - FIRST_EXIT < count)) || exit 0
+  mode=${ids[code - FIRST_EXIT]}
+done

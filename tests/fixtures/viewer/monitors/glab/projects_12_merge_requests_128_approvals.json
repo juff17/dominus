@@ -1,0 +1,11 @@
+{
+  "approved_by": [
+    {
+      "user": {
+        "username": "mei"
+      }
+    }
+  ],
+  "approvals_required": 2,
+  "approvals_left": 1
+}

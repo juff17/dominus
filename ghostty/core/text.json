@@ -1,0 +1,2550 @@
+{
+  "controls": {
+    "on": "on",
+    "off": "off",
+    "yes": "yes",
+    "no": "no",
+    "close": "close",
+    "more": "+{n} more"
+  },
+  "settings": {
+    "sections": {
+      "general": {
+        "name": "General",
+        "where": "what every part of the hub shares",
+        "heads": {
+          "folders": "Folders"
+        }
+      },
+      "newAgent": {
+        "name": "New agent",
+        "where": "what New agent (alt+n) starts with; the form can still change it",
+        "heads": {
+          "task": "Task",
+          "folders": "Folders"
+        }
+      },
+      "monitors": {
+        "name": "Monitors",
+        "where": "what Alt+M lists, and how it starts monitors",
+        "heads": {
+          "prs": "PR",
+          "key": "Key",
+          "pipelines": "Pipelines",
+          "logs": "Logs"
+        },
+        "aliases": {
+          "keys.monitors": {
+            "label": "Open Monitors",
+            "sub": "tab switches views inside it"
+          }
+        }
+      },
+      "prBabysit": {
+        "name": "PR babysit",
+        "where": "pr-babysit monitors started from Alt+M, and the watcher every babysit runs",
+        "heads": {
+          "agent": "Agent",
+          "watcher": "Watcher",
+          "actOnItsOwn": "Act on its own"
+        },
+        "aliases": {
+          "approvals.push": {
+            "label": "Auto push changes",
+            "sub": "push fixes and rebases once lint and tests pass; refused if anyone pushed since"
+          },
+          "approvals.reply": {
+            "label": "Auto reply to reviewers",
+            "sub": "after a fix is committed; posted under your name"
+          }
+        }
+      },
+      "approvals": {
+        "name": "Approvals",
+        "where": "what babysitters do on their own, and what waits for you in Alt+A and the tray",
+        "heads": {
+          "autoApprove": "Auto-approve",
+          "whenYouApprove": "When you approve"
+        },
+        "fixed": {
+          "approveADeployment": {
+            "label": "Approve a deployment",
+            "value": "ask, always",
+            "sub": "GitHub environment rules"
+          }
+        },
+        "aliases": {
+          "keys.approvals": {
+            "label": "Popup key",
+            "sub": "the same key as Keybinds › Approvals popup"
+          }
+        }
+      },
+      "logger": {
+        "name": "Log watcher",
+        "where": "log-watcher monitors started from Alt+M › Logs, and what every watch_logs.py passes on",
+        "heads": {
+          "agent": "Agent",
+          "watcher": "Watcher"
+        }
+      },
+      "todo": {
+        "name": "Todo",
+        "where": "the Todo list: w hands todos to agents, a files one with Claude",
+        "heads": {
+          "handOff": "Hand-off",
+          "filing": "Filing",
+          "list": "List"
+        }
+      },
+      "hub": {
+        "name": "Hub & monitors",
+        "where": "the agent hub’s board and its Monitors tray",
+        "heads": {
+          "lanes": "Lanes",
+          "stopped": "Stopped agents",
+          "monitors": "Monitors"
+        }
+      },
+      "tray": {
+        "name": "Tray",
+        "where": "the Agents widget in the panel and its Meta+A inbox",
+        "heads": {
+          "panelChip": "Panel chip",
+          "inbox": "Inbox",
+          "sounds": "Sounds"
+        },
+        "fixed": {
+          "shortcut": {
+            "label": "Shortcut",
+            "value": "Meta+A",
+            "sub": "set in KDE’s Keyboard Shortcuts, shown here"
+          }
+        },
+        "aliases": {
+          "approvals.trayButtons": {
+            "label": "Approve buttons on babysit rows",
+            "sub": "Post, Push, Retry and Run; same as Approvals › Also show buttons"
+          }
+        }
+      },
+      "editor": {
+        "name": "Editor",
+        "where": "what alt+e opens the current tab or agent in",
+        "heads": {
+          "opening": "Opening"
+        }
+      },
+      "workspace": {
+        "name": "Workspace",
+        "where": "the viewer pane on the left: its modes, their order and how it opens",
+        "heads": {
+          "viewerModes": "Viewer modes · their order is the tab cycle",
+          "startup": "Startup",
+          "whenAModeIsOff": "When a mode is off"
+        }
+      },
+      "layout": {
+        "name": "Layout",
+        "where": "the parts of every Ghostty window",
+        "heads": {
+          "window": "Window",
+          "popups": "Popups"
+        }
+      },
+      "viewers": {
+        "name": "Viewers",
+        "where": "the left pane’s Diagrams and Diff, and Alt+D",
+        "heads": {
+          "diagrams": "Diagrams",
+          "diff": "Diff"
+        }
+      },
+      "keys": {
+        "name": "Keybinds",
+        "where": "keys that work anywhere in the window; ↵ then press the new key",
+        "heads": {
+          "anywhere": "Anywhere · layout.conf",
+          "ghostty": "Ghostty · config.ghostty"
+        }
+      }
+    },
+    "rows": {
+      "general.folder": {
+        "label": "Default folder",
+        "sub": "where an agent starts when nothing names a folder: New agent, Logs, a pipeline with no clone, a todo with no repo",
+        "empty": "~/projects"
+      },
+      "newAgent.task.model": {
+        "label": "Model"
+      },
+      "newAgent.task.mode": {
+        "label": "Permission mode"
+      },
+      "newAgent.task.effort": {
+        "label": "Effort"
+      },
+      "newAgent.task.chrome": {
+        "label": "Chrome",
+        "sub": "claude --chrome: Claude in Chrome browser tools"
+      },
+      "newAgent.task.branch": {
+        "label": "Branch",
+        "choices": {
+          "current": "current branch"
+        }
+      },
+      "worktree.fetch": {
+        "label": "Fetch before a worktree",
+        "sub": "git fetch before any Claude session makes a worktree, so it starts from the remote’s latest"
+      },
+      "newAgent.recent": {
+        "label": "Recent folders shown",
+        "sub": "under Folder; 8 is all the form has room for"
+      },
+      "newAgent.rankBy": {
+        "label": "Rank folders by",
+        "sub": "frecency from ~/.z, merged with folders agents ran in; without ~/.z, last used",
+        "choices": {
+          "frecency": "z.sh frecency",
+          "recent": "last used"
+        }
+      },
+      "newAgent.gitOnly": {
+        "label": "Only git repos",
+        "sub": "a subfolder counts as its repo; folders outside git are left out"
+      },
+      "newAgent.defaultFolder": {
+        "label": "Default folder",
+        "sub": "where Folder starts: the selected agent’s repo, else the newest recent; or always General’s Default folder",
+        "choices": {
+          "tab": "active tab",
+          "projects": "Default folder"
+        }
+      },
+      "newAgent.pr.model": {
+        "label": "Model",
+        "sub": "pr-babysit monitors the attach drawer starts"
+      },
+      "newAgent.pr.mode": {
+        "label": "Permission mode"
+      },
+      "newAgent.pr.effort": {
+        "label": "Effort",
+        "sub": "its mode and Chrome are PR babysit's"
+      },
+      "newAgent.pr.chrome": {
+        "label": "Chrome",
+        "sub": "claude --chrome: Claude in Chrome browser tools"
+      },
+      "prBabysit.interval": {
+        "label": "Check the PR every",
+        "sub": "watch_pr.py --interval",
+        "unit": "s"
+      },
+      "prBabysit.stuckAfter": {
+        "label": "A job is stuck after",
+        "sub": "waiting for a runner; watch_pr.py --stuck-after",
+        "unit": "m"
+      },
+      "prBabysit.errorAfter": {
+        "label": "Warn after failed checks",
+        "sub": "API calls failing this many checks in a row raise an error; it keeps trying"
+      },
+      "prBabysit.notifyStage": {
+        "label": "Notify on stage finished",
+        "sub": "[stage] events in the tray, not just chat"
+      },
+      "prBabysit.autoFix": {
+        "label": "Auto-fix review comments",
+        "sub": "commit obvious fixes without asking first; off asks about each"
+      },
+      "prBabysit.autoRebase": {
+        "label": "Auto rebase",
+        "sub": "when behind the base; off rebases only for conflicts or when the host requires it",
+        "choices": {
+          "clean": "when clean"
+        }
+      },
+      "approvals.retry": {
+        "label": "Retry a flaky job",
+        "sub": "runner lost, network, registry; once per job"
+      },
+      "approvals.move": {
+        "label": "Move local commits after a push",
+        "sub": "rebase babysit commits onto the new head"
+      },
+      "approvals.manual": {
+        "label": "Run a manual job",
+        "sub": "GitLab play button; deploy stages always ask"
+      },
+      "approvals.push": {
+        "label": "Push fixes to the PR",
+        "sub": "goes out under your name; same as PR babysit › Auto push"
+      },
+      "approvals.reply": {
+        "label": "Post a reply",
+        "sub": "same as PR babysit › Auto reply",
+        "choices": {
+          "draft": "draft for approval"
+        }
+      },
+      "approvals.edited": {
+        "label": "An edited reply",
+        "sub": "after e in the popup",
+        "choices": {
+          "post": "post it",
+          "confirm": "show it once more"
+        }
+      },
+      "approvals.editor": {
+        "label": "Editor for e",
+        "sub": "with no $EDITOR set, the inline box",
+        "choices": {
+          "editor": "$EDITOR",
+          "inline": "inline box"
+        }
+      },
+      "approvals.trayButtons": {
+        "label": "Also show buttons in the tray",
+        "sub": "Post, Push, Retry and Run on babysit rows in the Meta+A inbox"
+      },
+      "newAgent.logs.model": {
+        "label": "Model",
+        "sub": "log watchers the Logs view starts"
+      },
+      "newAgent.logs.mode": {
+        "label": "Permission mode"
+      },
+      "newAgent.logs.effort": {
+        "label": "Effort",
+        "sub": "its mode and Chrome are Log watcher's"
+      },
+      "newAgent.logs.chrome": {
+        "label": "Chrome",
+        "sub": "claude --chrome: Claude in Chrome browser tools"
+      },
+      "logger.dedup": {
+        "label": "Hide repeats for",
+        "sub": "the same line again within this is dropped; 0 keeps every one; --dedup",
+        "unit": "s"
+      },
+      "logger.floodLimit": {
+        "label": "Most lines per 10 s",
+        "sub": "past this, lines are dropped and counted"
+      },
+      "logger.traceLines": {
+        "label": "Stack trace lines kept",
+        "sub": "after the error line that starts one"
+      },
+      "logger.lineChars": {
+        "label": "Longest line",
+        "sub": "longer lines are cut",
+        "unit": " chars"
+      },
+      "todo.handoff.model": {
+        "label": "Model",
+        "sub": "m in the hand-off picker"
+      },
+      "todo.handoff.mode": {
+        "label": "Permission mode"
+      },
+      "todo.handoff.effort": {
+        "label": "Effort"
+      },
+      "todo.handoff.branch": {
+        "label": "Branch",
+        "sub": "b in the picker; only for todos added in git",
+        "choices": {
+          "worktree": "own worktree",
+          "branch": "branch it was added on"
+        }
+      },
+      "todo.handoff.merge": {
+        "label": "Before merging into main",
+        "sub": "own-worktree agents only",
+        "choices": {
+          "never": "never merge"
+        }
+      },
+      "todo.filing.model": {
+        "label": "Model",
+        "sub": "writes the title, category and note"
+      },
+      "todo.filing.effort": {
+        "label": "Effort"
+      },
+      "todo.filing.limit": {
+        "label": "Give up after",
+        "sub": "then the item shows the error",
+        "unit": "m"
+      },
+      "todo.keepDone": {
+        "label": "Keep done items",
+        "sub": "under “done today”, then dropped",
+        "unit": "d"
+      },
+      "todo.noteSecs": {
+        "label": "Notes show for",
+        "sub": "what the list says after you add, hand off or finish something",
+        "unit": "s"
+      },
+      "hub.doneCards": {
+        "label": "Done cards before folding",
+        "sub": "the rest fold to a line each"
+      },
+      "hub.idleLane": {
+        "label": "Show the Idle lane",
+        "sub": "off gives its room to the other three; idle agents still count"
+      },
+      "hub.restartStopped": {
+        "label": "Restart stopped agents",
+        "sub": "background agents left with no process, as after a reboot: once each per login"
+      },
+      "hub.listCols": {
+        "label": "List width beside a session",
+        "unit": " cols"
+      },
+      "hub.boardCols": {
+        "label": "Narrowest board",
+        "sub": "a narrower hub shows one list instead of the lanes",
+        "unit": " cols"
+      },
+      "hub.noteSecs": {
+        "label": "Notes show for",
+        "sub": "what the footer says after you start, stop or close something",
+        "unit": "s"
+      },
+      "hub.monitorRows": {
+        "label": "Rows kept for monitors",
+        "sub": "more than 5 needs a UI test at that size first"
+      },
+      "hub.endedFor": {
+        "label": "Ended monitors leave after",
+        "unit": "m"
+      },
+      "hub.maxEvents": {
+        "label": "Events kept per monitor"
+      },
+      "hub.askStopMonitor": {
+        "label": "Ask before stopping a monitor",
+        "sub": "x in the hub asks “Stop monitor …?”; its session keeps running"
+      },
+      "hub.attention": {
+        "label": "Count as needing you",
+        "sub": "events that put a monitor’s agent in Needs you"
+      },
+      "hub.broke": {
+        "label": "Count as broke",
+        "sub": "events that turn a monitor ✗ red in the tray"
+      },
+      "tray.count": {
+        "label": "Count",
+        "sub": "glyphs shown on the chip",
+        "choices": {
+          "you": "▲ you",
+          "broke": "✗ broke",
+          "work": "✻ work",
+          "watch": "◉ watch",
+          "done": "✓ done"
+        }
+      },
+      "tray.flash": {
+        "label": "Flash on a new ▲ or ✗",
+        "sub": "0 turns the flash off",
+        "unit": "s"
+      },
+      "tray.ring": {
+        "label": "Ring until the inbox opens",
+        "sub": "a ring round the chip while something is new"
+      },
+      "tray.pollSecs": {
+        "label": "Check agents every",
+        "unit": "s"
+      },
+      "tray.noteHours": {
+        "label": "Notes expire after",
+        "sub": "notify.sh items you haven’t opened",
+        "unit": "h"
+      },
+      "tray.foldDone": {
+        "label": "Fold done items",
+        "sub": "into one line until you press Show"
+      },
+      "tray.desktop": {
+        "label": "Desktop pop-up too",
+        "sub": "a KDE notification for a new ▲ or ✗"
+      },
+      "tray.messageSecs": {
+        "label": "Results show for",
+        "sub": "what the inbox says after a button",
+        "unit": "s"
+      },
+      "tray.inboxWidth": {
+        "label": "Width",
+        "unit": " px"
+      },
+      "tray.inboxHeight": {
+        "label": "Most height",
+        "sub": "it grows with its items up to this",
+        "unit": " px"
+      },
+      "tray.soundYou": {
+        "label": "Sound when something needs you",
+        "sub": "a new ▲ in the tray"
+      },
+      "tray.soundBroke": {
+        "label": "Sound when something breaks",
+        "sub": "a new ✗ in the tray"
+      },
+      "tray.sound": {
+        "label": "Sound",
+        "sub": "from the freedesktop sound theme, or the file below",
+        "choices": {
+          "custom": "custom file"
+        }
+      },
+      "tray.soundFile": {
+        "label": "Sound file",
+        "sub": "for Sound › custom file: an .oga, .ogg or .wav; ↵ to type its path"
+      },
+      "tray.quiet": {
+        "label": "Quiet while Ghostty is focused",
+        "sub": "only play when you are in another window"
+      },
+      "tray.tabBell": {
+        "label": "Tab bell",
+        "sub": "ghostty-claude-ping turns a tab red when Claude stops or asks"
+      },
+      "editor.app": {
+        "label": "Editor",
+        "sub": "its command (code, zed) has to be on PATH",
+        "choices": {
+          "code": "VS Code",
+          "zed": "Zed"
+        }
+      },
+      "editor.window": {
+        "label": "Window",
+        "choices": {
+          "default": "editor decides",
+          "new": "new window",
+          "reuse": "reuse a window"
+        }
+      },
+      "editor.open": {
+        "label": "Open",
+        "sub": "outside git it opens the folder either way",
+        "choices": {
+          "root": "repo or worktree",
+          "folder": "tab’s folder"
+        }
+      },
+      "workspace.modes": {
+        "label": "Viewer modes",
+        "sub": "off hides a mode from the header and the tab cycle; its data stays"
+      },
+      "workspace.viewerShown": {
+        "label": "Viewer pane in new windows",
+        "sub": "hidden: Alt+V opens it"
+      },
+      "workspace.startMode": {
+        "label": "Viewer opens in",
+        "sub": "a mode that is off falls back to the first one on",
+        "choices": {
+          "first": "first mode on",
+          "files": "Files",
+          "diff": "Diff",
+          "todo": "Todo",
+          "diagrams": "Diagrams"
+        }
+      },
+      "workspace.popupsWhenOff": {
+        "label": "Its popup key",
+        "sub": "Alt+T for Todo, Alt+D for Diagrams",
+        "choices": {
+          "works": "still works",
+          "off": "off too"
+        }
+      },
+      "layout.railCols": {
+        "label": "Rail width",
+        "unit": " cols"
+      },
+      "layout.diagramsPercent": {
+        "label": "Alt+D window size",
+        "sub": "of the Ghostty window",
+        "unit": "%"
+      },
+      "layout.header": {
+        "label": "Header (btop)",
+        "sub": "btop across the top of new windows, showing CPU use; off gives the tabs the full height"
+      },
+      "layout.sidePanel": {
+        "label": "Side panel",
+        "sub": "the viewer Alt+V shows: Files, Diagrams, Diff and Todo; off turns Alt+V off"
+      },
+      "layout.viewerPercent": {
+        "label": "Viewer pane width",
+        "sub": "each time Alt+V shows it; GHOSTTY_VIEWER_SHARE wins",
+        "unit": "%"
+      },
+      "layout.topRows": {
+        "label": "btop height",
+        "sub": "in new windows; GHOSTTY_TOP_ROWS wins",
+        "unit": " rows"
+      },
+      "layout.todoWidth": {
+        "label": "Alt+T width",
+        "unit": "%"
+      },
+      "layout.todoHeight": {
+        "label": "Alt+T height",
+        "unit": "%"
+      },
+      "layout.helpPercent": {
+        "label": "Alt+H size",
+        "unit": "%"
+      },
+      "layout.settingsPercent": {
+        "label": "Settings size",
+        "sub": "takes effect the next time it opens",
+        "unit": "%"
+      },
+      "viewer.zoomStep": {
+        "label": "Zoom per step",
+        "sub": "a wheel notch or + / -",
+        "unit": "%"
+      },
+      "viewer.panPercent": {
+        "label": "Pan per key",
+        "sub": "of the view, for h j k l",
+        "unit": "%"
+      },
+      "viewer.maxZoom": {
+        "label": "Most zoom",
+        "sub": "big diagrams can stop sooner: the picture has only so many cells",
+        "unit": "×"
+      },
+      "viewer.scrollLines": {
+        "label": "Lines per scroll",
+        "sub": "a wheel notch, or J / K"
+      },
+      "keys.help": {
+        "label": "Help"
+      },
+      "keys.todo": {
+        "label": "Todo popup"
+      },
+      "keys.settings": {
+        "label": "Settings",
+        "sub": "this panel"
+      },
+      "keys.diagrams": {
+        "label": "Diagrams"
+      },
+      "keys.approvals": {
+        "label": "Approvals popup",
+        "sub": "what babysitters want to post, push or run"
+      },
+      "keys.viewer": {
+        "label": "Show or hide the viewer"
+      },
+      "keys.newAgent": {
+        "label": "New agent"
+      },
+      "keys.editor": {
+        "label": "Open in your editor"
+      },
+      "keys.workspace": {
+        "label": "Go to the workspace"
+      },
+      "keys.hub": {
+        "label": "Agent view",
+        "sub": "the session the hub opened, focused"
+      },
+      "keys.board": {
+        "label": "Back to the board"
+      },
+      "keys.newTab": {
+        "label": "New tab"
+      },
+      "keys.closeTab": {
+        "label": "Close tab"
+      },
+      "keys.newWindow": {
+        "label": "New window"
+      },
+      "monitors.githubHosts": {
+        "label": "GitHub hosts",
+        "sub": "gh reads each; ✓ when gh is installed and its token is set; ↵ to change"
+      },
+      "monitors.gitlabHosts": {
+        "label": "GitLab hosts",
+        "sub": "glab reads each; ✓ when glab is installed and GITLAB_TOKEN is set; ↵ to add one"
+      },
+      "monitors.startOn": {
+        "label": "Start on",
+        "sub": "Mine: PRs you opened · Reviewer: PRs you're asked to review",
+        "choices": {
+          "mine": "Mine",
+          "reviewer": "Reviewer"
+        }
+      },
+      "monitors.drafts": {
+        "label": "Show drafts",
+        "sub": "dimmed, after the others"
+      },
+      "monitors.refreshSecs": {
+        "label": "Refresh every",
+        "sub": "only while Alt+M is open; never in the background",
+        "unit": "s"
+      },
+      "monitors.watch": {
+        "label": "Watch by default",
+        "sub": "what the attach drawer starts with on",
+        "choices": {
+          "pipeline": "pipeline",
+          "comments": "comments",
+          "rebase": "rebase",
+          "ping": "ping on every comment"
+        }
+      },
+      "monitors.until": {
+        "label": "Until",
+        "sub": "when a PR monitor stops on its own; m in the drawer changes it",
+        "choices": {
+          "merged": "merged",
+          "pipeline": "pipeline passes",
+          "8h": "8h",
+          "24h": "24h"
+        }
+      },
+      "monitors.pipelines.fromPrs": {
+        "label": "Pipelines from PR monitors",
+        "sub": "list the pipelines of PRs a monitor watches, under From watched PRs; P in the view too"
+      },
+      "monitors.pipelines.projects": {
+        "label": "Projects",
+        "sub": "host/group/project, comma apart; ↵ to type them",
+        "empty": "ones with an open PR"
+      },
+      "monitors.pipelines.refs": {
+        "label": "Branches and tags",
+        "sub": "which refs show under Not from a PR; globs like v*"
+      },
+      "monitors.pipelines.keepFinished": {
+        "label": "Keep finished",
+        "sub": "how long a passed or canceled pipeline shows after it started; failed ones stay. x hides one sooner",
+        "choices": {
+          "6h": "6h",
+          "24h": "24h",
+          "3d": "3 days",
+          "7d": "7 days",
+          "always": "until a newer run"
+        }
+      },
+      "monitors.pipelines.model": {
+        "label": "Model",
+        "sub": "pipeline-watch monitors m and + watch start"
+      },
+      "monitors.pipelines.effort": {
+        "label": "Effort",
+        "sub": "they run in auto mode, without Chrome"
+      },
+      "monitors.logs.envs": {
+        "label": "Environments",
+        "sub": "the Logs form’s envs; local is always one"
+      },
+      "monitors.logs.kubeconfig": {
+        "label": "Kubeconfig",
+        "sub": "and every file in $KUBECONFIG; ↵ to pick another",
+        "empty": "~/.kube/config"
+      },
+      "monitors.logs.protected": {
+        "label": "Protected",
+        "sub": "shown in red; asks before it starts",
+        "empty": "none"
+      },
+      "monitors.logs.level": {
+        "label": "Level",
+        "sub": "what a new log watcher reports",
+        "choices": {
+          "warn": "warn and up",
+          "error": "errors only",
+          "info": "info and up"
+        }
+      },
+      "monitors.logs.for": {
+        "label": "For",
+        "sub": "how long a new log watcher runs"
+      },
+      "keys.monitors": {
+        "label": "Monitors popup",
+        "sub": "what's running, and your PRs and MRs"
+      }
+    },
+    "modes": {
+      "files": {
+        "name": "Files",
+        "sub": "yazi, in Claude’s folder"
+      },
+      "diff": {
+        "name": "Diff",
+        "sub": "the active tab’s uncommitted changes"
+      },
+      "todo": {
+        "name": "Todo",
+        "sub": "every repo’s todos"
+      },
+      "diagrams": {
+        "name": "Diagrams",
+        "sub": "the diagrams Claude draws"
+      }
+    },
+    "ui": {
+      "title": "Settings",
+      "savedTo": "saved to {file}",
+      "cantSave": "Couldn't save: {err}",
+      "notSaved": "{why}; not saved",
+      "notAKey": "Not a key it takes: {mods} and a letter or digit",
+      "pressKey": "press a key… ",
+      "escCancels": "esc cancels",
+      "unbound": "unbound",
+      "none": "none",
+      "on": "on",
+      "off": "off",
+      "more": "▾ more",
+      "builtIn": "{name} is built in: space turns it off",
+      "oneModeOn": "One mode has to stay on",
+      "filesNeedsYazi": "Files needs yazi, which isn't installed: keep another mode on",
+      "notApplied": "Saved, but not applied: {err}",
+      "nameFirst": "Give it a name first",
+      "commandFirst": "Give it a command to run",
+      "wholePath": "Give the whole path, from / or ~/",
+      "noFolder": "No folder at {path}",
+      "noFile": "No file at {path}",
+      "addedMode": "{cmd} · added by you, x removes it",
+      "addMode": "+ Add a mode",
+      "addModeSub": "a name, then any command to run in the left pane",
+      "instructions": "Your instructions",
+      "noPromptFile": "no file yet: run install",
+      "lines": {
+        "one": "{n} line",
+        "other": "{n} lines"
+      },
+      "askName": "New mode’s name: ",
+      "askCommand": "Command for {name}: ",
+      "askFile": "{label}: ",
+      "matches": "Matches",
+      "noMatches": "nothing matches",
+      "changedFrom": "default {value}",
+      "keys": {
+        "setting": "setting",
+        "section": "section",
+        "unbind": "unbind",
+        "pressNewKey": "press new key",
+        "addMode": "add a mode",
+        "typePath": "type a path",
+        "typeHosts": "type hosts",
+        "typeList": "type them"
+      },
+      "notHosts": "Not a list of hosts: names like github.com, comma apart",
+      "askHosts": "{label}, comma apart: ",
+      "askList": "{label}, comma apart:",
+      "notList": "Not a list it takes: check each one, comma apart"
+    },
+    "keybinds": {
+      "takenBy": "{key} is taken by {what}",
+      "reserved": {
+        "shellWordBack": "the shell (word back)",
+        "shellWordForward": "the shell (word forward)",
+        "modelPicker": "Claude Code (model picker)",
+        "copy": "Ghostty (copy)",
+        "paste": "Ghostty (paste)",
+        "quit": "Ghostty (quit)",
+        "splitRight": "Ghostty (split right)",
+        "splitDown": "Ghostty (split down)",
+        "inspector": "Ghostty (inspector)",
+        "scrollback": "Ghostty (scrollback to a file)",
+        "palette": "Ghostty (command palette)"
+      }
+    }
+  },
+  "hints": {
+    "cancel": "cancel",
+    "close": "close",
+    "save": "save",
+    "next": "next",
+    "add": "add",
+    "remove": "remove",
+    "move": "move",
+    "pick": "pick",
+    "change": "change",
+    "default": "default",
+    "complete": "complete",
+    "clear": "clear",
+    "start": "start",
+    "open": "open",
+    "edit": "edit",
+    "delete": "delete",
+    "drop": "drop",
+    "filter": "filter",
+    "scroll": "scroll",
+    "back": "back",
+    "quit": "quit",
+    "switch": "switch",
+    "go": "go",
+    "onOff": "on/off",
+    "turnOnOff": "turn on/off"
+  },
+  "newAgent": {
+    "where": {
+      "folder": {
+        "label": "Select folder",
+        "sub": "a repo or folder you pick below"
+      },
+      "default": {
+        "label": "Default",
+        "sub": "Settings › General › Default folder, for work that isn’t about one repo"
+      }
+    },
+    "branch": {
+      "current": {
+        "label": "Current branch",
+        "sub": "works in the folder as it is"
+      },
+      "worktree": {
+        "label": "Worktree",
+        "sub": "its own worktree and branch"
+      }
+    },
+    "fields": {
+      "prompt": "Task",
+      "where": "Runs in",
+      "folder": "Folder",
+      "recent": "Recent",
+      "matches": "Matches",
+      "branch": "Branch",
+      "model": "Model",
+      "mode": "Mode",
+      "effort": "Effort",
+      "chrome": "Chrome"
+    },
+    "taskNote": "a worker · ctrl+v pastes an image · monitors start from Alt+M",
+    "noMatches": "no folder matches",
+    "start": "Start",
+    "lands": "runs in the background; lands in Working",
+    "noFolder": "No folder {path}",
+    "noPrompt": "Give the task a first prompt",
+    "notSaved": "Couldn't save what you chose: {err}",
+    "keys": {
+      "field": "field",
+      "choose": "choose",
+      "completeFolder": "complete folder"
+    },
+    "imagesNote": {
+      "one": "{n} image attached · ctrl+v adds another",
+      "other": "{n} images attached · ctrl+v adds another"
+    }
+  },
+  "help": {
+    "title": "Keys",
+    "matching": "matching “{query}”",
+    "filterPlaceholder": "filter every key: try close, tab, todo",
+    "noMatch": "No key matches “{query}”",
+    "more": "▾ more",
+    "rare": "peach",
+    "easyToForget": "easy to forget",
+    "keyCount": {
+      "one": "{n} key",
+      "other": "{n} keys"
+    },
+    "hints": {
+      "keep": "keep",
+      "section": "section"
+    },
+    "sections": {
+      "any": {
+        "name": "Anywhere",
+        "where": "the workspace, the hub, or a session it opened",
+        "keys": [
+          [
+            "alt+h",
+            "This help"
+          ],
+          [
+            "alt+t",
+            "Todo list in a popup"
+          ],
+          [
+            "alt+a",
+            "Monitors, on what waits for your approval"
+          ],
+          [
+            "alt+m",
+            "Monitors: what runs, your PRs and MRs, pipelines waiting on you, and a log watcher to start"
+          ],
+          [
+            "alt+s",
+            "Settings"
+          ],
+          [
+            "alt+d",
+            "Diagrams of the active tab, open session or selected card"
+          ],
+          [
+            "alt+n",
+            "New agent"
+          ],
+          [
+            "alt+e",
+            "Open the repo or worktree in your editor (Settings › Editor): the active tab's, or in the hub the open session's or selected card's"
+          ],
+          [
+            "ctrl+shift+w",
+            "Go to the workspace"
+          ],
+          [
+            "ctrl+shift+a",
+            "Agent view: the session the hub opened, focused (reopens the last one)"
+          ],
+          [
+            "ctrl+shift+b",
+            "Back to the board (closes the session the hub opened)",
+            true
+          ],
+          [
+            "ctrl+shift+n",
+            "New window with the layout"
+          ],
+          [
+            "shift+drag",
+            "Select text with Ghostty instead of tmux",
+            true
+          ]
+        ]
+      },
+      "tabs": {
+        "name": "Tabs",
+        "where": "the tmux tab bar",
+        "keys": [
+          [
+            "ctrl+shift+t",
+            "New tab"
+          ],
+          [
+            "ctrl+shift+x",
+            "Close tab"
+          ],
+          [
+            "ctrl+tab",
+            "Next tab"
+          ],
+          [
+            "ctrl+shift+tab",
+            "Previous tab"
+          ],
+          [
+            "ctrl+shift+→ / ←",
+            "Next / previous tab"
+          ],
+          [
+            "ctrl+shift+pgup",
+            "Move this tab left",
+            true
+          ],
+          [
+            "ctrl+shift+pgdn",
+            "Move this tab right",
+            true
+          ],
+          [
+            "click ×",
+            "Close that tab"
+          ],
+          [
+            "n/m",
+            "The count on the right: tab n of m",
+            true
+          ],
+          [
+            "◀ / ▶",
+            "More tabs that way than fit on the bar",
+            true
+          ]
+        ]
+      },
+      "viewer": {
+        "name": "Viewer pane",
+        "where": "the left pane: Diagrams, Files, Diff, Todo",
+        "keys": [
+          [
+            "alt+v",
+            "Show or hide it (or view on the rail); new windows open without it"
+          ],
+          [
+            "tab",
+            "Next mode (click the viewer first to focus it)"
+          ],
+          [
+            "click a mode",
+            "Switch to that mode"
+          ],
+          [
+            "q in Files",
+            "Go to Diagrams",
+            true
+          ]
+        ]
+      },
+      "diff": {
+        "name": "Diff",
+        "where": "uncommitted changes of the active tab’s repo",
+        "keys": [
+          [
+            "j / k",
+            "Move between changed files"
+          ],
+          [
+            "↵ or click",
+            "Open that file’s diff in place, or close it"
+          ],
+          [
+            "J / K  pgdn / pgup",
+            "Scroll"
+          ],
+          [
+            "g / G",
+            "Top / bottom"
+          ],
+          [
+            "q",
+            "Back to Files"
+          ]
+        ]
+      },
+      "dv": {
+        "name": "Diagrams",
+        "where": "dv, in the pane or the Alt+D window",
+        "keys": [
+          [
+            "[ / ]",
+            "Previous / next diagram"
+          ],
+          [
+            "1–9 or click a chip",
+            "Jump to that diagram"
+          ],
+          [
+            "scroll  + / -",
+            "Zoom"
+          ],
+          [
+            "drag  h j k l",
+            "Pan"
+          ],
+          [
+            "0",
+            "Fit the diagram again",
+            true
+          ],
+          [
+            "x or click ×",
+            "Close that diagram"
+          ],
+          [
+            "esc  alt+d",
+            "Close the Alt+D window"
+          ]
+        ]
+      },
+      "todo": {
+        "name": "Todo",
+        "where": "the Todo mode and the Alt+T popup",
+        "keys": [
+          [
+            "j / k  g / G",
+            "Move, first / last"
+          ],
+          [
+            "↵",
+            "Open its agent in the hub, or go to the tab that added it"
+          ],
+          [
+            "↵ ↵",
+            "Reopen its tab with claude --resume when it’s closed",
+            true
+          ],
+          [
+            "space",
+            "Mark done, or reopen"
+          ],
+          [
+            "a",
+            "Add with Claude: describe it and Claude files it"
+          ],
+          [
+            "shift+a",
+            "Add by hand: title, category 1–6, then a note"
+          ],
+          [
+            "ctrl+v",
+            "In a prompt: paste an image from the clipboard as [Image #n]; the todo keeps it and an agent it’s handed to gets it"
+          ],
+          [
+            "r",
+            "Retry a filing Claude couldn’t finish",
+            true
+          ],
+          [
+            "e",
+            "Edit: title, category, type, directory and note in one form; tab moves, ↵ saves"
+          ],
+          [
+            "c",
+            "Next category",
+            true
+          ],
+          [
+            "m  shift+m",
+            "Mark for hand-off, clear the marks"
+          ],
+          [
+            "w",
+            "Hand the marked todos, or this one, to agents: t tab or background, b worktree or branch, m model",
+            true
+          ],
+          [
+            "x x",
+            "Delete, or drop a filing (press twice)",
+            true
+          ],
+          [
+            "f",
+            "This repo only / every repo",
+            true
+          ],
+          [
+            "d",
+            "Show what’s done today",
+            true
+          ],
+          [
+            "q  esc",
+            "Close (Files, in the pane)"
+          ]
+        ]
+      },
+      "hub": {
+        "name": "Hub",
+        "where": "the board and the session beside it",
+        "keys": [
+          [
+            "h / l  j / k",
+            "Move between lanes and agents"
+          ],
+          [
+            "tab",
+            "The monitors strip",
+            true
+          ],
+          [
+            "↵",
+            "Open the agent’s live session beside the list"
+          ],
+          [
+            "alt+← / →",
+            "Focus the list / the session beside it; moving in the list shows each agent in the session",
+            true
+          ],
+          [
+            "ctrl+]",
+            "Close the session, back to the board",
+            true
+          ],
+          [
+            "ctrl+shift+t",
+            "In a background agent’s session: a terminal in a popup in its folder; esc closes it, ctrl+shift+t moves it to a workspace tab",
+            true
+          ],
+          [
+            "a / d",
+            "Allow / deny the permission prompt"
+          ],
+          [
+            "e / E",
+            "Mark the done agent seen / all of them",
+            true
+          ],
+          [
+            "o",
+            "Go to the agent’s tab"
+          ],
+          [
+            "x  ctrl+x",
+            "Close its tab, or stop a monitor (asks first)"
+          ],
+          [
+            "r / R",
+            "Restart the stopped background agent / all of them (asks first)"
+          ],
+          [
+            "/",
+            "Filter by name, repo or command"
+          ],
+          [
+            "n",
+            "New agent"
+          ]
+        ]
+      },
+      "new": {
+        "name": "New agent",
+        "where": "alt+n, + new on the rail, or n in the hub",
+        "keys": [
+          [
+            "↑ / ↓",
+            "Move between fields"
+          ],
+          [
+            "← / →",
+            "Change a choice"
+          ],
+          [
+            "tab",
+            "Complete the folder",
+            true
+          ],
+          [
+            "ctrl+v",
+            "Paste an image into the task as [Image #n]; delete the placeholder to take it out"
+          ],
+          [
+            "ctrl+s",
+            "Start"
+          ],
+          [
+            "esc",
+            "Cancel"
+          ]
+        ]
+      },
+      "approvals": {
+        "name": "Approvals",
+        "where": "a in Monitors, alt+a, or the tray's Review",
+        "keys": [
+          [
+            "← / →",
+            "Previous / next proposal of the monitor"
+          ],
+          [
+            "j / k",
+            "Another monitor; the panel follows it"
+          ],
+          [
+            "a",
+            "Approve: post, push, retry or run it as shown"
+          ],
+          [
+            "shift+a",
+            "Approve, and always do this kind on its own (Settings › Approvals)",
+            true
+          ],
+          [
+            "e",
+            "Edit the reply, inline or in $EDITOR (Settings › Approvals)"
+          ],
+          [
+            "r",
+            "Reject it, or not yet for a push"
+          ],
+          [
+            "↑ / ↓  ↵",
+            "A push’s commits, and one’s diff, as the Diff mode shows it",
+            true
+          ],
+          [
+            "space",
+            "Keep or drop the commit; a push without it goes back to the babysitter",
+            true
+          ],
+          [
+            "d",
+            "Every change in the push, over the whole popup as the Diff mode shows it; esc goes back",
+            true
+          ],
+          [
+            "J / K  pgdn / pgup",
+            "Scroll a proposal too tall for the panel; a waits until all of it was on screen",
+            true
+          ],
+          [
+            "g",
+            "Go to the babysit session"
+          ],
+          [
+            "o",
+            "Open its comment, job, run or PR on GitHub or GitLab"
+          ],
+          [
+            "esc",
+            "Close the panel"
+          ]
+        ]
+      },
+      "set": {
+        "name": "Settings",
+        "where": "⚙ set on the rail",
+        "keys": [
+          [
+            "↑ / ↓",
+            "Move between settings"
+          ],
+          [
+            "tab / shift+tab",
+            "Next / previous section"
+          ],
+          [
+            "← / →",
+            "Change a setting"
+          ],
+          [
+            "space",
+            "Turn on or off, or the next choice"
+          ],
+          [
+            "r",
+            "Put a setting back to its default",
+            true
+          ],
+          [
+            "J / K",
+            "Workspace: move a viewer mode down or up",
+            true
+          ],
+          [
+            "a",
+            "Workspace: add a viewer mode, a name then a command",
+            true
+          ],
+          [
+            "x",
+            "Workspace: remove a mode you added",
+            true
+          ],
+          [
+            "esc or alt+s",
+            "Close"
+          ]
+        ]
+      },
+      "monitors": {
+        "name": "Monitors",
+        "where": "the Alt+M popup",
+        "keys": [
+          [
+            "tab / shift+tab",
+            "Running, PR, Pipelines or Logs"
+          ],
+          [
+            "j / k",
+            "Move"
+          ],
+          [
+            "/",
+            "Running and PRs: filter the list (↵ keeps it, esc clears it)"
+          ],
+          [
+            "↵",
+            "Running: open the monitor's session in the hub"
+          ],
+          [
+            "a",
+            "Running: review its proposals beside it"
+          ],
+          [
+            "x",
+            "Running: stop the monitor (asks first, until you answer a)"
+          ],
+          [
+            "o",
+            "Open the PR, MR or pipeline in the browser"
+          ],
+          [
+            "space / *",
+            "PRs: mark one, or all of them"
+          ],
+          [
+            "↵",
+            "PRs: attach a monitor to the marked PRs, or the selected one"
+          ],
+          [
+            "g",
+            "PRs: go to the PR's monitor in Running",
+            true
+          ],
+          [
+            "w / r",
+            "PRs: mine or reviewer / refresh",
+            true
+          ],
+          [
+            "1–4",
+            "Drawer: watch the pipeline, comments, rebase; ping on every comment"
+          ],
+          [
+            "m",
+            "Drawer: until, model and effort (←/→ change them)",
+            true
+          ],
+          [
+            "ctrl+s / esc",
+            "Drawer: start one monitor per PR / close it"
+          ],
+          [
+            "y / n",
+            "Pipelines: run the prompt under the cursor, or skip it until it changes"
+          ],
+          [
+            "x / u",
+            "Pipelines: hide until its next run / undo"
+          ],
+          [
+            "m / +",
+            "Pipelines: watch the pipeline / paste a pipeline URL or project@ref",
+            true
+          ],
+          [
+            "↵ / P / r",
+            "Pipelines: its prompts / pipelines from PR monitors / refresh",
+            true
+          ],
+          [
+            "↑/↓ ←/→",
+            "Logs: field / environment or choice"
+          ],
+          [
+            "ctrl+s",
+            "Logs: start the log watcher (a protected environment asks first)"
+          ],
+          [
+            "ctrl+v",
+            "In the attach drawer’s brief or Logs’ Watch for: paste an image as [Image #n] for the monitor’s agent"
+          ]
+        ]
+      }
+    }
+  },
+  "tray": {
+    "act": {
+      "dismissed": "Dismissed",
+      "itemGone": "That item is gone",
+      "approvalGone": "That approval is gone",
+      "sessionGone": "The session that sent this is gone",
+      "noButton": "This row has no {action} button",
+      "unknownAction": "Unknown action {action}",
+      "notPermission": "Only a permission prompt takes allow or deny",
+      "changed": "That changed since the inbox showed it; look again",
+      "movedOn": "{title} has moved on since the inbox showed it"
+    },
+    "approval": {
+      "failed": "{title} failed",
+      "retryTitle": "{name} failed, looks flaky",
+      "reply": "babysit · reply",
+      "stage": "{stage} stage",
+      "manualJob": "manual job",
+      "deployment": "deployment",
+      "flaky": "looks flaky",
+      "onto": "onto {sha}",
+      "replaces": "replaces {n} on the remote",
+      "scriptGone": "The babysit script that proposed this is gone",
+      "scriptSlow": "The approval script took too long and was stopped",
+      "scriptFailed": "The approval script failed"
+    },
+    "links": {
+      "comment": "Comment",
+      "job": "Job",
+      "run": "Run",
+      "pr": "PR",
+      "mr": "MR"
+    },
+    "go": {
+      "outside": "{title} runs outside the layout, so there's nowhere to take you",
+      "noWindowFor": "No Ghostty layout window is open to show it in",
+      "noWindow": "No Ghostty layout window is open",
+      "hubDown": "The hub is not running",
+      "hubNotShown": "Couldn't show the hub: {err}",
+      "notOpened": "Couldn't open {title} in the hub: {err}",
+      "inHub": "{title}, in the hub",
+      "inTab": "{title}, in its tab",
+      "tabNotShown": "Couldn't show {title}'s tab: {err}",
+      "hub": "The hub",
+      "inPopup": "In Monitors",
+      "popupNotOpened": "Couldn't open Monitors: {err}"
+    },
+    "permission": {
+      "openToAnswer": "Open {title} to answer it",
+      "notShowing": "{title} isn't showing a permission prompt right now",
+      "notAnswered": "Couldn't answer: {err}",
+      "allowed": "Allowed {what}",
+      "denied": "Denied {what}"
+    },
+    "stale": {
+      "notRunning": "agentd isn't running",
+      "behind": "agentd last looked {secs}s ago"
+    },
+    "where": {
+      "hubTab": "hub tab {tab}",
+      "tab": "tab {tab}",
+      "background": "background",
+      "terminal": "terminal",
+      "via": "agent: {name}",
+      "goneQuiet": "gone quiet"
+    }
+  },
+  "widget": {
+    "title": "Agents",
+    "openHub": "Open hub",
+    "nothingRunning": "Nothing running",
+    "allQuiet": "All quiet. No agent is running.",
+    "counts": {
+      "you": "{n} need you",
+      "broke": "{n} broke",
+      "work": "{n} working",
+      "watch": "{n} watching",
+      "done": "{n} done"
+    },
+    "sections": {
+      "you": "NEEDS YOU",
+      "broke": "BROKE",
+      "work": "WORKING",
+      "watch": "WATCHING"
+    },
+    "actions": {
+      "allow": "Allow",
+      "deny": "Deny",
+      "go": "Go",
+      "dismiss": "Dismiss",
+      "post": "Post",
+      "edit": "Edit",
+      "skip": "Skip",
+      "push": "Push",
+      "review": "Review",
+      "run": "Run",
+      "retry": "Retry",
+      "approve": "Approve",
+      "move": "Move",
+      "again": "Try again"
+    },
+    "done": {
+      "count": "{n} done",
+      "note": "leave once you open them",
+      "show": "Show",
+      "hide": "Hide"
+    },
+    "keys": {
+      "move": "move",
+      "first": "first",
+      "buttons": "buttons",
+      "open": "open",
+      "dismiss": "dismiss"
+    },
+    "actFailed": "The tray command failed: {err}",
+    "stale": "Not updating: {err}",
+    "staleSince": "Not updating since {time}: {err}",
+    "exited": "it exited with {code}",
+    "printedNothing": "it printed nothing",
+    "noSnapshot": "it printed no snapshot"
+  },
+  "states": {
+    "needs": "Needs you",
+    "working": "Working",
+    "done": "Done",
+    "idle": "Idle",
+    "stopped": "stopped",
+    "monitors": {
+      "action": "needs action",
+      "watching": "watching",
+      "stale": "stale",
+      "ended": "ended"
+    }
+  },
+  "agents": {
+    "cmd": {
+      "allow": "Allow {tool}?",
+      "waiting": "Waiting: {what}",
+      "inputNeeded": "input needed",
+      "thinking": "Thinking…",
+      "newSession": "New session",
+      "stopped": "stopped, with no process"
+    },
+    "ended": {
+      "expired": "expired",
+      "restarted": "restarted",
+      "ended": "ended"
+    }
+  },
+  "hub": {
+    "title": "agents",
+    "pluginMissing": "the dominus Claude Code plugin isn't installed; run ./install.sh in dominus",
+    "newAgent": "New agent",
+    "new": "New",
+    "board": "Board",
+    "summary": {
+      "tasks": {
+        "one": "{n} task",
+        "other": "{n} tasks"
+      },
+      "monitors": {
+        "one": "{n} monitor",
+        "other": "{n} monitors"
+      },
+      "needs": "{n} need you",
+      "working": "{n} working",
+      "done": "{n} done",
+      "idle": "{n} idle",
+      "watching": "{n} watching"
+    },
+    "monitors": "Monitors",
+    "monitorsNote": "stay put, raise a card in Needs you when needed",
+    "empty": {
+      "needs": "Nothing needs you",
+      "working": "Nothing working",
+      "done": "Nothing done",
+      "idle": "Nothing idle",
+      "monitors": "Nothing being monitored",
+      "monitorsStart": "Monitor a PR or logs"
+    },
+    "above": "{n} above",
+    "more": "{n} more",
+    "trayKeys": "{tab}, then {move}",
+    "firstEvent": "waiting for its first event",
+    "card": {
+      "ctx": "ctx {n}",
+      "monitor": "monitor"
+    },
+    "where": {
+      "tab": "tab {n}",
+      "hubTab": "hub tab {n}",
+      "otherWindow": "w{win} · {tab}",
+      "bg": "bg",
+      "stopped": "stopped",
+      "terminal": "terminal"
+    },
+    "keys": {
+      "lane": "lane",
+      "agent": "agent",
+      "monitors": "monitors",
+      "allow": "allow",
+      "deny": "deny",
+      "allowDeny": "allow/deny",
+      "answer": "answer",
+      "reviewed": "reviewed",
+      "goToTab": "go to tab",
+      "stopMonitor": "stop monitor",
+      "diagrams": "diagrams",
+      "editor": "editor",
+      "new": "new",
+      "session": "session",
+      "workspace": "workspace",
+      "restart": "restart"
+    },
+    "dontAskAgain": "yes, don't ask again",
+    "close": {
+      "refuseBusy": "Only Done and Idle agents close from here",
+      "alsoMonitors": {
+        "one": " and its monitor",
+        "other": " and its {n} monitors"
+      },
+      "tabJob": "Close {place} and stop background agent {title}{also}? Its conversation is kept.",
+      "tab": "Close {place} ({title}){also}?",
+      "job": "Stop background agent {title}{also}? Its conversation is kept.",
+      "outside": "{title} runs outside the layout; close it where it runs"
+    },
+    "notes": {
+      "answerKeys": "a and d answer permission prompts",
+      "openToAnswer": "Open a background session ({key}) to answer it",
+      "noPrompt": "{title} isn't showing a permission prompt right now",
+      "allowFailed": "Couldn't allow {what}: {err}",
+      "denyFailed": "Couldn't deny {what}: {err}",
+      "allowed": "Allowed {what}",
+      "denied": "Denied {what}",
+      "closeFailed": "Couldn't close {title}: {err}",
+      "closedTabJob": "Closed {place} and stopped {title}; {resume} resumes it",
+      "closedTab": "Closed {place} ({title})",
+      "stoppedJob": "Stopped {title}; {resume} resumes it",
+      "monitorEnded": "{name} has already ended",
+      "monitorNoProcess": "Couldn't find the process for {name}; it may have just ended",
+      "monitorStopped": "Stopped {name}; {title} keeps running",
+      "monitorStopFailed": "Couldn't stop {name}: {err}",
+      "stopMonitorAsk": "Stop monitor {name}? {title} and its other monitors keep running.",
+      "choiceNotSaved": "Couldn't save that choice: {err}",
+      "noTmuxNewAgent": "The hub is not running in tmux, so it has nowhere to show New agent",
+      "newAgentFailed": "Couldn't show New agent: {err}",
+      "startingBg": "Starting {name} in the background…",
+      "startFailed": "Couldn't start claude: {err}",
+      "startedBg": "Started {name} in the background {out}",
+      "bgFailed": "claude --bg failed: {err}",
+      "noLayout": "Not in a Ghostty layout window, so there is no tab session to open a tab in",
+      "tabFailed": "Couldn't open a tab: {err}",
+      "noWorkspaceTabs": "no workspace tabs",
+      "noTmuxSession": "The hub is not running in tmux, so it has nowhere to open a session",
+      "outsideLayout": "{title} runs outside the layout's tabs, so it can't be opened here",
+      "openFailed": "Couldn't open the session: {err}",
+      "noLayoutDiagrams": "Not in a Ghostty layout window, so there is nowhere to show diagrams",
+      "selectForDiagrams": "Select an agent to see its diagrams",
+      "noDiagrams": "{title} runs outside tmux and the background, so it has no diagrams to show",
+      "diagramsFailed": "Couldn't show the diagrams: {err}",
+      "selectForEditor": "Select an agent to open its repo in your editor",
+      "nothingToView": "No session to show: select a hub tab or background agent and press Enter",
+      "noFolderForEditor": "agentd doesn't know {title}'s folder yet, so there is nothing to open",
+      "editorFailed": "Couldn't open the editor",
+      "outsideTabs": "{title} runs outside the layout's tabs",
+      "switchedTab": "Switched {title}'s tab in Ghostty window {win}",
+      "notStopped": "{title} isn't stopped; r restarts only stopped background agents",
+      "restarting": "Restarting {title}…",
+      "restarted": "Restarted {title}",
+      "restartFailed": "Couldn't restart {title}: {err}",
+      "noneStopped": "No background agent is stopped",
+      "restartAllAsk": {
+        "one": "Restart the stopped background agent?",
+        "other": "Restart all {n} stopped background agents?"
+      },
+      "restartedAll": "Restarted {ok} of {n} stopped agents"
+    }
+  },
+  "rail": {
+    "work": "work",
+    "hub": "hub",
+    "new": "new",
+    "help": "help",
+    "settings": "set"
+  },
+  "shell": {
+    "hub": {
+      "noTabSession": "Window {win} has no tab session to show.\nPress any key to close.",
+      "attachFailed": "claude attach {id} failed (exit {exit}).\nPress any key to close.",
+      "notInLayout": "Run this in a Ghostty layout window, or name the window number."
+    },
+    "term": {
+      "title": " Terminal · {dir} · esc closes · {key} moves it to a new tab ",
+      "moveFailed": "Couldn't move the terminal to a tab in window {win}."
+    },
+    "viewer": {
+      "off": "The side panel is off: turn it on in Settings › Layout › Side panel."
+    },
+    "editor": {
+      "noTab": "No tab to open in {editor}.",
+      "noFolder": "{dir} isn't there any more, so there is nothing to open.",
+      "notInstalled": "{editor} ({command}) isn't installed."
+    }
+  },
+  "todo": {
+    "summary": "{n} open · {scope}",
+    "allRepos": "all repos",
+    "thisRepo": "this repo",
+    "byCategory": "by category",
+    "none": "none",
+    "categories": {
+      "bug": {
+        "name": "bug",
+        "short": "bug"
+      },
+      "feature": {
+        "name": "feature",
+        "short": "feat"
+      },
+      "follow-up": {
+        "name": "follow-up",
+        "short": "follow"
+      },
+      "docs": {
+        "name": "docs",
+        "short": "docs"
+      },
+      "question": {
+        "name": "question",
+        "short": "ask"
+      },
+      "other": {
+        "name": "other",
+        "short": "other"
+      }
+    },
+    "types": {
+      "research": "research",
+      "decide": "decide",
+      "action": "action",
+      "review": "review",
+      "chore": "chore"
+    },
+    "groups": {
+      "filing": "filing",
+      "doneToday": "done today {n}"
+    },
+    "fields": {
+      "title": "title",
+      "cat": "category",
+      "type": "type",
+      "repo": "directory",
+      "note": "note"
+    },
+    "pills": {
+      "claude": "CLAUDE",
+      "title": "TITLE",
+      "note": "NOTE",
+      "category": "CATEGORY",
+      "edit": "EDIT",
+      "handOff": "HAND OFF",
+      "todo": "TODO"
+    },
+    "placeholders": {
+      "claude": "Describe the item and let Claude handle it, or Shift+A to add it by hand",
+      "title": "What needs doing",
+      "note": "Details for later, or ↵ to skip",
+      "editNote": "Details for later"
+    },
+    "card": {
+      "added": "added by {by} {where}",
+      "byClaude": "Claude",
+      "byYou": "you",
+      "inTab": "in {tab}",
+      "at": "at {time}",
+      "onBranch": "on {branch}",
+      "handed": "handed to {name} {place} at {time}",
+      "inBackground": "in the background",
+      "aTab": "a tab",
+      "noDirMatches": "no directory matches"
+    },
+    "tabs": {
+      "closed": "a tab now closed",
+      "hub": "a hub tab",
+      "tab": "tab {n}",
+      "otherWindow": "w{win} · {tab}"
+    },
+    "keys": {
+      "goToAgent": "go to agent",
+      "goToTab": "go to tab",
+      "reopen": "reopen",
+      "category": "category",
+      "type": "type",
+      "done": "done",
+      "retry": "retry",
+      "addByHand": "add by hand",
+      "byHand": "by hand",
+      "mark": "mark",
+      "handOff": "hand off",
+      "allRepos": "all repos",
+      "thisRepo": "this repo",
+      "nextField": "next field"
+    },
+    "filing": {
+      "busy": "Claude {model} is filing this, since {time}",
+      "failed": "Claude couldn't file this: {why}",
+      "tooLong": "it took too long",
+      "failedHint": "r retries it, Shift+A adds it by hand, x drops it",
+      "busyHint": "Claude is still filing this; x drops it"
+    },
+    "empty": {
+      "noneIn": "No open todos in {scope}.",
+      "showAll": "f shows every repo.",
+      "none": "No todos yet.",
+      "howToAdd": "Press a to have Claude add one, or Shift+A to add one by hand."
+    },
+    "handOff": {
+      "count": {
+        "one": "{n} todo →",
+        "other": "{n} todos →"
+      },
+      "worktree": "worktree",
+      "thisBranch": "this branch",
+      "notGit": "in {folder}, not git",
+      "theirFolders": "their folders",
+      "notInGit": "{n} not in git",
+      "withoutRepo": "{n} without a repo → {repo}",
+      "starting": {
+        "one": "Starting an agent…",
+        "other": "Starting {n} agents…"
+      },
+      "someFailed": "Started {n}; couldn't start {failed}",
+      "allFailed": "couldn't start {failed}",
+      "oneInBackground": "Handed to an agent in the background: {title}",
+      "manyInBackground": "Handed {n} todos to agents in the background",
+      "repoGone": "{repo} is gone from disk",
+      "noClaude": "couldn't start claude: {err}",
+      "bgFailed": "claude --bg failed: {out}",
+      "sendKeysFailed": "tmux send-keys failed"
+    },
+    "confirm": {
+      "delete": "Delete \"{title}\"?",
+      "drop": "Drop \"{title}\"?",
+      "reopen": "Its tab is closed. Open Claude in {folder}?",
+      "reopenResume": "Its tab is closed. Open Claude in {folder}, resuming its session?",
+      "otherKeys": "other keys",
+      "keep": "keep it"
+    },
+    "say": {
+      "needsTitle": "A todo needs a title",
+      "isDone": "It’s done; space reopens it",
+      "dropped": "Dropped it",
+      "deleted": "Deleted: {title}",
+      "reopened": "Reopened: {title}",
+      "done": "Done: {title}",
+      "added": "Added to {repo}: {title}",
+      "saved": "Saved: {title}",
+      "gone": "That todo is gone",
+      "filerFailed": "Couldn't run ghostty-todo: {err}",
+      "sent": "Sent to Claude. It shows here once it’s filed.",
+      "askedAgain": "Asked Claude again"
+    },
+    "go": {
+      "ranInBackground": "{name} ran in the background and the hub no longer lists it",
+      "addedHere": "You added this one here, so it has no tab to go to",
+      "outsideTabs": "This one was added outside the layout’s tabs",
+      "tabsUnread": "Couldn't read the tab session's tabs; try again",
+      "hubTab": "It's a tab the hub opened: pick it on the board",
+      "hubTabElsewhere": "It's a tab the hub opened in Ghostty window {win}: pick it on the board",
+      "switched": "Switched to tab {n} in Ghostty window {win}",
+      "noLayout": "Not in a Ghostty layout window, so there is no tab session to open a tab in",
+      "closedAndGone": "Its tab is closed and {repo} is gone from disk",
+      "noTab": "Couldn't open a tab: {err}",
+      "noClaude": "Opened a tab but couldn't start Claude in it: {err}"
+    },
+    "store": {
+      "unreadable": "Can't read {file}: {err}",
+      "locked": "{lock} is held; remove it if no todo command is running"
+    }
+  },
+  "diff": {
+    "pill": "DIFF",
+    "files": {
+      "one": "{n} file",
+      "other": "{n} files"
+    },
+    "changed": "changed",
+    "kinds": {
+      "modified": "{n} modified",
+      "new": "{n} new",
+      "deleted": "{n} deleted",
+      "renamed": "{n} renamed",
+      "conflicted": "{n} conflicted"
+    },
+    "binary": "binary",
+    "binaryChanged": "Binary file changed",
+    "notRepo": "Not a git repository",
+    "gitFailed": "git failed",
+    "gitFailedWith": "git failed: {err}",
+    "reading": "Reading git…",
+    "clean": "No uncommitted changes"
+  },
+  "approvals": {
+    "title": "Approvals",
+    "position": "{at} of {n}",
+    "none": "none",
+    "nothingWaiting": "Nothing is waiting for you.",
+    "moreBelow": {
+      "one": "▾ {n} more line: J or PgDn",
+      "other": "▾ {n} more lines: J or PgDn"
+    },
+    "backToTop": "▴ K or PgUp for the top",
+    "notes": {
+      "replaced": "What you were reading was settled or replaced; this is another one",
+      "unseen": "Not all of it has been on screen: J or PgDn to the end first",
+      "lookAgain": "This replaced what you were reading. Look it over, then press a again.",
+      "unchanged": "Reply unchanged",
+      "edited": "Edited. Press a to post it as shown.",
+      "editDropped": "Edit dropped",
+      "keepOne": "Keep at least one commit, or press r for not yet",
+      "deployAsks": "A deployment always asks",
+      "tryAgain": "Press a to try it again",
+      "done": "Done",
+      "failed": "Failed",
+      "settingNotSaved": "Couldn't save the setting: {err}",
+      "sessionGone": "The session that proposed this is gone",
+      "editorFailed": "$EDITOR exited with {exit}; reply unchanged",
+      "noOpener": "Couldn't open {url}: no xdg-open",
+      "opened": "Opened {url}",
+      "closesWhenDone": "Closes when this is done; press again to close now"
+    },
+    "busy": {
+      "reply": "Posting…",
+      "push": "Pushing…",
+      "handBack": "Handing back…",
+      "retry": "Retrying…",
+      "manual": "Starting…",
+      "approve": "Approving…",
+      "reject": "Rejecting…",
+      "dismiss": "Dismissing…"
+    },
+    "diff": {
+      "badge": "DIFF",
+      "allCommits": {
+        "one": "all {n} commit",
+        "other": "all {n} commits"
+      },
+      "files": {
+        "one": "{n} file",
+        "other": "{n} files"
+      },
+      "gitFailed": "✗ git couldn't read the diff: {err}",
+      "noChanges": "No changes in these commits."
+    },
+    "meta": {
+      "thread": "thread {id}",
+      "onto": "{local} onto {sha}",
+      "stage": "{stage} stage",
+      "job": "job {id}",
+      "proposed": "proposed {ago} ago",
+      "failed": "✗ Failed: {message}"
+    },
+    "labels": {
+      "theirComment": "THEIR COMMENT",
+      "theirCommentBy": "THEIR COMMENT · @{author}",
+      "whatIDid": "WHAT I DID",
+      "briefing": "WHY IT NEEDS YOU",
+      "reply": "REPLY THAT WILL BE POSTED",
+      "replyEditing": "REPLY THAT WILL BE POSTED · editing",
+      "commits": "COMMITS · space to keep or drop",
+      "checks": "CHECKS",
+      "takesOff": {
+        "one": "TAKES OFF THE BRANCH · {n} commit on {branch} now",
+        "other": "TAKES OFF THE BRANCH · {n} commits on {branch} now"
+      },
+      "whatApproving": "WHAT APPROVING DOES"
+    },
+    "reply": {
+      "posted": "Posted as you, exactly as shown.",
+      "postedEdited": "Posted as you, exactly as shown, with your edit.",
+      "editHere": "Press e to edit it here.",
+      "editInEditor": "Press e to edit it in $EDITOR."
+    },
+    "push": {
+      "leaseOk": "lease {sha} matches remote",
+      "remoteMoved": "remote moved to {sha}",
+      "nothing": "nothing",
+      "afterDropping": "{command}   (after dropping {n}: handed back to the session)",
+      "refused": "Refused if anyone pushed since {sha}",
+      "refusedShort": "Refused if pushed since {sha}"
+    },
+    "what": {
+      "retry": "Retries {name} once.",
+      "flaky": "Why it looks flaky: {reason}.",
+      "manual": "Starts the manual job {name}.",
+      "manualIn": "Starts the manual job {name} in the {stage} stage.",
+      "deploy": "Approves {name} on GitHub, which lets its deployment or workflow run. This always asks.",
+      "move": "The babysitter rebases its commits from {from} onto {onto}, reruns lint and tests, then proposes the push."
+    },
+    "buttons": {
+      "tryAgain": "Try again",
+      "reply": "Post reply",
+      "push": "Push",
+      "pushSome": "Push {n} of {total}",
+      "retry": "Retry",
+      "manual": "Run",
+      "deploy": "Approve",
+      "move": "Move commits",
+      "edit": "Edit",
+      "openDiff": "Open diff",
+      "dismiss": "Dismiss",
+      "notYet": "Not yet",
+      "reject": "Reject",
+      "goToSession": "Go to session"
+    },
+    "keys": {
+      "file": "file",
+      "openClose": "open/close",
+      "done": "done",
+      "dropEdit": "drop the edit",
+      "dismiss": "dismiss",
+      "goToSession": "go to the session",
+      "commits": "commits",
+      "itsDiff": "its diff",
+      "keepDrop": "keep/drop",
+      "always": "approve + always",
+      "alwaysReplies": "approve + always for replies",
+      "alwaysRetries": "approve + always for retries",
+      "alwaysKind": "approve + always for this kind",
+      "reject": "reject",
+      "proposal": "proposal"
+    }
+  },
+  "diagrams": {
+    "title": "Diagrams",
+    "tabTitle": "{dir} · tab {tab}",
+    "fit": "fit",
+    "tabGone": "That tab has closed, so it has no diagrams to show.",
+    "noneYet": "No diagrams yet",
+    "noneYetIn": "No diagrams in {tab} yet",
+    "askClaude": "Ask Claude for a diagram and it shows here.",
+    "pngGone": "This PNG is gone from the cache. Open its tab in Claude to draw it again.",
+    "notClosed": "Couldn't close {title}: {err}",
+    "keys": {
+      "prevNext": "prev/next",
+      "jump": "jump",
+      "zoom": "zoom",
+      "pan": "pan",
+      "fit": "fit",
+      "closeDiagram": "close diagram",
+      "diagrams": "diagrams"
+    }
+  },
+  "monitors": {
+    "title": "Monitors",
+    "running": "{n} running",
+    "views": {
+      "running": "Running",
+      "prs": "PR",
+      "pipes": "Pipelines",
+      "logs": "Logs"
+    },
+    "counts": {
+      "approve": "{n} to approve",
+      "action": "{n} need you",
+      "watching": "{n} watching",
+      "stale": "{n} stale",
+      "ended": "{n} ended"
+    },
+    "roles": {
+      "mine": "Mine",
+      "reviewer": "Reviewer"
+    },
+    "refreshed": "⟳ {ago} ago",
+    "refreshing": "⟳ fetching…",
+    "never": "⟳ not fetched yet",
+    "filter": {
+      "placeholder": "repo, title, branch or #number",
+      "placeholderRunning": "target, repo or event",
+      "placeholderPipes": "project, branch, tag, #PR, job or status",
+      "count": "{n} of {total}",
+      "hidden": {
+        "one": "{n} more hidden by the filter · esc shows it",
+        "other": "{n} more hidden by the filter · esc shows them"
+      }
+    },
+    "groups": {
+      "needs": "Needs you",
+      "watching": "Watching",
+      "ended": "Ended",
+      "endedNote": "leave after {n}m"
+    },
+    "cols": {
+      "state": "state",
+      "kind": "kind",
+      "target": "target",
+      "latest": "latest",
+      "age": "age",
+      "pr": "PR",
+      "title": "title",
+      "pipeline": "pipeline",
+      "reviews": "reviews",
+      "branch": "branch",
+      "monitor": "monitor"
+    },
+    "kinds": {
+      "pr": "PR",
+      "pipe": "PIPE",
+      "logs": "LOGS"
+    },
+    "empty": {
+      "running": "Nothing is being watched. Tab shows your PRs and MRs, pipelines and log watchers to start one.",
+      "noMatch": "Nothing matches “{query}”",
+      "prs": "No open PRs or MRs",
+      "noHosts": "No hosts to read: add them in Settings › Monitors"
+    },
+    "pipeline": {
+      "passed": "✓ passed",
+      "failed": "✗ {job}",
+      "failedNoJob": "✗ failed",
+      "running": "◐ running {done}/{total}",
+      "pending": "◌ pending",
+      "manual": "⏸ manual {job}",
+      "canceled": "⊘ canceled",
+      "none": "— none"
+    },
+    "reviews": {
+      "changes": "changes requested",
+      "of": "{n} of {required} approvals",
+      "approved": "✓ approved",
+      "required": "review required",
+      "waiting": "waiting on {n}",
+      "none": "no reviewers",
+      "draft": "draft",
+      "threads": {
+        "one": "{n} thread",
+        "other": "{n} threads"
+      }
+    },
+    "branch": {
+      "ok": "up to date",
+      "behind": "↓ {n} behind",
+      "behindSome": "↓ behind",
+      "conflict": "⚠ conflicts",
+      "unknown": "…"
+    },
+    "monitor": {
+      "watching": "◉ watching",
+      "action": "▲ needs you",
+      "stale": "◌ stale",
+      "attach": "+ attach"
+    },
+    "info": {
+      "selected": "selected",
+      "reviewers": "reviewers",
+      "checkout": "checkout",
+      "opened": "opened {ago} ago",
+      "approvedBy": "approved by {who}",
+      "noReviewers": "none",
+      "noCheckout": "no clone of {repo} on this machine"
+    },
+    "hosts": {
+      "missing": "{cli} isn't installed",
+      "auth": "{cli} isn't logged in",
+      "failed": "couldn't read it: {err}",
+      "stale": "couldn't refresh: {err}"
+    },
+    "side": {
+      "bg": "bg session",
+      "tab": "tab {n}",
+      "term": "terminal",
+      "watchingUntil": "Watching, {until}",
+      "watch": {
+        "pipeline": "pipeline",
+        "comments": "review comments",
+        "rebase": "rebase",
+        "ping": "ping on every comment"
+      },
+      "brief": "brief: {text}",
+      "latest": "Latest",
+      "noEvents": "no events yet",
+      "ended": "ended: {why}"
+    },
+    "approvals": {
+      "toApprove": "{n} to approve",
+      "left": "{n} left",
+      "waiting": "Waiting for you · {n}",
+      "more": "and {n} more",
+      "reviewHere": "review them here",
+      "nothingWaits": "Nothing waits on {target}",
+      "nothingLeft": "Nothing left on {target}",
+      "settledLast": "{said} · nothing left on {target}",
+      "gone": "That proposal was settled or replaced",
+      "noneWaiting": "Nothing is waiting for you",
+      "standIn": {
+        "left": "its monitor ended; its session is still there",
+        "gone": "the session that proposed these is gone"
+      }
+    },
+    "until": {
+      "merged": "until merged",
+      "pipeline": "until the pipeline passes",
+      "8h": "for 8h",
+      "24h": "for 24h"
+    },
+    "untilShort": {
+      "merged": "merged",
+      "pipeline": "pipeline passes",
+      "8h": "8h",
+      "24h": "24h"
+    },
+    "drawer": {
+      "attachTo": "Attach to {n} marked",
+      "attachOne": "Attach to {ref}",
+      "offScreen": "({n} off screen)",
+      "watch": "watch",
+      "brief": "brief",
+      "briefPlaceholder": "optional: e2e:checkout is flaky, retry it once",
+      "start": "Start",
+      "summary": "until {until} · {model} · {effort} effort",
+      "more": "more",
+      "until": "until",
+      "model": "model",
+      "effort": "effort",
+      "toggles": {
+        "pipeline": "pipeline",
+        "comments": "comments",
+        "rebase": "rebase",
+        "ping": "ping on every comment"
+      }
+    },
+    "hints": {
+      "move": "move",
+      "open": "open session",
+      "approvals": "approvals",
+      "stop": "stop",
+      "browser": "open in browser",
+      "filter": "filter",
+      "view": "view",
+      "mark": "mark",
+      "markAll": "mark all",
+      "attach": "attach",
+      "goMonitor": "go to its monitor",
+      "role": "mine / reviewer",
+      "refresh": "refresh",
+      "keep": "keep filter",
+      "clear": "clear and hide",
+      "toggle": "toggle",
+      "brief": "brief",
+      "more": "more",
+      "less": "less",
+      "start": "start",
+      "closeDrawer": "close",
+      "back": "back",
+      "change": "change",
+      "next": "next",
+      "field": "field",
+      "choose": "choose",
+      "runSkip": "run or skip",
+      "dismiss": "hide",
+      "watchPipe": "watch",
+      "pasteUrl": "paste a URL",
+      "prompts": "prompts",
+      "startWatching": "start watching",
+      "monitor": "monitor",
+      "closePanel": "close panel"
+    },
+    "notes": {
+      "ended": "{name} has already ended",
+      "noLink": "No PR to open for this one",
+      "noMonitor": "No monitor watches {ref}; ↵ attaches one",
+      "opened": "Opened {url}",
+      "noOpener": "Couldn't open {url}",
+      "starting": {
+        "one": "Starting a monitor…",
+        "other": "Starting {n} monitors…"
+      },
+      "started": {
+        "one": "Started a monitor on {refs}; it shows here once it's watching",
+        "other": "Started {n} monitors on {refs}; they show here once they're watching"
+      },
+      "startFailed": "Couldn't start {what}",
+      "noCheckout": "no clone of {repo} on this machine"
+    },
+    "pipes": {
+      "scope": "your projects' default branches and tags",
+      "waiting": "⏸ {n} waiting for you",
+      "hidden": "{n} hidden",
+      "empty": "No pipelines yet: Settings › Monitors › Projects, or a PR open on a host",
+      "groups": {
+        "own": "Not from a PR",
+        "prs": "From watched PRs"
+      },
+      "cols": {
+        "project": "project",
+        "ref": "ref",
+        "trigger": "trigger",
+        "stages": "stages",
+        "now": "now",
+        "age": "age",
+        "monitor": "monitor"
+      },
+      "triggers": {
+        "push": "push",
+        "tag": "tag",
+        "schedule": "schedule",
+        "mr": "MR",
+        "pr": "PR",
+        "manual": "manual",
+        "other": "other"
+      },
+      "now": {
+        "waitsOne": "⏸ {job} waits for you",
+        "waitsMany": "⏸ {n} jobs wait for you",
+        "failed": "✗ {job} failed",
+        "failedNoJob": "✗ failed",
+        "running": "◐ {stage} · {done} of {total} jobs",
+        "runningNoStage": "◐ running",
+        "passed": "✓ passed",
+        "manual": "⏸ manual",
+        "pending": "◌ pending",
+        "canceled": "⊘ canceled",
+        "skipped": "⊘ skipped"
+      },
+      "monitor": {
+        "watching": "◉ watching",
+        "via": "via {ref}",
+        "none": "+ watch"
+      },
+      "ask": "Run {job}?",
+      "approve": "Deploy to {env}?",
+      "detailJob": "{sha} · stage {stage}",
+      "detailEnv": "{sha} · protected env {env}",
+      "run": "y run",
+      "skip": "n skip",
+      "watch": "+ watch",
+      "watchPlaceholder": "paste a pipeline URL, or project@ref",
+      "fromPrs": "pipelines from PR monitors",
+      "notes": {
+        "onPrompt": "Move onto a prompt to run or skip it",
+        "skipped": "Skipped {job} until it changes",
+        "dismissed": "Hid {project} {ref} until its next run · u brings it back",
+        "undismissed": "Brought it back",
+        "nothingToUndo": "Nothing to bring back",
+        "notATarget": "Paste a pipeline URL, or project@ref",
+        "running": "Running {job} on {ref}…",
+        "ran": "Ran {job} on {ref}",
+        "approved": "Approved the deployment to {env} on {ref}",
+        "changed": "{job} changed since it was shown ({why}), so it didn't run; r refreshes",
+        "failed": "Couldn't run {job}: {err}",
+        "watching": "Started a pipeline monitor on {target}; it shows here once it's watching",
+        "watchFailed": "Couldn't start a monitor on {target}: {err}"
+      }
+    },
+    "logs": {
+      "title": "New log watcher",
+      "running": {
+        "one": "{n} log watcher running",
+        "other": "{n} log watchers running"
+      },
+      "fields": {
+        "env": "Environment",
+        "source": "Source",
+        "task": "Watch for",
+        "level": "Level",
+        "for": "For",
+        "model": "Model",
+        "effort": "Effort"
+      },
+      "levels": {
+        "warn": "warn and up",
+        "error": "errors only",
+        "info": "info and up"
+      },
+      "sources": {
+        "docker": "Docker",
+        "kubernetes": "Kubernetes",
+        "elastic": "Elastic",
+        "checking": "checking for kubectl and an Elastic MCP…",
+        "onlyLocal": "only local can be watched · {kube} · {elastic}",
+        "why": {
+          "kubectl": "Kubernetes: kubectl isn't installed",
+          "kubeconfig": "Kubernetes: no kubeconfig file",
+          "elastic": "Elastic: no Elastic MCP in Claude Code"
+        }
+      },
+      "placeholder": "what to look for: errors after a deploy, a request id, a log line that should fire…",
+      "start": "Start log watcher",
+      "info": "/log-watcher watch · {env} · {source} · read-only · in {folder}",
+      "confirm": "{env} is protected. Start a read-only log watcher there?",
+      "startAnyway": "start it",
+      "notes": {
+        "noEnv": "Pick an environment to watch",
+        "noTask": "Say what to watch for",
+        "started": "Started a log watcher on {env}; it shows here once it's watching",
+        "startFailed": "Couldn't start a log watcher on {env}: {err}"
+      }
+    }
+  },
+  "images": {
+    "noDisplay": "No desktop session to paste an image from: WAYLAND_DISPLAY and DISPLAY are unset",
+    "noTool": "Install wl-clipboard (Wayland) or xclip (X11) to paste images",
+    "none": "No image on the clipboard",
+    "empty": "it gave nothing",
+    "unreadable": "Couldn’t read the clipboard’s image: {err}",
+    "notSaved": "Couldn’t save the image: {err}",
+    "attached": {
+      "one": "{n} image attached",
+      "other": "{n} images attached"
+    }
+  }
+}

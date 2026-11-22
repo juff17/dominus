@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1204,
+    "name": "deploy",
+    "stage": "deploy",
+    "status": "created",
+    "commit": {
+      "id": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+    }
+  },
+  {
+    "id": 1203,
+    "name": "e2e",
+    "stage": "e2e",
+    "status": "created",
+    "commit": {
+      "id": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+    }
+  },
+  {
+    "id": 1202,
+    "name": "test:unit",
+    "stage": "test",
+    "status": "failed",
+    "commit": {
+      "id": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+    }
+  },
+  {
+    "id": 1201,
+    "name": "build",
+    "stage": "build",
+    "status": "success",
+    "commit": {
+      "id": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"
+    }
+  }
+]

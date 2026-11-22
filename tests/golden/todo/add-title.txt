@@ -1,0 +1,30 @@
+ Todo
+7 open · all repos                                                                      by category
+▾ filing 1
+  ✕ rename the sidebar thing                                                            alpha · 1m
+
+▾ bug 2
+  ☐ Crash when saving an empty file                                          research · alpha · 2m
+     added by Claude in a tab now closed at HH:MM on main
+     Seen in the editor pane after a fresh clone; the stack trace points at the writer.
+     ↵ reopen  e edit  c category  t type  space done
+  ☐ Login button misaligned on narrow screens                                   action · beta · 3h
+
+▾ feature 1
+  ☐ Add a dark mode toggle to the settings page                                         alpha · 1d
+
+▾ follow-up 1
+  ☐ Follow up on the review comments                                         ✻ review · gamma · 5m
+
+▾ docs 1
+  ☐ Document the install steps                                                   chore · beta · 2d
+
+▾ question 1
+  ☐ Should we drop Node 18?                                                    decide · alpha · 4h
+
+▾ other 1
+  ☐ Buy more coffee                                                                     none · 30m
+
+▸ done today 1
+
+ TITLE   What needs doing                                                    title › category › note

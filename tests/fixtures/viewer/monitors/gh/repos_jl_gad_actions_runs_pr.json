@@ -1,0 +1,17 @@
+{
+  "total_count": 1,
+  "workflow_runs": [
+    {
+      "id": 601,
+      "name": "deploy",
+      "head_branch": "jl/sync-retry",
+      "head_sha": "4f2a1c9b8e7d6c5b4a39281706f5e4d3c2b1a090",
+      "event": "pull_request",
+      "status": "waiting",
+      "conclusion": null,
+      "html_url": "https://github.com/jl/gad/actions/runs/601",
+      "run_started_at": "@-9m",
+      "created_at": "@-9m"
+    }
+  ]
+}

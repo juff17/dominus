@@ -1,0 +1,62 @@
+theme = Catppuccin Mocha
+
+# Every new split, tab and window runs ghostty-surface. In a new window it
+# starts the layout's tmux: btop on top, the tabs below. Other splits get your
+# shell.
+command = shell:exec ~/.config/ghostty/bin/ghostty-surface
+# Ghostty only adds its shell features when it sees a shell as the command,
+# so name the shell ghostty-surface ends up running.
+shell-integration = zsh
+
+# Every new window opens maximized, from the launcher, the taskbar or
+# Ctrl+Shift+N, so the layout gets the whole screen.
+maximize = true
+
+# Tab keys go to tmux instead of making Ghostty tabs, so new tabs open in the
+# tmux tab bar under btop. layout.conf binds these sequences.
+keybind = ctrl+shift+t=csi:9001~
+keybind = ctrl+shift+x=csi:9002~
+keybind = ctrl+tab=csi:9003~
+keybind = ctrl+shift+tab=csi:9004~
+keybind = ctrl+shift+arrow_right=csi:9003~
+keybind = ctrl+shift+arrow_left=csi:9004~
+keybind = ctrl+shift+page_up=csi:9005~
+keybind = ctrl+shift+page_down=csi:9006~
+# The layout keeps its tabs in tmux, so Ghostty's own Alt+1 … Alt+9 tab keys
+# are unbound and the keys reach the program in the pane. Ghostty names each
+# digit both ways.
+keybind = alt+digit_1=unbind
+keybind = alt+1=unbind
+keybind = alt+digit_2=unbind
+keybind = alt+2=unbind
+keybind = alt+digit_3=unbind
+keybind = alt+3=unbind
+keybind = alt+digit_4=unbind
+keybind = alt+4=unbind
+keybind = alt+digit_5=unbind
+keybind = alt+5=unbind
+keybind = alt+digit_6=unbind
+keybind = alt+6=unbind
+keybind = alt+digit_7=unbind
+keybind = alt+7=unbind
+keybind = alt+digit_8=unbind
+keybind = alt+8=unbind
+keybind = alt+digit_9=unbind
+keybind = alt+9=unbind
+# The window's three views: Ctrl+Shift+W the workspace (in place of Ghostty's
+# close-surface), Ctrl+Shift+A the agent view, the session the hub opened (in
+# place of select-all, which in the layout would select every pane at once),
+# and Ctrl+Shift+B the hub's board. Ctrl+Shift+X closes a tab instead.
+keybind = ctrl+shift+w=csi:9009~
+keybind = ctrl+shift+a=csi:9007~
+keybind = ctrl+shift+b=csi:9008~
+# Settings › Keybinds writes the keys moved from these (settings/keybinds.ts). It's
+# read after this file, and Ghostty reloads it when Settings changes it.
+config-file = ?keys.local.ghostty
+
+# Claude Code writes the clipboard three times per copy inside tmux, so the
+# "Copied to clipboard" popup would show three times.
+app-notifications = no-clipboard-copy
+# No desktop pop-ups from programs in the terminal either, Claude Code's
+# included: the Agents panel widget is where an agent tells you it needs you.
+desktop-notifications = false

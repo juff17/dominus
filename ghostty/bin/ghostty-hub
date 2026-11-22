@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# The agent hub's processes, as the layout runs them (see hub/hub.ts):
+#   ghostty-hub hub <window>              the hub, in the window's hub window
+#   ghostty-hub rail <window> <work|hub>  the rail down the left of either
+#   ghostty-hub peek <win> <window>       one tab's live session, beside the hub
+#   ghostty-hub attach <id>               a background agent's live session
+#   ghostty-hub tray <snapshot|seen|text> the tray widget's items and words (tray/tray.ts)
+#   ghostty-hub setup [window]            adds the rail and the hub to a window
+#                                         opened before they existed
+# hub and rail start again a second after they exit, like btop, so a crash
+# doesn't leave a hole in the window.
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+# Ghostty's own PATH usually lacks claude, and ~/.local/bin, where claude's
+# installer puts it, so look there as well; the cache is where
+# ghostty-claude-start last found it.
+if [[ -z ${AGENT_HUB_CLAUDE:-} ]]; then
+  for c in "$(command -v claude)" "$(cat "$GHOSTTY_CACHE/claude" 2>/dev/null)" \
+    "$HOME/.local/bin/claude" "$HOME/.claude/local/claude" /usr/local/bin/claude; do
+    [[ -n $c && -x $c ]] && { AGENT_HUB_CLAUDE=$c; break; }
+  done
+fi
+export AGENT_HUB_CLAUDE=${AGENT_HUB_CLAUDE:-claude}
+export GHOSTTY_CONF
+
+# Node is found again before each restart, as the one it ran may have gone
+# (an upgrade) or a newer one been saved since. One that keeps failing
+# straight away waits longer each time, up to half a minute, so a broken
+# node doesn't fill the log every second.
+forever() {
+  local status started fails=0 delay
+  if ! find_node; then
+    echo "The agent hub needs Node.js."
+    read -rsn1
+    exit 1
+  fi
+  while :; do
+    started=$SECONDS
+    "$NODE" "$GHOSTTY_CONF/hub/$1" "${@:2}"
+    status=$?
+    # A run of ten seconds or more was a working one, so the count restarts.
+    if ((status == 0 || SECONDS - started >= 10)); then fails=0; else fails=$((fails + 1)); fi
+    delay=$((fails > 5 ? 30 : 1 << (fails > 0 ? fails - 1 : 0)))
+    ((status == 0)) || ah_log error hub "exited, restarting" module "$1" exit "$status" win "$HUB_WIN" delay "$delay"
+    sleep "$delay"
+    find_node
+  done
+}
+
+case ${1:-} in
+  hub)
+    export HUB_WIN=$2
+    forever hub.ts
+    ;;
+  rail)
+    export HUB_WIN=$2
+    forever rail/rail.ts "$3"
+    ;;
+  peek)
+    # A session grouped with the hub's tab session (hub_tabs in lib/tabs.sh)
+    # shares its tabs, which are the hub's own, so a tab opened here goes to
+    # the hub only. It's named after this pane so the hub can follow which
+    # tab it shows and the tab keys can switch it (layout.conf). One left
+    # from a respawned pane goes first.
+    name="peek-${TMUX_PANE#%}"
+    unset TMUX TMUX_PANE
+    group=$(hub_tabs "$2") || {
+      ah_log warn hub "peek has no tab session" win "$2" window "$3"
+      printf '%s' "$(words shell.hub.noTabSession win="$2")"
+      read -rsn1
+      exit 1
+    }
+    tab_server kill-session -t "=$name" 2>/dev/null
+    exec tmux -L "$TABS_SOCKET" -f "$GHOSTTY_CONF/tmux.conf" \
+      new-session -t "$group" -s "$name" \; set destroy-unattached on \; select-window -t "$name:$3"
+    ;;
+  attach)
+    # Not exec: when attaching fails, the pane stays to say why rather than
+    # closing at once.
+    "$AGENT_HUB_CLAUDE" attach "$2"
+    rc=$?
+    if ((rc != 0)); then
+      ah_log error hub "claude attach failed" id "$2" exit "$rc"
+      printf '\n%s' "$(words shell.hub.attachFailed id="$2" exit="$rc")"
+      read -rsn1
+    fi
+    ;;
+  tray)
+    # find_node has logged why; 127, as for a command not found.
+    find_node || exit 127
+    exec "$NODE" "$GHOSTTY_CONF/tray/tray.ts" "${@:2}"
+    ;;
+  setup)
+    if [[ -n ${2:-} ]]; then
+      session_window "$2" ''
+    else
+      session_window "$(tmux display -p '#S' 2>/dev/null)" ghostty-
+    fi || {
+      words shell.hub.notInLayout
+      exit 1
+    }
+    add_hub "$WIN"
+    ;;
+  *)
+    sed -n '2,11s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac

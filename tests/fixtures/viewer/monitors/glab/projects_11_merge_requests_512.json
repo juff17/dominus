@@ -1,0 +1,9 @@
+{
+  "head_pipeline": {
+    "id": 901,
+    "status": "success"
+  },
+  "diverged_commits_count": 0,
+  "has_conflicts": true,
+  "detailed_merge_status": "conflict"
+}

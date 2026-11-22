@@ -1,0 +1,14 @@
+[
+  {
+    "name": "build",
+    "status": "success"
+  },
+  {
+    "name": "test",
+    "status": "running"
+  },
+  {
+    "name": "e2e",
+    "status": "created"
+  }
+]

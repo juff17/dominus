@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Monitors (viewer/monitors/monitors-view.ts) as an overlay, from Alt+M
+# (layout.conf), Alt+A (bin/ghostty-approvals) or the tray's Edit and Review
+# buttons (tray/navigate.ts).
+#   ghostty-monitors <client> <layout session>                  open it on that tmux client
+#   ghostty-monitors <client> <layout session> --approval <id>  with the panel on that proposal
+#   ghostty-monitors <client> <layout session> --approvals      with the panel on the oldest one waiting
+#   ghostty-monitors --panel <layout session> [--approval <id> | --approvals]
+#                                                               what runs inside the overlay
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+if [[ $1 == --panel ]]; then
+  run_panel Monitors "$GHOSTTY_CONF/viewer/monitors/monitors-view.ts" "${@:2}"
+fi
+
+overlay "$1" ghostty-monitors --panel "${@:2}"

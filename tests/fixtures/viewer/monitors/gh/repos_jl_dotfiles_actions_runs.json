@@ -1,0 +1,29 @@
+{
+  "total_count": 2,
+  "workflow_runs": [
+    {
+      "id": 501,
+      "name": "nightly",
+      "head_branch": "main",
+      "head_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+      "event": "schedule",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/jl/dotfiles/actions/runs/501",
+      "run_started_at": "@-7h",
+      "created_at": "@-7h"
+    },
+    {
+      "id": 499,
+      "name": "nightly",
+      "head_branch": "main",
+      "head_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+      "event": "schedule",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jl/dotfiles/actions/runs/499",
+      "run_started_at": "@-1d",
+      "created_at": "@-1d"
+    }
+  ]
+}

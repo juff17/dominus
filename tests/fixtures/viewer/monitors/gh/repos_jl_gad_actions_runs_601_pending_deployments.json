@@ -1,0 +1,10 @@
+[
+  {
+    "environment": {
+      "id": 31,
+      "name": "staging"
+    },
+    "current_user_can_approve": true,
+    "wait_timer": 0
+  }
+]

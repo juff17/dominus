@@ -1,0 +1,42 @@
+[
+  {
+    "notes": [
+      {
+        "resolvable": true,
+        "resolved": false
+      }
+    ]
+  },
+  {
+    "notes": [
+      {
+        "resolvable": true,
+        "resolved": false
+      }
+    ]
+  },
+  {
+    "notes": [
+      {
+        "resolvable": true,
+        "resolved": false
+      }
+    ]
+  },
+  {
+    "notes": [
+      {
+        "resolvable": true,
+        "resolved": true
+      }
+    ]
+  },
+  {
+    "notes": [
+      {
+        "resolvable": false,
+        "resolved": false
+      }
+    ]
+  }
+]

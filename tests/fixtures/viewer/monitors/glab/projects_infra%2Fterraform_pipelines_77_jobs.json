@@ -1,0 +1,33 @@
+[
+  {
+    "id": 703,
+    "name": "apply",
+    "stage": "apply",
+    "status": "manual",
+    "allow_failure": false,
+    "web_url": "https://gitlab.example.com/infra/terraform/-/jobs/703",
+    "commit": {
+      "id": "77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd"
+    }
+  },
+  {
+    "id": 702,
+    "name": "plan",
+    "stage": "plan",
+    "status": "success",
+    "web_url": "https://gitlab.example.com/infra/terraform/-/jobs/702",
+    "commit": {
+      "id": "77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd"
+    }
+  },
+  {
+    "id": 701,
+    "name": "init",
+    "stage": "init",
+    "status": "success",
+    "web_url": "https://gitlab.example.com/infra/terraform/-/jobs/701",
+    "commit": {
+      "id": "77aa88bb99cc00dd11ee22ff33aa44bb55cc66dd"
+    }
+  }
+]

@@ -1,0 +1,376 @@
+{
+  "data": {
+    "viewer": {
+      "login": "jl"
+    },
+    "mine": {
+      "nodes": [
+        {
+          "number": 44,
+          "title": "Tidy the install script",
+          "url": "https://github.com/jl/dotfiles/pull/44",
+          "isDraft": false,
+          "createdAt": "@-3d",
+          "headRefName": "jl/tidy-install",
+          "baseRefName": "main",
+          "author": {
+            "login": "jl"
+          },
+          "repository": {
+            "nameWithOwner": "jl/dotfiles"
+          },
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "BEHIND",
+          "reviewDecision": "CHANGES_REQUESTED",
+          "reviewRequests": {
+            "nodes": []
+          },
+          "latestOpinionatedReviews": {
+            "nodes": [
+              {
+                "state": "CHANGES_REQUESTED",
+                "author": {
+                  "login": "amy"
+                }
+              }
+            ]
+          },
+          "reviewThreads": {
+            "nodes": [
+              {
+                "isResolved": false
+              },
+              {
+                "isResolved": false
+              },
+              {
+                "isResolved": false
+              },
+              {
+                "isResolved": true
+              }
+            ]
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "SUCCESS",
+                    "contexts": {
+                      "nodes": [
+                        {
+                          "__typename": "CheckRun",
+                          "name": "build",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "test",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 77,
+          "title": "Retry the sync job",
+          "url": "https://github.com/jl/gad/pull/77",
+          "isDraft": false,
+          "createdAt": "@-1d",
+          "headRefName": "jl/sync-retry",
+          "baseRefName": "main",
+          "author": {
+            "login": "jl"
+          },
+          "repository": {
+            "nameWithOwner": "jl/gad"
+          },
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": "APPROVED",
+          "reviewRequests": {
+            "nodes": []
+          },
+          "latestOpinionatedReviews": {
+            "nodes": [
+              {
+                "state": "APPROVED",
+                "author": {
+                  "login": "amy"
+                }
+              }
+            ]
+          },
+          "reviewThreads": {
+            "nodes": []
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "PENDING",
+                    "contexts": {
+                      "nodes": [
+                        {
+                          "__typename": "CheckRun",
+                          "name": "build",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "test",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "deploy:staging",
+                          "status": "WAITING",
+                          "conclusion": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 9,
+          "title": "Parser rewrite",
+          "url": "https://github.com/jl/jstack/pull/9",
+          "isDraft": false,
+          "createdAt": "@-5h",
+          "headRefName": "jl/parser",
+          "baseRefName": "main",
+          "author": {
+            "login": "jl"
+          },
+          "repository": {
+            "nameWithOwner": "jl/jstack"
+          },
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": "REVIEW_REQUIRED",
+          "reviewRequests": {
+            "nodes": [
+              {
+                "requestedReviewer": {
+                  "login": "bo"
+                }
+              }
+            ]
+          },
+          "latestOpinionatedReviews": {
+            "nodes": []
+          },
+          "reviewThreads": {
+            "nodes": [
+              {
+                "isResolved": false
+              },
+              {
+                "isResolved": false
+              }
+            ]
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "PENDING",
+                    "contexts": {
+                      "nodes": [
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job0",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job1",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job2",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job3",
+                          "status": "IN_PROGRESS",
+                          "conclusion": null
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job4",
+                          "status": "IN_PROGRESS",
+                          "conclusion": null
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job5",
+                          "status": "IN_PROGRESS",
+                          "conclusion": null
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job6",
+                          "status": "IN_PROGRESS",
+                          "conclusion": null
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job7",
+                          "status": "IN_PROGRESS",
+                          "conclusion": null
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "job8",
+                          "status": "IN_PROGRESS",
+                          "conclusion": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 3,
+          "title": "Weekly report script",
+          "url": "https://github.com/jl/notes/pull/3",
+          "isDraft": false,
+          "createdAt": "@-2h",
+          "headRefName": "jl/weekly",
+          "baseRefName": "main",
+          "author": {
+            "login": "jl"
+          },
+          "repository": {
+            "nameWithOwner": "jl/notes"
+          },
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": null,
+          "reviewRequests": {
+            "nodes": []
+          },
+          "latestOpinionatedReviews": {
+            "nodes": []
+          },
+          "reviewThreads": {
+            "nodes": []
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "FAILURE",
+                    "contexts": {
+                      "nodes": [
+                        {
+                          "__typename": "CheckRun",
+                          "name": "lint",
+                          "status": "COMPLETED",
+                          "conclusion": "FAILURE"
+                        },
+                        {
+                          "__typename": "CheckRun",
+                          "name": "test",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "review": {
+      "nodes": [
+        {
+          "number": 12,
+          "title": "Fix the header",
+          "url": "https://github.com/amy/site/pull/12",
+          "isDraft": false,
+          "createdAt": "@-4h",
+          "headRefName": "amy/header",
+          "baseRefName": "main",
+          "author": {
+            "login": "amy"
+          },
+          "repository": {
+            "nameWithOwner": "amy/site"
+          },
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": "REVIEW_REQUIRED",
+          "reviewRequests": {
+            "nodes": [
+              {
+                "requestedReviewer": {
+                  "login": "jl"
+                }
+              }
+            ]
+          },
+          "latestOpinionatedReviews": {
+            "nodes": []
+          },
+          "reviewThreads": {
+            "nodes": []
+          },
+          "commits": {
+            "nodes": [
+              {
+                "commit": {
+                  "statusCheckRollup": {
+                    "state": "SUCCESS",
+                    "contexts": {
+                      "nodes": [
+                        {
+                          "__typename": "CheckRun",
+                          "name": "ci",
+                          "status": "COMPLETED",
+                          "conclusion": "SUCCESS"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "reviewed": {
+      "nodes": []
+    }
+  }
+}

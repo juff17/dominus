@@ -1,0 +1,19 @@
+{
+  "name": "dominus",
+  "private": true,
+  "type": "module",
+  "description": "Node runs ghostty/ as it is. @inquirer/prompts is for install.sh's walkthrough; the dev tools check the code.",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "8.8.0"
+  }
+}

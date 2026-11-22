@@ -1,0 +1,50 @@
+[
+ {
+  "query": "watch this pipeline https://gitlab.com/acme/api/-/pipelines/48211",
+  "should_trigger": true
+ },
+ {
+  "query": "tell me when the deploy pipeline finishes",
+  "should_trigger": true
+ },
+ {
+  "query": "keep an eye on main's CI and ping me if it goes red",
+  "should_trigger": true
+ },
+ {
+  "query": "follow https://github.com/acme/web/actions/runs/9123456 until a job fails",
+  "should_trigger": true
+ },
+ {
+  "query": "let me know when the release pipeline for the v2.4.0 tag gets to the manual prod deploy",
+  "should_trigger": true
+ },
+ {
+  "query": "the github actions run on main takes like 2 hours, watch it in the background and tell me how it ends",
+  "should_trigger": true
+ },
+ {
+  "query": "babysit my PR https://github.com/acme/web/pull/88 until it merges",
+  "should_trigger": false
+ },
+ {
+  "query": "watch the CI on my MR !482 and rebase it if main moves",
+  "should_trigger": false
+ },
+ {
+  "query": "tail the worker logs in staging while the deploy runs and tell me if anything breaks",
+  "should_trigger": false
+ },
+ {
+  "query": "add a GitLab CI pipeline with lint and test stages to this repo",
+  "should_trigger": false
+ },
+ {
+  "query": "why did the last github actions run fail? here's the log",
+  "should_trigger": false
+ },
+ {
+  "query": "retry the failed e2e job in pipeline 48211",
+  "should_trigger": false
+ }
+]

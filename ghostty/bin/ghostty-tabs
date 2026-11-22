@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Closing a tab (--close), from layout.conf, tmux.conf's × on a tab, and
+# the hub.
+#   ghostty-tabs --close <tabs> [<tab>] [keep]
+#                                        close tab <tab> of <tabs> (its number
+#                                        or window id; the active tab when
+#                                        empty), see close_tab in lib/tabs.sh
+
+source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
+
+case ${1:-} in
+--close)
+  close_tab "$2" "${3:-}" "${4:-}"
+  ;;
+*)
+  sed -n '2,7s/^# \{0,1\}//p' "$0"
+  exit 1
+  ;;
+esac

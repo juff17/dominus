@@ -1,0 +1,6 @@
+{"apiVersion": "v1", "kind": "List", "items": [
+  {"metadata": {"name": "api-7d9f-x2k4p", "labels": {"app": "api"}},
+   "status": {"phase": "Running", "containerStatuses": [
+     {"name": "app", "restartCount": 4, "state": {"waiting": {"reason": "CrashLoopBackOff", "message": "back-off 5m0s"}}},
+     {"name": "sidecar", "restartCount": 1, "state": {"terminated": {"reason": "OOMKilled", "exitCode": 137}}}]}}
+]}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": 4512,
+    "ref": "v2.14.0",
+    "sha": "8c41d2e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5",
+    "status": "manual",
+    "source": "push",
+    "web_url": "https://gitlab.example.com/platform/api/-/pipelines/4512",
+    "created_at": "@-6m"
+  },
+  {
+    "id": 4510,
+    "ref": "main",
+    "sha": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d",
+    "status": "running",
+    "source": "push",
+    "web_url": "https://gitlab.example.com/platform/api/-/pipelines/4510",
+    "created_at": "@-4m"
+  },
+  {
+    "id": 4508,
+    "ref": "jl/rate-limit",
+    "sha": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d",
+    "status": "success",
+    "source": "push",
+    "web_url": "https://gitlab.example.com/platform/api/-/pipelines/4508",
+    "created_at": "@-20m"
+  },
+  {
+    "id": 4400,
+    "ref": "main",
+    "sha": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d",
+    "status": "success",
+    "source": "push",
+    "web_url": "https://gitlab.example.com/platform/api/-/pipelines/4400",
+    "created_at": "@-1d"
+  }
+]
