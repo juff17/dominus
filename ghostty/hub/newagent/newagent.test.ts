@@ -22,7 +22,7 @@ symlinkSync(join(P, 'alpha'), join(P, 'linked'))
 symlinkSync(join(P, 'missing'), join(P, 'broken'))
 writeFileSync(join(P, 'notes.txt'), '')
 
-const { POPUP, attach, fields, form, key, matchesOf, pick, save, scrollTo, suggestion } = await import('./newagent.ts')
+const { POPUP, attach, fields, form, key, matchesOf, pick, popupBox, save, scrollTo, suggestion } = await import('./newagent.ts')
 const { tokens } = await import('../../tui/term.ts')
 
 const UP = '\x1b[A'
@@ -523,6 +523,31 @@ test('no suggestion mid-line, off the folder, for a different case or a trailing
 
 test('the popup is the form\'s size, border included', () => {
   assert.deepEqual(POPUP, { w: 80, h: 22 })
+})
+
+test('the popup grows a row for each row the prompt wraps to, up to five', () => {
+  const d = form({ folder: P })
+  const screen = { cols: 200, rows: 50 }
+  assert.deepEqual(popupBox(screen), POPUP)
+  // The prompt is 62 cells wide here.
+  d.prompt = { text: 'word '.repeat(30), at: 0 }
+  assert.deepEqual(popupBox(screen), { w: 80, h: 24 })
+  d.prompt = { text: 'word '.repeat(100), at: 0 }
+  assert.deepEqual(popupBox(screen), { w: 80, h: 26 }, 'past five rows it scrolls')
+})
+
+test('up and down move through the prompt\'s rows before leaving it', () => {
+  const d = form({ folder: P })
+  // 64 cells wide with no overlay: twelve words a row.
+  d.prompt = { text: 'word '.repeat(30), at: 2 }
+  keys(DOWN)
+  assert.deepEqual([d.field, d.prompt.at], ['prompt', 62])
+  keys(DOWN)
+  assert.deepEqual([d.field, d.prompt.at], ['prompt', 122])
+  keys(DOWN)
+  assert.equal(d.field, 'where', 'off the last row')
+  keys(UP, UP)
+  assert.deepEqual([d.field, d.prompt.at], ['prompt', 62])
 })
 
 test('a short popup scrolls the form only as far as the field you are on needs', () => {

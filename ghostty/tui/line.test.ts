@@ -106,3 +106,32 @@ test('head and tail keep a joined emoji whole, never a lone half of it', () => {
   assert.equal(line.tail(`ab${family}`, 1), '')
   assert.equal(width(line.tail(`a${family}`, 2)), 2)
 })
+
+test('a wrapped field breaks after a space, keeping the last cell for the caret', () => {
+  // Rows are 6 cells, 5 for text.
+  const rows = (text: string, w = 6) => {
+    const starts = line.wrapRows(text, w)
+    return starts.map((s, i) => [...text].slice(s, starts[i + 1]).join(''))
+  }
+  assert.deepEqual(rows(''), [''])
+  assert.deepEqual(rows('fix it'), ['fix ', 'it'])
+  assert.deepEqual(rows('abcdefgh'), ['abcde', 'fgh'], 'a long word at the edge')
+  assert.deepEqual(rows('abcde'), ['abcde'], 'the caret after it fits')
+  assert.deepEqual(rows('abcde '), ['abcde ', ''], 'a space at the edge starts a row for the next word')
+  assert.deepEqual(rows('abcde f'), ['abcde ', 'f'])
+  assert.deepEqual(rows('ab漢字cd'), ['ab漢', '字cd'], 'wide characters by their cells')
+  assert.deepEqual(rows('ab [Image #1] cd', 8), ['ab ', '[Image #1]', ' cd'], 'a placeholder is never split')
+})
+
+test('up and down move the caret a row, near its column', () => {
+  // 'fix the ' over 'bug now'.
+  const text = 'fix the bug now'
+  assert.deepEqual(line.wrapRows(text, 9), [0, 8])
+  assert.equal(line.rowOf([0, 8], 8), 1, 'a caret at a row start is on that row')
+  assert.equal(line.rowStep(text, 2, 9, -1), null)
+  assert.equal(line.rowStep(text, 2, 9, 1), 10)
+  assert.equal(line.rowStep(text, 15, 9, -1), 7, "onto the row's last character, not the next row's start")
+  assert.equal(line.rowStep(text, 7, 9, 1), 15, 'onto the end of the last row')
+  assert.equal(line.rowStep(text, 10, 9, 1), null)
+  assert.equal(line.rowStep('a [Image #1] b', 13, 20, -1), null)
+})

@@ -187,3 +187,63 @@ export const withCaret = (text: string, at: number | undefined): string => {
 // is no character: taking it would print the rest of the code.
 export const caretShown = (line: string): string =>
   line.replace(new RegExp(`${CARET_MARK}([^\\x1b][\\p{Mn}\\p{Me}\\u200b-\\u200f\\ufe0f]*)?`, 'u'), (_, ch?: string) => `\x1b[7m${ch ?? ' '}\x1b[27m`)
+
+// ------------------------------------------------------------ wrapped
+
+// What a wrapped field lays out: the pieces between caret stops, so an emoji
+// or a placeholder is never split across rows.
+type Unit = { at: number; cells: number; space: boolean }
+function units(chars: string[]): Unit[] {
+  const s = stops(chars)
+  return s.slice(0, -1).map((at, i) => {
+    const piece = chars.slice(at, s[i + 1]).join('')
+    return { at, cells: cells(piece), space: piece === ' ' }
+  })
+}
+
+// Where each row starts, in code points, as a field `w` cells wide wraps
+// the text: after a space where the row has one, else at the edge. A row
+// keeps its last cell for the caret, which a space may take instead, so
+// typing at the end never shifts the row; a space there puts the caret on
+// a row of its own, where the next word will go.
+export function wrapRows(text: string, w: number): number[] {
+  const chars = [...text]
+  const room = Math.max(1, w - 1)
+  const starts = [0]
+  let first = 0
+  let used = 0
+  let space = -1
+  const us = units(chars)
+  for (let k = 0; k < us.length; k++) {
+    const u = us[k]
+    if (used + u.cells > room && k > first && !(u.space && used <= room)) {
+      first = space >= first ? space + 1 : k
+      starts.push(us[first].at)
+      used = us.slice(first, k).reduce((n, x) => n + x.cells, 0)
+      space = -1
+    }
+    used += u.cells
+    if (u.space) space = k
+  }
+  if (used > room) starts.push(chars.length)
+  return starts
+}
+
+// The row the caret is on: a caret at a row's start is on that row.
+export const rowOf = (starts: readonly number[], at: number): number => Math.max(0, starts.findLastIndex(s => s <= at))
+
+// The caret a row up (dir < 0) or down, on the nearest stop at or before
+// its column; null with no row that way.
+export function rowStep(text: string, at: number, w: number, dir: number): number | null {
+  const chars = [...text]
+  const starts = wrapRows(text, w)
+  const r = rowOf(starts, at)
+  const to = r + Math.sign(dir)
+  if (to < 0 || to >= starts.length) return null
+  const col = cells(chars.slice(starts[r], at).join(''))
+  const last = to === starts.length - 1
+  const end = last ? chars.length : starts[to + 1]
+  // A row's own stops: the next row's start is that row's, but for the end.
+  const own = stops(chars).filter(s => s >= starts[to] && (s < end || (last && s === end)))
+  return own.findLast(s => cells(chars.slice(starts[to], s).join('')) <= col) ?? starts[to]
+}

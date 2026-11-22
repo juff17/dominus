@@ -15,12 +15,12 @@ import { type Image, type Pasted, attachFiles, imageFiles, imagesDir, keptImages
 import { expandHome as expand, tilde } from '../../core/paths.ts'
 import { type Menu, complete, matchesOf, suggestion as pathSuggestion } from '../../tui/complete.ts'
 import { leftPress } from '../../tui/input.ts'
-import { type LineState, editLine, insertAt, length } from '../../tui/line.ts'
+import { type LineState, editLine, insertAt, length, rowOf, rowStep, wrapRows } from '../../tui/line.ts'
 import { button, chips, field, fieldLabel, radio, select } from '../../tui/controls.ts'
 import { t } from '../../core/text.ts'
 import { MODEL_IDS } from '../../settings/models.ts'
 import { defaultFolder, load as settings } from '../../settings/settings.ts'
-import { type Overlay, openOverlay } from '../../tui/overlay.ts'
+import { type Overlay, openOverlay, overlayBox } from '../../tui/overlay.ts'
 import { BOLD, P, type Span, bg, clean, fg, render, tokens, width } from '../../tui/term.ts'
 import { logger } from '../../core/log.ts'
 
@@ -61,13 +61,16 @@ const HINTS = [
   .join('   ')
 // The form: the prompt and its note, a gap, where, folder, recent, a gap,
 // branch and its note, a gap, model, mode, effort, chrome, a gap, Start.
-// Below it a gap, then the keys.
+// Below it a gap, then the keys. The prompt counts one row here; it wraps
+// to as many as PROMPT_ROWS, the frame growing with it, and past that it
+// scrolls to keep the caret's row in view.
 const BODY_ROWS = 16
 const LABEL_COLS = 10
+const PROMPT_ROWS = 5
 
-// The overlay frame's size, edges included: just room for the form, with
-// the folder and prompt as wide as the keys line. A window smaller than
-// that gets all of it.
+// The overlay frame's size, edges included, with a one-row prompt: just room
+// for the form, with the folder and prompt as wide as the keys line. A
+// window smaller than that gets all of it.
 export const POPUP = {
   w: width(HINTS) + 2 * MARGIN_X + 2,
   h: BODY_ROWS + 2 + 2 * MARGIN_Y + 2,
@@ -119,11 +122,32 @@ let hits: { y: number; f: Field }[] = []
 let menu: Menu | null = null
 // The first body row drawn, when the popup is too short for them all.
 let top = 0
+// The prompt's first row drawn, once it wraps past PROMPT_ROWS.
+let promptTop = 0
 // Branch under the Runs in choice not shown, swapped in when you switch, so
 // Default starts on Current branch and each keeps what you chose in it.
 let otherBranch = 0
 
 const isText = (f: Field): f is TextField => f === 'folder' || f === 'prompt'
+
+// The prompt's width in a frame `inner` cells wide, and the rows it wraps to.
+const promptWidth = (inner = cols()) => inner - 2 * MARGIN_X - LABEL_COLS
+const promptRows = (w = promptWidth()) => wrapRows(d.prompt.text, w)
+
+// The frame as tall as the prompt's rows need, up to PROMPT_ROWS. Read from
+// the window, not the overlay, whose size comes from this.
+export function popupBox(screen = { cols: process.stdout.columns || 80, rows: process.stdout.rows || 24 }) {
+  const inner = overlayBox(screen, POPUP).w - 2
+  return { w: POPUP.w, h: POPUP.h + Math.min(PROMPT_ROWS, promptRows(promptWidth(inner)).length) - 1 }
+}
+
+// Up and Down move the caret a row while the prompt has one that way.
+function promptRow(dir: number): boolean {
+  const at = rowStep(d.prompt.text, d.prompt.at, promptWidth(), dir)
+  if (at === null) return false
+  d.prompt.at = at
+  return true
+}
 
 const inDefault = () => WHERE[d.where].id === 'default'
 
@@ -247,6 +271,7 @@ function handle(k: string, paste?: string): Done | undefined {
   if (k === CTRL_V && d.field === 'prompt') return void attach(pasteImage(imagesDir('agent')))
   if (k === CTRL_S || (k === ENTER && d.field === 'start')) return submit()
   if (d.field === 'folder' && folderKey(k)) return
+  if (d.field === 'prompt' && (k === UP || k === DOWN) && promptRow(k === UP ? -1 : 1)) return
   const moveBy = MOVES.get(k)
   const stepBy = STEPS.get(k)
   const f = d.field
@@ -319,8 +344,9 @@ function startWith() {
 // ------------------------------------------------------------ drawing
 
 // `f` is null for a note or a gap; `input` is the text field that fills the
-// rest of the row.
-type Row = { f: Field | null; spans: Span[]; input?: TextField; ghost?: string }
+// rest of the row, `part` the code points of it this row shows, all of them
+// when left off.
+type Row = { f: Field | null; spans: Span[]; input?: TextField; ghost?: string; part?: [number, number] }
 
 function body(w: number): Row[] {
   const rows: Row[] = []
@@ -328,7 +354,7 @@ function body(w: number): Row[] {
   const row = (f: Field | null, spans: Span[], input?: TextField, ghost?: string) => rows.push({ f, spans, input, ghost })
   const note = (text: string) => row(null, [[`${' '.repeat(LABEL_COLS)}${text}`, fg(P.overlay1)]])
   const gap = () => row(null, [])
-  row('prompt', label('prompt'), 'prompt')
+  promptBody(w).forEach(r => rows.push(r))
   const images = keptImages(d.images, d.prompt.text).length
   note(images ? t('newAgent.imagesNote', { n: images }) : t('newAgent.taskNote'))
   gap()
@@ -363,11 +389,32 @@ function body(w: number): Row[] {
   return rows
 }
 
+// The prompt's rows in view, ↑ and ↓ beside its label while it has rows
+// above or below them.
+function promptBody(w: number): Row[] {
+  const { text, at } = d.prompt
+  const starts = promptRows(w - LABEL_COLS)
+  const n = starts.length
+  const room = Math.min(PROMPT_ROWS, n)
+  promptTop = scrollTo(promptTop, d.field === 'prompt' ? rowOf(starts, at) : -1, room, n)
+  return Array.from({ length: room }, (_, i): Row => {
+    const r = promptTop + i
+    const mark = i === 0 && r > 0 ? '↑' : i === room - 1 && r < n - 1 ? '↓' : ''
+    const name = i === 0 ? t('newAgent.fields.prompt') : ''
+    const spans: Span[] = [...fieldLabel(name, d.field === 'prompt', LABEL_COLS - 2), [mark.padEnd(2), fg(P.overlay1)]]
+    return { f: 'prompt', spans, input: 'prompt', part: [starts[r], starts[r + 1] ?? length(text)] }
+  })
+}
+
 function drawRow(r: Row, w: number): string {
   if (!r.input) return render(r.spans, w, BOX)
   const lw = r.spans.reduce((n, [s]) => n + width(s), 0)
-  const text = d[r.input]
-  const input = field({ text: text.text, at: text.at, w: w - lw, focused: d.field === r.f, ghost: r.ghost ?? '' })
+  const { text, at } = d[r.input]
+  const chars = [...text]
+  const [from, to] = r.part ?? [0, chars.length]
+  // A caret on the next row's start is that row's, but for the end.
+  const here = d.field === r.f && at >= from && (at < to || to === chars.length)
+  const input = field({ text: chars.slice(from, to).join(''), at: at - from, w: w - lw, focused: here, ghost: here ? (r.ghost ?? '') : '' })
   return render(r.spans, lw, BOX) + render(input, w - lw, BOX)
 }
 
@@ -446,6 +493,7 @@ export function form({ folder = '', recents: given = [] }: FormOptions = {}): Fo
   recents = given
   menu = null
   top = 0
+  promptTop = 0
   otherBranch = BRANCH.findIndex(b => b.id === 'current')
   const s = settings()
   const start = s['newAgent.defaultFolder'] === 'projects' ? '' : folder || recents[0]
@@ -484,6 +532,15 @@ function onClick(y: number): Done | undefined {
   return h ? pick(h.f) : undefined
 }
 
+// The wheel over the prompt moves its caret a row, scrolling it as Up and
+// Down do.
+export function onWheel(y: number, dir: number) {
+  if (hits.find(r => r.y === y)?.f !== 'prompt') return
+  menu = null
+  d.field = 'prompt'
+  promptRow(dir)
+}
+
 // Picks a field, and on Start, starts. A Tab menu ends here as it does on
 // any other key, or Shift+Tab back on Folder would step its old matches.
 export function pick(f: Field): Done | undefined {
@@ -505,7 +562,7 @@ function main() {
   sweepImages(imagesDir('agent'), new Set(), IMAGES_KEPT_MS)
   RESULT = result
   form(formOptions(opts || '{}'))
-  ov = openOverlay({ name: 'newagent', key: 'keys.newAgent', box: () => POPUP })
+  ov = openOverlay({ name: 'newagent', key: 'keys.newAgent', box: () => popupBox() })
   const overlay = ov
   overlay.start(data => {
     // The read as it came: tokens decodes it, keeping a character a long
@@ -515,6 +572,7 @@ function main() {
       if (tok.key && overlay.closes(tok.key)) return finish(null)
       const m = tok.mouse && overlay.mouse(tok.mouse)
       if (m === 'close') return finish(null)
+      if (m && m.button & 64) onWheel(m.y, m.button & 1 ? 1 : -1)
       if (tok.mouse && !(m && leftPress(m))) continue
       const r = m ? onClick(m.y) : key(tok.key ?? '', tok.paste)
       // finish() exits, unless the spec couldn't be saved: then the form
