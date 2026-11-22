@@ -8,7 +8,7 @@ import { type Hint, type ModeTab, hintSpans, tabAt } from '../../tui/chrome.ts'
 import { type CellSize, type Tokenizer, tokenizer } from '../../tui/input.ts'
 import { type Span, width } from '../../tui/term.ts'
 import type { Image } from '../view.ts'
-import { type ImageId, type PlacementId, deleteImage, placeGrid, transmitFile } from './kitty.ts'
+import { type ImageId, type PlacementId, deleteImage, placeGrid, transmitFile } from '../../tui/kitty.ts'
 
 export const TAB_MAX = 24
 

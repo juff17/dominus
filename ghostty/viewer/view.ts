@@ -1,11 +1,11 @@
 // Zoom and pan in image pixels.
 
 import { load as settings } from '../settings/settings.ts'
+import { MAX_GRID } from '../tui/kitty.ts'
+
+export { MAX_GRID }
 
 export const maxZoomSetting = (): number => settings()['viewer.maxZoom']
-// The picture is a grid of placeholder cells (kitty.ts), which can't have
-// more rows or columns than there are diacritics to number them.
-export const MAX_GRID = 297
 
 export type Image = { width: number; height: number }
 // cw, ch: each cell's size in pixels.

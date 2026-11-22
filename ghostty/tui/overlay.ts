@@ -13,12 +13,12 @@ import { load } from '../settings/settings.ts'
 import { type Box, type BoxSpec, type Grid, captureWindow, frameBox, slice } from './backdrop.ts'
 import { type HeaderTitle, closeHintWidth, frameBottom, frameTop, titleText } from './controls.ts'
 import { type Mouse, leftPress } from './input.ts'
-import { P, RESET, bg, fg } from './palette.ts'
+import { ACCENT, P, RESET, bg, fg } from './palette.ts'
 import { type PaintOptions, type ScreenModes, enter, leave, paint } from './screen.ts'
 
 export type { Box, BoxSpec, Grid }
 export type Size = { cols: number; rows: number }
-// color is the edge's, blue by default.
+// color is the edge's, the theme's ACCENT by default.
 export type Look = { title: HeaderTitle; close: string; color?: string }
 type KeyValues = Partial<Record<KeyName, string>>
 
@@ -44,7 +44,7 @@ export const closes = (key: string, own: KeyName, values: KeyValues = load()): b
 // its cells by column (\e[nG, as Todo's right-hand text and the diagrams'
 // picture do) counting from the frame's inside, as on a screen of its own.
 export function compose(backdrop: Grid, size: Size, b: Box, look: Look, body: readonly string[]): string[] {
-  const color = look.color ?? P.blue
+  const color = look.color ?? ACCENT
   const edge = `${fg(color)}│${RESET}`
   const right = b.left + b.w
   const dim = (r: number, from: number, to: number): string => (from < to ? `\x1b[${from + 1}G${DIM}${slice(backdrop[r], from, to)}${RESET}` : '')

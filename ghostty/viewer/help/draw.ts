@@ -5,7 +5,7 @@ import { t } from '../../core/text.ts'
 import { hintSpansAfter } from '../../tui/chrome.ts'
 import { field } from '../../tui/controls.ts'
 import type { Size } from '../../tui/overlay.ts'
-import { BOLD, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
+import { ACCENT, BOLD, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
 import { type HelpSection, SECTIONS } from './help.ts'
 import { BOTTOM, type HelpState, NAV, TOP, filtering, fitScroll, footerHints, keyWidth, shown } from './state.ts'
 
@@ -28,7 +28,7 @@ function content(groups: HelpSection[], query: string, w: number): string[] {
     ])
     for (const k of g.keys) {
       lines.push([
-        [k.key.padEnd(keyW - (width(k.key) - k.key.length)), BOLD + fg(k.rare ? P.peach : P.text)],
+        [k.key.padEnd(keyW - (width(k.key) - k.key.length)), BOLD + fg(k.rare ? ACCENT : P.text)],
         [k.what, fg(P.text)],
       ])
     }
@@ -59,7 +59,7 @@ function navRow(s: HelpState, i: number, counts: Map<string, number>): string {
 function footer(s: HelpState, groups: HelpSection[], w: number): string {
   const total = groups.reduce((n, g) => n + g.keys.length, 0)
   return split(
-    [[' '], ...hintSpansAfter(footerHints(s)), [t('help.rare'), BOLD + fg(P.peach)], [` ${t('help.easyToForget')}`, fg(P.sub)]],
+    [[' '], ...hintSpansAfter(footerHints(s)), [t('help.rare'), BOLD + fg(ACCENT)], [` ${t('help.easyToForget')}`, fg(P.sub)]],
     [[`${filtering(s) ? t('help.keyCount', { n: total }) : `${s.sel + 1} / ${SECTIONS.length}`} `, fg(P.sub)]],
     w,
     BASE,
@@ -78,7 +78,7 @@ export function frame(s: HelpState, { cols: w, rows }: Size): Frame {
   const title = filtering(s) ? t('help.matching', { query: s.query.trim() }) : SECTIONS[s.sel].name
   const lines = [
     render([], w, BASE),
-    render([[' / ', BOLD + fg(P.blue)], ...field({ text: s.query, at: s.at, w: w - 4, focused: s.typing, placeholder: t('help.filterPlaceholder') })], w, BASE),
+    render([[' / ', BOLD + fg(ACCENT)], ...field({ text: s.query, at: s.at, w: w - 4, focused: s.typing, placeholder: t('help.filterPlaceholder') })], w, BASE),
     render([], w, BASE),
   ]
   for (let y = 0; y < height; y++) {

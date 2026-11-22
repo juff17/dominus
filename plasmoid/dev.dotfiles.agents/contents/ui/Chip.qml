@@ -1,7 +1,7 @@
 // The ring stays while there's something you haven't opened the inbox for;
 // a new ▲ or ✗ fills the chip with its colour for a moment.
 import QtQuick
-import "mocha.js" as M
+import "palette.js" as M
 
 Rectangle {
     id: chip
@@ -38,7 +38,7 @@ Rectangle {
         radius: parent.radius + 3
         color: "transparent"
         border.width: 3
-        border.color: "#38fab387"
+        border.color: "#38ffa04d"
         visible: chip.ring && !chip.flashing
     }
 

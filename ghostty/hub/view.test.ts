@@ -88,6 +88,51 @@ test('the board fills the screen exactly, every line as wide as it', () => {
   }
 })
 
+// Stand-ins for the board gear's placeholder rows.
+const GEAR = { cols: 8, rows: ['<g1>', '<g2>', '<g3>', '<g4>'] }
+
+test('with nothing running the board shows the gear, the name and a New agent button, in place of the lanes', () => {
+  const r = recorder()
+  const f = boardFrame(ui({ splash: GEAR }), PREFS, { w: 100, h: 30 }, r.acts)
+  assert.equal(f.lines.length, 30)
+  const at = f.lines.findIndex(l => l.includes('<g1>'))
+  assert.ok(at > 1, 'the gear is drawn')
+  assert.deepEqual(
+    f.lines.slice(at, at + 4).map(l => l.includes(`\x1b[47G`) && l.match(/<g\d>/)?.[0]),
+    ['<g1>', '<g2>', '<g3>', '<g4>'],
+  )
+  const words = f.lines.slice(at + 4, at + 9).map(l => plain(l).trim())
+  assert.deepEqual(words, ['', 'D O M I N U S', '', 'All quiet. No agent is running.', ''])
+  assert.match(plain(f.lines[at + 9]), /\+ New agent alt\+n .* or {3}q back to the workspace/)
+  const s = screen(f)
+  assert.ok(!s.includes('Needs you'), 'no lanes')
+  assert.match(plain(f.lines[0]), /^ 0 tasks · 0 monitors/)
+  assert.match(plain(f.lines.at(-1) ?? ''), /n new +q workspace/)
+  // The New agent under the words, as well as the summary's.
+  const button = f.hits.find(h => h.y1 === at + 10)
+  assert.ok(button)
+  assert.ok(plain(f.lines[at + 9]).slice(button.x1 - 1, button.x2).includes('+ New agent alt+n'))
+  button.act()
+  assert.deepEqual(r.calls, [['newAgent']])
+})
+
+test('without the gear, or too short for it, the board still says nothing is running', () => {
+  for (const [splash, h] of [[null, 30], [GEAR, 12]] as const) {
+    const f = boardFrame(ui({ splash }), PREFS, { w: 100, h }, recorder().acts)
+    assert.equal(f.lines.length, h)
+    assert.ok(!f.lines.some(l => l.includes('<g1>')))
+    assert.ok(screen(f).includes('All quiet. No agent is running.'))
+  }
+})
+
+test('a filter that hides every agent, or any agent at all, keeps the lanes', () => {
+  for (const extra of [{ filter: 'zzz' }, { agents: [agent('a')] }]) {
+    const s = screen(boardFrame(ui({ splash: GEAR, ...extra }), PREFS, { w: 140, h: 40 }, recorder().acts))
+    assert.ok(!s.includes('All quiet'))
+    assert.ok(s.includes('Needs you'))
+  }
+})
+
 test('the summary counts the lanes and monitors, and its New agent button opens the dialog', () => {
   const r = recorder()
   const f = boardFrame(ui({ agents: WORLD }), PREFS, { w: 140, h: 40 }, r.acts)

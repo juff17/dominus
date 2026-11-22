@@ -25,6 +25,7 @@ import {
   where,
 } from './board.ts'
 import type { Peek } from './peek.ts'
+import { type GearCells, centredRow } from '../tui/gear.ts'
 import { type Agent, type Lane, type Lanes, type Monitor, cardHeights, counts, lanes, monitorsOf, scrollTo, watches } from '../agents/model.ts'
 import type { Counts } from '../agents/model.ts'
 import { pipelineResult } from '../agents/transcript.ts'
@@ -32,7 +33,7 @@ import { lookup, t } from '../core/text.ts'
 import { type Hint, hintSpans } from '../tui/chrome.ts'
 import { button as buttonSpans, confirm as question, field, frameBottom, frameRow, spanWidth } from '../tui/controls.ts'
 import type { Look } from '../tui/palette.ts'
-import { BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bar, bg, clean, fg, mix, render, split, width, wrap } from '../tui/term.ts'
+import { ACCENT, BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bar, bg, clean, fg, mix, render, split, width, wrap } from '../tui/term.ts'
 
 // A clickable region of a frame, its cells counted from 1; `wheel` is the
 // lane (4: the monitors strip) the wheel scrolls over it.
@@ -55,6 +56,9 @@ export type HubUi = {
   note: Note | null
   win: number
   now: number
+  // The gear the board shows when nothing's running (hub.ts); null until it
+  // can be drawn.
+  splash?: GearCells | null
 }
 // From Settings. `broke` and `attention` are the monitor event tags that mean
 // broke and need you.
@@ -73,7 +77,7 @@ const LANE_BG = bg(P.mantle)
 const CARD_BG = bg(P.base)
 const SEL_BG = bg(P.surface0)
 const nothing = (name: Lane | 'monitors') => t(`hub.empty.${name}`)
-const MONITORS_LOOK: Look = { glyph: '◉', color: P.teal, name: t('hub.monitors') }
+const MONITORS_LOOK: Look = { glyph: '◉', color: P.rose, name: t('hub.monitors') }
 
 const kilo = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))
 const tint = (color: string) => mix(color, P.mantle, 0.2)
@@ -152,7 +156,7 @@ function cmdColor(name: Lane, a: Agent, broke: Set<string>) {
 // the other lanes its context size.
 function cardNote(name: Lane, a: Agent, raised: Monitor | null): Span[] {
   if (name !== 'needs') return a.ctx ? [[t('hub.card.ctx', { n: kilo(a.ctx) }), fg(P.overlay1)]] : []
-  if (a.need === 'monitor') return [[`◉ ${raised?.kind ?? t('hub.card.monitor')}`, fg(P.teal)]]
+  if (a.need === 'monitor') return [[`◉ ${raised?.kind ?? t('hub.card.monitor')}`, fg(P.rose)]]
   if (a.need === 'permission')
     return hint([
       ['a', t('hub.keys.allow')],
@@ -166,7 +170,7 @@ function lineCard(name: Lane, a: Agent, label: string, age: string, w: number, o
   const done = name === 'done'
   const mark: Span[] = done ? [['✓ ', fg(P.green)]] : a.stopped ? [[`${STOPPED.glyph} `, fg(STOPPED.color)]] : []
   const left: Span[] = [
-    [on ? ' ▌' : '  ', fg(P.blue)],
+    [on ? ' ▌' : '  ', fg(ACCENT)],
     ...mark,
     [clean(a.repo), fg(P.sub)],
     [` ${label}`, done ? fg(P.text) : a.stopped ? fg(P.sub) : BOLD + fg(P.text)],
@@ -182,7 +186,7 @@ export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, 
   const age = ago(name === 'working' ? a.stateSince : a.since, now)
   if (hgt === 1) return [lineCard(name, a, label, age, w, on, ctx.win)]
   const title: Span[] = [
-    [` ${clean(a.repo)}`, BOLD + fg(on ? P.blue : P.text)],
+    [` ${clean(a.repo)}`, BOLD + fg(on ? ACCENT : P.text)],
     [`${clean(placeOf(a))} `, fg(P.sub)],
   ]
   const right: Span[] = [[` ${where(a, ctx.win)} · ${age} `, fg(P.sub)]]
@@ -194,7 +198,7 @@ export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, 
   const named: Span = [label, BOLD + fg(P.text)]
   const lines: BoxLine[] =
     hgt >= 4 ? [[named], { left: doing, right: [['  ', ''], ...cardNote(name, a, raised)] }] : [[named, [' · ', fg(P.overlay1)], ...doing]]
-  const border = on ? P.blue : a.need === 'monitor' ? P.teal : P.surface1
+  const border = on ? ACCENT : a.need === 'monitor' ? P.rose : P.surface1
   return box(title, right, lines, w, border, on ? SEL_BG : CARD_BG)
 }
 
@@ -245,10 +249,10 @@ function filterSpans(ui: HubUi): Span[] {
   // caret is inside it, so the header doesn't shift as it moves.
   const fw = width(clean(ui.filter)) + 1
   const typed = field({ text: ui.filter, at: ui.filterAt, w: fw, focused: ui.filtering })
-  return [['/', fg(P.yellow)], ...typed, [' '.repeat(fw - spanWidth(typed) + 2), '']]
+  return [['/', fg(ACCENT)], ...typed, [' '.repeat(fw - spanWidth(typed) + 2), '']]
 }
 
-function summary(b: Board, c: Counts, W: number) {
+function summary(b: Pick<Board, 'ui' | 'hits' | 'acts'>, c: Counts, W: number) {
   const { ui } = b
   const tasks = t('hub.summary.tasks', { n: c.needs + c.working + c.done + c.idle })
   const left: Span[] = [
@@ -257,7 +261,7 @@ function summary(b: Board, c: Counts, W: number) {
     [`  ✻ ${t('hub.summary.working', { n: c.working })}`, fg(P.blue)],
     [`  ✓ ${t('hub.summary.done', { n: c.done })}`, fg(P.green)],
     [`  ○ ${t('hub.summary.idle', { n: c.idle })}`, fg(P.sub)],
-    [`  ◉ ${t('hub.summary.watching', { n: c.watching })}`, fg(P.teal)],
+    [`  ◉ ${t('hub.summary.watching', { n: c.watching })}`, fg(P.rose)],
   ]
   const right = filterSpans(ui)
   const button = newButton(t('hub.newAgent'))
@@ -305,7 +309,7 @@ function tagColor({ tag, line }: { tag: string; line: string }, prefs: HubPrefs)
   if (result === 'canceled' || result === 'skipped') return P.sub
   if (prefs.broke.has(tag)) return P.red
   if (prefs.attention.has(tag)) return P.peach
-  return /comment|review/.test(tag) ? P.mauve : P.teal
+  return /comment|review/.test(tag) ? P.mauve : P.rose
 }
 
 // Column widths of a monitor's row before its last event, which takes the rest.
@@ -319,7 +323,7 @@ function monitorRow(m: Monitored, on: boolean, w: number, ui: HubUi, prefs: HubP
   const ev = m.event
   const stateCol = render(
     [
-      [on ? ' ▌' : '  ', fg(P.blue)],
+      [on ? ' ▌' : '  ', fg(ACCENT)],
       [`${look.glyph} ${look.name}`, BOLD + fg(look.color)],
     ],
     STATE_COLS,
@@ -380,7 +384,50 @@ const boardKeys = (focus: Focus, agents: readonly Agent[]): Hint[] => [
   ['/', t('hints.filter')],
 ]
 
-export function boardFrame(ui: HubUi, prefs: HubPrefs, { w: W, h: H }: Size, acts: ClickActs): HubFrame {
+// ------------------------------------------------------------ nothing running
+
+// No agent at all, and no filter hiding any: the board shows the gear.
+export const quiet = (ui: Pick<HubUi, 'agents' | 'filter'>): boolean => ui.agents.length === 0 && !ui.filter
+
+const SPLASH_KEYS: Hint[] = [
+  ['n', t('hub.keys.new')],
+  ['q', t('hub.keys.workspace')],
+]
+
+// In place of the lanes and the monitors: the gear (left out until hub.ts
+// can draw it, or when it won't fit), the name, and a way to start an agent.
+function splashFrame(ui: HubUi, { w: W, h: H }: Size, acts: ClickActs): HubFrame {
+  const hits: Hit[] = []
+  const foot = footer(ui, SPLASH_KEYS, W)
+  // Under the summary and its blank row, over a blank row and the footer.
+  const panel = Math.max(0, H - 3 - foot.length)
+  const blank = render([], W, LANE_BG)
+  const centred = (spans: Span[]) => render([[' '.repeat(Math.max(0, Math.floor((W - spanWidth(spans)) / 2)))], ...spans], W, LANE_BG)
+  const button = newButton(t('hub.newAgent'))
+  const choice: Span[] = [...button.spans, [`  ${t('hub.splash.or')}   `, fg(P.sub)], ['q', BOLD + fg(P.text)], [` ${t('hub.splash.back')}`, fg(P.sub)]]
+  const words = [
+    centred([[[...t('hub.splash.name')].join(' '), BOLD + fg(P.text)]]),
+    blank,
+    centred([[t('hub.splash.quiet'), ITALIC + fg(P.sub)]]),
+    blank,
+    centred(choice),
+  ]
+  const gear = ui.splash && ui.splash.rows.length + 1 + words.length <= panel ? ui.splash : null
+  const block = gear ? [...gear.rows.map(cells => centredRow(cells, gear.cols, W, LANE_BG)), blank, ...words] : words
+  const top = Math.max(0, Math.floor((panel - block.length) / 2))
+  const body = Array.from({ length: panel }, (_, r) => block[r - top] ?? blank)
+  const lines = [summary({ ui, hits, acts }, counts(ui.agents), W), render([], W), ...body, render([], W)]
+  // The choice is the block's last row; rows count from 1, under two above.
+  const x1 = Math.max(0, Math.floor((W - spanWidth(choice)) / 2)) + 1
+  if (top + block.length <= panel) hits.push({ x1, x2: x1 + button.cells - 1, y1: top + block.length + 2, y2: top + block.length + 2, act: acts.newAgent })
+  return { lines: [...lines.slice(0, H - foot.length), ...foot], hits, focus: ui.focus, selected: { ...ui.selected }, scroll: { ...ui.scroll }, listSel: ui.listSel }
+}
+
+// ------------------------------------------------------------ the board
+
+export function boardFrame(ui: HubUi, prefs: HubPrefs, size: Size, acts: ClickActs): HubFrame {
+  if (quiet(ui)) return splashFrame(ui, size, acts)
+  const { w: W, h: H } = size
   const l = lanes(ui.agents)
   const strip = monitorsOf(ui.agents)
   const selected = { ...ui.selected }
@@ -429,7 +476,7 @@ function listRows(it: ListItem, W: number, ui: HubUi, listSel: string | null): s
   return [
     split(
       [
-        open ? [' ▶ ', fg(P.blue)] : a.stopped ? [` ${STOPPED.glyph} `, fg(STOPPED.color)] : ['   ', ''],
+        open ? [' ▶ ', fg(ACCENT)] : a.stopped ? [` ${STOPPED.glyph} `, fg(STOPPED.color)] : ['   ', ''],
         [clean(a.title), BOLD + fg(a.stopped ? P.sub : P.text)],
       ],
       [[` ${ago(a.since, ui.now)} `, fg(P.sub)]],
@@ -448,7 +495,7 @@ export function listFrame(ui: HubUi, prefs: HubPrefs, { w: W, h: H }: Size, acts
   const { peek } = ui
   const button = newButton(t('hub.new'))
   const back: Span[] = [[' ', ''], ...buttonSpans(`◂ ${t('hub.board')}`, { key: 'ctrl+shift+b', color: P.text, round: true })]
-  const title: Span[] = [[` ${t('hub.title')}`, BOLD + fg(P.blue)]]
+  const title: Span[] = [[` ${t('hub.title')}`, BOLD + fg(ACCENT)]]
   const lines = [split(peek ? back : title, [...filterSpans(ui), ...button.spans], W), render([], W)]
   hits.push({ x1: W - button.cells + 1, x2: W, y1: 1, y2: 1, act: acts.newAgent })
   hits.push({ x1: 1, x2: spanWidth(back), y1: 1, y2: 1, act: acts.closePeek })

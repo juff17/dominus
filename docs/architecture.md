@@ -40,7 +40,9 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │                            complete (path completion for path fields),
 │                            controls (the shared radio, select, field, chips, button,
 │                            confirm, header and frame), overlay (every popup's frame,
-│                            keys and clicks), backdrop (the window behind it, dimmed)
+│                            keys and clicks), backdrop (the window behind it, dimmed),
+│                            kitty (the graphics protocol), png, gear and gear-art (the
+│                            Dominus gear the rail and the empty board draw)
 ├── agents/                  agentd (the process), tick (one tick), daemon (scan helpers),
 │                            transcript, classify, board (lanes), launch, client, text, warn,
 │                            stop (stopping one monitor, for the hub and Monitors),
@@ -57,7 +59,7 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
     ├── todo/                todo-view (entry), state, draw, effects, todo-ui (keys), todo (store)
     ├── diff/                diff-view (entry), effects, diff (parsing), diff-rows (drawing)
     ├── diagrams/            diagram-view (entry), state, draw, effects, diagram (pane file,
-    │                        keys), kitty (the graphics protocol)
+    │                        keys)
     ├── approvals/           approvals (state and keys), draw, effects: the approvals panel
     │                        Monitors opens beside Running
     ├── help/                help-view (entry), state, draw, help (the sections)
@@ -190,8 +192,15 @@ pre-commit run it too). The settings are in `tsconfig.json`, with `strict` on.
   fails if any other source file lists model names.
 - **A tray item kind:** its row type in `tray/rows.ts`, a row builder in
   `tray/items.ts`; its buttons' actions in `tray/tray.ts`'s `ACTS` table;
-  its glyph and colour in `tui/palette.ts`, which `mocha.js` must match
+  its glyph and colour in `tui/palette.ts`, which the tray's `palette.js` must match
   (contract test).
+- **The theme colour:** `ACCENT` (and `ACCENT_INK`, the text on it) in
+  `tui/palette.ts`. Focus, selection, titles, frames, buttons and keys use
+  it, never a hue from `P`; the state colours (`STATE`, `MONITOR`) stay
+  their own. The copies outside TypeScript are tmux's `@accent` in
+  `theme.conf`, yazi's `init.lua` and `theme.toml`, the tray's `palette.js`,
+  and Ghostty's colours in `config.ghostty`; the colours contract test holds
+  each to the palette.
 - **A babysit proposal kind:** a kind in pr-babysit's `approval.py`, and
   a row in `tray/approvals.ts`'s `APPROVE` table. `ProposalKind` is that
   table's keys, so tsc then points at each other table (`GLYPH`, `DETAIL`,

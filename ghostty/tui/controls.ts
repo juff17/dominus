@@ -5,7 +5,7 @@
 import { t } from '../core/text.ts'
 import { type Hint, hintSpans } from './chrome.ts'
 import { caretParts, head as fitHead, length } from './line.ts'
-import { BOLD, CAP_L, CAP_R, ITALIC, type Line, P, RESET, type Span, bg, clean, fg, render, spanWidth, split, width } from './term.ts'
+import { ACCENT, ACCENT_INK, BOLD, CAP_L, CAP_R, ITALIC, type Line, P, RESET, type Span, bg, clean, fg, render, spanWidth, split, width } from './term.ts'
 
 // Screens take it from here with the controls.
 export { spanWidth }
@@ -39,11 +39,11 @@ const REVERSE = '\x1b[7m'
 
 export const ansi = (spans: Line): string => spans.map(([s, style = '']) => (style ? `${style}${s}${RESET}` : s)).join('')
 
-export const fieldLabel = (name: string, focused: boolean, w: number, accent = P.blue): Span[] => [[name.padEnd(w), fg(focused ? accent : P.sub)]]
+export const fieldLabel = (name: string, focused: boolean, w: number, accent = ACCENT): Span[] => [[name.padEnd(w), fg(focused ? accent : P.sub)]]
 
-export function radio(options: readonly RadioOption[], at: number, { color = P.blue }: RadioOptions = {}): Span[] {
+export function radio(options: readonly RadioOption[], at: number, { color = ACCENT }: RadioOptions = {}): Span[] {
   return options.flatMap((o, i): Span[] => [
-    ...(o.key !== undefined ? [[`${o.key} `, fg(P.blue)] as const] : []),
+    ...(o.key !== undefined ? [[`${o.key} `, fg(ACCENT)] as const] : []),
     [`${i === at ? '●' : '○'} `, fg(o.off ? P.surface2 : (o.color ?? color))],
     [o.label, i === at ? BOLD + fg(P.text) : fg(o.off ? P.surface2 : P.sub)],
     ...(i < options.length - 1 ? [['   ', ''] as const] : []),
@@ -51,7 +51,7 @@ export function radio(options: readonly RadioOption[], at: number, { color = P.b
 }
 
 export function select(value: string, focused = false): Span[] {
-  const arrows = fg(focused ? P.blue : P.overlay0)
+  const arrows = fg(focused ? ACCENT : P.overlay0)
   return [['‹ ', arrows], [value, focused ? BOLD + fg(P.text) : fg(P.text)], [' ›', arrows]]
 }
 
@@ -60,7 +60,7 @@ export const onOff = (on: boolean): Span[] => [[on ? `● ${t('controls.on')}` :
 export const checks = <V>(options: readonly CheckOption<V>[], values: readonly V[], at = -1): Span[] =>
   options.flatMap((o, i): Span[] => {
     const on = values.includes(o.value)
-    return [[`${on ? '■' : '□'} ${o.label}`, i === at ? BOLD + fg(P.blue) : fg(on ? P.text : P.sub)], ...(i < options.length - 1 ? [[' ', ''] as const] : [])]
+    return [[`${on ? '■' : '□'} ${o.label}`, i === at ? BOLD + fg(ACCENT) : fg(on ? P.text : P.sub)], ...(i < options.length - 1 ? [[' ', ''] as const] : [])]
   })
 
 // `ghost` is the rest of a suggestion, drawn dim after the text with the
@@ -100,14 +100,14 @@ export function chips(names: readonly string[], at: number, w: number, { lead = 
   for (; i < names.length; i++) {
     const c = width(names[i]) + 3
     if (used + c + (i < names.length - 1 ? MORE : 0) > room) break
-    spans.push([` ${names[i]} `, i === at ? fg(P.crust) + bg(P.blue) : fg(P.text) + bg(P.surface0)], [' ', ''])
+    spans.push([` ${names[i]} `, i === at ? fg(ACCENT_INK) + bg(ACCENT) : fg(P.text) + bg(P.surface0)], [' ', ''])
     used += c
   }
   if (i < names.length) spans.push([t('controls.more', { n: names.length - i }), fg(P.overlay1)])
   return spans
 }
 
-export function button(label: string, { key, main = false, focused = false, color = P.blue, round = false }: ButtonOptions = {}): Span[] {
+export function button(label: string, { key, main = false, focused = false, color = ACCENT, round = false }: ButtonOptions = {}): Span[] {
   const filled = main || focused
   const spans: Span[] = [
     [` ${label} `, filled ? BOLD + fg(P.crust) + bg(color) : fg(color) + bg(P.surface0)],
@@ -139,19 +139,19 @@ export const titleText = (title: HeaderTitle): string => (typeof title === 'stri
 export const closeHintWidth = (close: string): number => spanWidth(closeHint(` ${close}`))
 
 export function header(title: HeaderTitle, w: number, { close = 'esc', right = [], fill = bg(P.base) }: HeaderOptions = {}): string {
-  return split([[` ${titleText(title)}`, BOLD + fg(P.blue)]], [...right, ...closeHint(close)], w, fill)
+  return split([[` ${titleText(title)}`, BOLD + fg(ACCENT)]], [...right, ...closeHint(close)], w, fill)
 }
 
-export function frameTop(w: number, { title = '', close, color = P.blue, fill = '' }: FrameTopOptions = {}): string {
+export function frameTop(w: number, { title = '', close, color = ACCENT, fill = '' }: FrameTopOptions = {}): string {
   const edge = fg(color) + fill
-  const name: Span[] = title ? [[` ${title} `, BOLD + fg(P.blue) + fill]] : []
+  const name: Span[] = title ? [[` ${title} `, BOLD + fg(ACCENT) + fill]] : []
   const right = close ? closeHint(` ${close}`, fill) : []
   const dashes = Math.max(0, w - 4 - spanWidth(name) - spanWidth(right))
   return render([['╭─', edge], ...name, ['─'.repeat(dashes), edge], ...right, ['─╮', edge]], w, fill)
 }
-export const frameBottom = (w: number, { color = P.blue, fill = '' }: FrameStyle = {}): string =>
+export const frameBottom = (w: number, { color = ACCENT, fill = '' }: FrameStyle = {}): string =>
   render([[`╰${'─'.repeat(Math.max(0, w - 2))}╯`, fg(color) + fill]], w, fill)
-export function frameRow(spans: Line, w: number, { color = P.blue, fill = '', inner = fill }: FrameRowOptions = {}): string {
+export function frameRow(spans: Line, w: number, { color = ACCENT, fill = '', inner = fill }: FrameRowOptions = {}): string {
   const side = render([['│', fg(color) + fill]], 1, fill)
   return side + render([[' ', inner], ...spans], w - 2, inner) + side
 }

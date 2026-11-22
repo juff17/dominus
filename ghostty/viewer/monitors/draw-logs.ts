@@ -20,11 +20,11 @@ export const TASK_ROWS = 3
 
 function label(l: LogsState, f: LogsField): Span[] {
   const on = l.field === f
-  return [[' '.repeat(MARGIN)], [`${on ? '▸ ' : '  '}${L(`fields.${f}`)}`.padEnd(LABEL), on ? BOLD + fg(P.teal) : fg(P.overlay2)]]
+  return [[' '.repeat(MARGIN)], [`${on ? '▸ ' : '  '}${L(`fields.${f}`)}`.padEnd(LABEL), on ? BOLD + fg(P.rose) : fg(P.overlay2)]]
 }
 
 function chip(name: string, picked: boolean, focused: boolean, red: boolean, open: boolean): Span {
-  if (picked) return [` ${name} `, BOLD + (focused ? fg(P.crust) + bg(P.teal) : fg(P.text) + bg(P.surface1))]
+  if (picked) return [` ${name} `, BOLD + (focused ? fg(P.crust) + bg(P.rose) : fg(P.text) + bg(P.surface1))]
   if (!open) return [` ${name} `, fg(P.surface2) + bg(P.mantle)]
   return [` ${name} `, fg(red ? P.red : P.sub) + bg(P.surface0)]
 }
@@ -73,7 +73,7 @@ export function logsBody(s: { logs: LogsState }, w: number, height: number): str
   lines.push(blank(w))
   const can = sourcesFor(l, l.env)
   const options = SOURCES.map(src => ({ label: L(`sources.${src}`), off: !can.includes(src) }))
-  lines.push(pad([...label(l, 'source'), ...radio(options, SOURCES.indexOf(l.source), { color: l.field === 'source' ? P.teal : P.overlay2 })]))
+  lines.push(pad([...label(l, 'source'), ...radio(options, SOURCES.indexOf(l.source), { color: l.field === 'source' ? P.rose : P.overlay2 })]))
   const note = sourceNote(l)
   if (note) lines.push(pad([[' '.repeat(MARGIN + LABEL)], [note, DIM]]))
   lines.push(blank(w))
@@ -85,7 +85,7 @@ export function logsBody(s: { logs: LogsState }, w: number, height: number): str
   for (const f of ['level', 'for', 'model', 'effort'] as const) lines.push(pad([...label(l, f), ...select(value[f], l.field === f)]))
   lines.push(blank(w))
   const info = L('info', { env: l.env, source: L(`sources.${l.source}`), folder: tilde(l.folder || '~') })
-  lines.push(pad([[' '.repeat(MARGIN + LABEL)], ...button(L('start'), { key: ' ctrl+s', main: true, color: P.teal }), ['   '], [info, fg(P.overlay2)]]))
+  lines.push(pad([[' '.repeat(MARGIN + LABEL)], ...button(L('start'), { key: ' ctrl+s', main: true, color: P.rose }), ['   '], [info, fg(P.overlay2)]]))
   while (lines.length < height) lines.push(blank(w))
   return lines.slice(0, height)
 }

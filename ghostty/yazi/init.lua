@@ -2,6 +2,10 @@
 -- a tab per mode that's on above the path, names without icons (folders end
 -- in /), and a status bar with only the mode, name, permissions and position.
 
+-- The theme colour and the text on it: ACCENT and ACCENT_INK in
+-- tui/palette.ts, held equal by tests/contract/colours.test.mjs.
+local ACCENT, ACCENT_INK = "#5fcca9", "#0a0b0b"
+
 -- bin/ghostty-viewer names the modes that are on in GV_MODES, joined by tabs,
 -- and which of them this is in GV_AT, counted from 0 (viewer/modes.ts).
 local TABS, AT = {}, tonumber(os.getenv("GV_AT") or "") or 0
@@ -9,7 +13,7 @@ for name in string.gmatch(os.getenv("GV_MODES") or "Files", "[^\t]+") do
 	local here = #TABS == AT
 	TABS[#TABS + 1] = {
 		" " .. name .. " ",
-		here and ui.Style():fg("#11111b"):bg("#cdd6f4"):bold() or ui.Style():fg("#a6adc8"):bold(),
+		here and ui.Style():fg(ACCENT_INK):bg(ACCENT):bold() or ui.Style():fg("#a2bdb5"):bold(),
 	}
 end
 
@@ -40,7 +44,7 @@ function Header:redraw()
 
 	local right = self:children_redraw(self.RIGHT)
 	self._right_width = right:width()
-	local switch = #TABS > 1 and { ui.Span("tab"):fg("#89b4fa"), ui.Span(" switch"):fg("#a6adc8") } or {}
+	local switch = #TABS > 1 and { ui.Span("tab"):fg(ACCENT), ui.Span(" switch"):fg("#a2bdb5") } or {}
 	return {
 		ui.Line(tabs):area(top),
 		ui.Line(switch):area(top):align(ui.Align.RIGHT),
@@ -87,6 +91,6 @@ function Status:position()
 	local cursor, length = self._current.cursor, #self._current.files
 	return ui.Line {
 		"  ",
-		ui.Span(string.format("%d/%d ", math.min(cursor + 1, length), length)):fg("#cdd6f4"),
+		ui.Span(string.format("%d/%d ", math.min(cursor + 1, length), length)):fg("#d9e9e3"),
 	}
 end

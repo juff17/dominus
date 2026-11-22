@@ -10,6 +10,10 @@
 // 256-colour indexes, so each stays under 256.
 export type ImageId = number
 export type PlacementId = number
+// Image ids belong to the whole Ghostty surface, not to a tmux pane, so each
+// view that draws pictures keeps to its own: Diagrams 1 and 2 in the viewer
+// pane and 3 and 4 in the Alt+D window (viewer/diagrams/diagram.ts), the
+// rail's gear 5 and 6, and the empty board's 7 (tui/gear.ts).
 
 // tmux only passes graphics commands on to the terminal when they're wrapped,
 // with every escape doubled.
@@ -40,6 +44,9 @@ const RANGES: readonly (readonly [from: number, to?: number])[] = [
 export const DIACRITICS: readonly string[] = RANGES.flatMap(([from, to = from]) =>
   Array.from({ length: to - from + 1 }, (_, i) => String.fromCodePoint(from + i)),
 )
+// A picture is a grid of placeholder cells, which can't have more rows or
+// columns than there are diacritics to number them.
+export const MAX_GRID = DIACRITICS.length
 
 // Scales the whole image into a grid of cols × rows placeholder cells.
 export const placeGrid = (id: ImageId, pid: PlacementId, cols: number, rows: number): string => command(`a=p,U=1,i=${id},p=${pid},c=${cols},r=${rows}`)

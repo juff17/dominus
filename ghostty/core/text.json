@@ -1691,6 +1691,12 @@
     "newAgent": "New agent",
     "new": "New",
     "board": "Board",
+    "splash": {
+      "name": "DOMINUS",
+      "quiet": "All quiet. No agent is running.",
+      "or": "or",
+      "back": "back to the workspace"
+    },
     "summary": {
       "tasks": {
         "one": "{n} task",

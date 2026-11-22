@@ -17,7 +17,7 @@ import { writeFileSync } from 'node:fs'
 import { checkbox, confirm, input, select, Separator } from '@inquirer/prompts'
 
 import { errorMessage, logger } from '../../ghostty/core/log.ts'
-import { BOLD, fg, P } from '../../ghostty/tui/palette.ts'
+import { ACCENT, BOLD, fg, P } from '../../ghostty/tui/palette.ts'
 import { load, row, set } from '../../ghostty/settings/settings.ts'
 import { type Answers, loadAnswers, saveAnswers } from './answers.ts'
 import { type Current, type Picked, type Prompts, runPages } from './pages.ts'
@@ -28,15 +28,15 @@ const log = logger('install')
 const RESET = '\x1b[0m'
 const c = (hex: string, s: string): string => `${fg(hex)}${s}\x1b[39m`
 
-// Catppuccin Mocha as the hub draws it: peach is what needs you.
+// The hub's palette (tui/palette.ts), in the theme colour.
 const theme = {
-  prefix: { idle: c(P.peach, '?'), done: c(P.green, '✔') },
-  icon: { checked: c(P.peach, '◉'), unchecked: c(P.overlay2, '◯'), cursor: c(P.peach, '❯') },
+  prefix: { idle: c(ACCENT, '?'), done: c(P.green, '✔') },
+  icon: { checked: c(ACCENT, '◉'), unchecked: c(P.overlay2, '◯'), cursor: c(ACCENT, '❯') },
   style: {
-    highlight: (s: string) => c(P.peach, s),
+    highlight: (s: string) => c(ACCENT, s),
     description: (s: string) => c(P.sub, s),
     disabled: (s: string) => c(P.overlay2, s),
-    answer: (s: string) => c(P.peach, s),
+    answer: (s: string) => c(ACCENT, s),
     keysHelpTip: (keys: [string, string][]) =>
       keys.map(([key, action]) => `${BOLD}${key}${RESET} ${c(P.overlay2, action)}`).join(c(P.overlay2, ' • ')),
   },

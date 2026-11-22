@@ -30,7 +30,7 @@ export const CATEGORIES = [
   { name: 'bug', short: 'bug', color: P.red },
   { name: 'feature', short: 'feat', color: P.blue },
   { name: 'follow-up', short: 'follow', color: P.mauve },
-  { name: 'docs', short: 'docs', color: P.teal },
+  { name: 'docs', short: 'docs', color: P.rose },
   { name: 'question', short: 'ask', color: P.yellow },
   { name: 'other', short: 'other', color: P.sub },
 ] as const

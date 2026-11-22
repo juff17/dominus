@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import "mocha.js" as M
+import "palette.js" as M
 import "reply.js" as R
 
 Rectangle {
@@ -148,9 +148,9 @@ Rectangle {
     }
 
     readonly property var fills: ["allow", "post", "push", "run", "retry", "approve", "move", "again"]
-    readonly property var blues: ["go", "edit", "review"]
+    readonly property var accents: ["go", "edit", "review"]
     function lookOf(action) {
-        return fills.indexOf(action) >= 0 ? "fill" : blues.indexOf(action) >= 0 ? "blue" : "plain"
+        return fills.indexOf(action) >= 0 ? "fill" : accents.indexOf(action) >= 0 ? "accent" : "plain"
     }
 
     component Buttons: Row {

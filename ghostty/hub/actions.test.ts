@@ -354,7 +354,7 @@ test('New agent needs tmux to show its popup', async () => {
 
 // The overlay's argv up to the form's command: borderless, the window's size,
 // told which window to dim.
-const overlayArgs = (under: string) => ['display-popup', '-E', '-B', '-t', '%1', '-w', '100%', '-h', '100%', '-s', 'bg=#11111b', '-e', `OV_UNDER=${under}`]
+const overlayArgs = (under: string) => ['display-popup', '-E', '-B', '-t', '%1', '-w', '100%', '-h', '100%', '-s', 'bg=#0a0b0b', '-e', `OV_UNDER=${under}`]
 
 test('New agent opens the form as an overlay over the hub’s window, then starts the agent in the background', async () => {
   let w: ReturnType<typeof world> | undefined

@@ -226,7 +226,7 @@ test("step writes state.json and marks the tab, leaving the hub's tabs alone, th
   assert.deepEqual(state.agents.map(a => a.id).sort(), IDS)
   assert.equal(existsSync(join(run, 'state.json.4242')), false, 'written through a temp file named for the pid')
   assert.deepEqual(tmux.tmuxCalls(), [
-    ['tmux', '-L', 'tabs-sock', 'set', '-w', '-t', '@1', '@agent', '▲', ';', 'set', '-w', '-t', '@1', '@agent_fg', '#fab387'],
+    ['tmux', '-L', 'tabs-sock', 'set', '-w', '-t', '@1', '@agent', '▲', ';', 'set', '-w', '-t', '@1', '@agent_fg', '#ffa04d'],
   ])
   // Nothing changed: no new state, no tmux but the lists.
   tick(1000)
@@ -242,7 +242,7 @@ test('a workspace tab an earlier version linked into the hub is unlinked, by the
   const { d, tmux } = agentd({ linkedAfter: 1 })
   await d.step()
   assert.deepEqual(tmux.tmuxCalls(), [
-    ['tmux', '-L', 'tabs-sock', 'set', '-w', '-t', '@1', '@agent', '▲', ';', 'set', '-w', '-t', '@1', '@agent_fg', '#fab387'],
+    ['tmux', '-L', 'tabs-sock', 'set', '-w', '-t', '@1', '@agent', '▲', ';', 'set', '-w', '-t', '@1', '@agent_fg', '#ffa04d'],
     ['tmux', '-L', 'tabs-sock', 'unlink-window', '-t', '=hubtabs-1:1'],
   ])
 })

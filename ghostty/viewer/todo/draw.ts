@@ -8,7 +8,7 @@ import { LONGEST_MODEL_ID, modelLabel, modelName } from '../../settings/models.t
 import { type Settings, load as loadSettings } from '../../settings/settings.ts'
 import { type Hint, keyHints, keyHintsWidth, modeHeader, switchCol } from '../../tui/chrome.ts'
 import { ansi, chips, confirm, field, fieldLabel, radio, select, spanWidth } from '../../tui/controls.ts'
-import { BG, BOLD, FG, ITALIC, P, RESET, STRIKE, fg } from '../../tui/palette.ts'
+import { ACCENT, BG, BOLD, FG, ITALIC, P, RESET, STRIKE, fg } from '../../tui/palette.ts'
 import { frame as screenFrame } from '../../tui/screen.ts'
 import { type Span, render } from '../../tui/term.ts'
 import { fit, visible, wrapText as wrap } from '../../tui/text.ts'
@@ -33,12 +33,11 @@ const C = {
   green: FG.green,
   peach: FG.peach,
   red: FG.red,
-  mauve: FG.mauve,
-  crust: FG.crust,
+  accent: FG.accent,
+  ink: FG.accentInk,
   cursorBg: BG.surface0,
   cardBg: BG.mantle,
-  pillBg: BG.mauve,
-  claudeBg: BG.peach,
+  pillBg: BG.accent,
   bold: BOLD,
   italic: ITALIC,
   strike: STRIKE,
@@ -69,7 +68,7 @@ export const TITLE = t('settings.modes.todo.name')
 
 function summary({ s, cols }: Frame, view: Arranged): string {
   const scope = s.only ? ui.scopeName(s.here.repo) : t('todo.allRepos')
-  const left = `${C.blue}${C.bold}${t('todo.summary', { n: view.open, scope })}${C.reset}`
+  const left = `${C.accent}${C.bold}${t('todo.summary', { n: view.open, scope })}${C.reset}`
   const right = t('todo.byCategory')
   return `${left}\x1b[${cols - ui.cells(right)}G${C.sub}${right}${C.reset}`
 }
@@ -80,7 +79,7 @@ function itemRow({ s, cols, now }: Frame, item: Item, selected: boolean): string
   const back = selected ? C.cursorBg : ''
   // ☑ has an emoji form that some fonts draw two cells wide; ✓ stays one.
   const box = item.done ? `${C.green}✓${C.reset}${back}` : '☐'
-  const mark = s.marked.has(item.id) ? `${C.mauve}▌${C.reset}${back}` : ' '
+  const mark = s.marked.has(item.id) ? `${C.accent}▌${C.reset}${back}` : ' '
   // ✻, as the hub marks a Claude at work: it's been handed to an agent.
   const agent = item.handoff ? `${C.blue}✻ ${C.reset}${back}` : ''
   const right = `${repoName(item.repo)} · ${age(now - (item.done || item.created))}`
@@ -193,7 +192,7 @@ function editRows(f: Frame, prompt: EditPrompt, w: number): string[] {
   const room = Math.max(4, w - LABEL_W)
   return EDIT_FIELDS.flatMap(name => {
     const on = prompt.field === name
-    const label = ansi(fieldLabel(fieldName(name), on, LABEL_W, P.mauve))
+    const label = ansi(fieldLabel(fieldName(name), on, LABEL_W))
     return EDIT_LINES[name](prompt, on, room).map((line, i) => cardLine(f, `${i ? ' '.repeat(LABEL_W) : label}${line}`))
   })
 }
@@ -275,7 +274,7 @@ function emptyRows({ s, cols }: Frame, height: number): BodyRow[] {
   return rows
 }
 
-const pill = (label: string, back: string): string => `${back}${C.crust}${C.bold} ${label} ${C.reset}`
+const pill = (label: string, back: string): string => `${back}${C.ink}${C.bold} ${label} ${C.reset}`
 const pillWidth = (label: string): number => ui.cells(label) + 2
 
 // width is text's width in cells, without its escape codes.
@@ -285,7 +284,7 @@ function trail(at: AddStep): Side {
   const parts = FIELDS.map((step, i) => {
     const name = fieldName(step)
     if (i < FIELDS.indexOf(at)) return { text: `✓ ${name}`, color: C.sub }
-    return step === at ? { text: name, color: `${C.mauve}${C.bold}` } : { text: name, color: C.hint }
+    return step === at ? { text: name, color: `${C.accent}${C.bold}` } : { text: name, color: C.hint }
   })
   return {
     text: parts.map(p => `${p.color}${p.text}${C.reset}`).join(`${C.hint} › ${C.reset}`),
@@ -305,7 +304,7 @@ function inputRow(cols: number, label: string, pillBg: string, text: string, pla
 
 const noteLine = (said: { text: string; color: string }, cols: number): string => `${fg(said.color)}${fit(said.text, cols - 1)}${C.reset}`
 
-const choice = (key: string, value: string): Span[] => [[`${key} `, fg(P.blue)], ...select(value)]
+const choice = (key: string, value: string): Span[] => [[`${key} `, fg(ACCENT)], ...select(value)]
 const joinChoices = (list: readonly Span[][]): Span[] => list.flatMap((c, i): Span[] => [...(i ? [['  ', ''] as const] : []), ...c])
 const longest = (...words: string[]): string => words.reduce((a, b) => (ui.cells(b) > ui.cells(a) ? b : a))
 
@@ -323,7 +322,7 @@ function handoffRow(f: Frame, prompt: HandoffPrompt): string {
     : [...choice('b', t(prompt.worktree ? 'todo.handOff.worktree' : 'todo.handOff.thisBranch')), ...(why ? [[` · ${why}`, fg(P.sub)] as const] : [])]
   const choices = joinChoices([branch, choice('m', prompt.model)])
   const label = t('todo.pills.handOff')
-  const lead = `${pill(label, C.claudeBg)} ${C.sub}${t('todo.handOff.count', { n })}${C.reset} ${ansi(choices)}`
+  const lead = `${pill(label, C.pillBg)} ${C.sub}${t('todo.handOff.count', { n })}${C.reset} ${ansi(choices)}`
   // The keys show only where the widest row leaves room, so they don't come
   // and go as the choices change.
   const widest = joinChoices([
@@ -376,7 +375,7 @@ function promptStatus(f: Frame, prompt: Prompt): string {
       const values = f.settings()
       const model = `${modelLabel(values['todo.filing.model'])} · ${values['todo.filing.effort']}`
       const side = { text: `${C.hint}${model}${C.reset}`, width: ui.cells(model) }
-      return inputRow(cols, t('todo.pills.claude'), C.claudeBg, prompt.text, t('todo.placeholders.claude'), side, prompt.at)
+      return inputRow(cols, t('todo.pills.claude'), C.pillBg, prompt.text, t('todo.placeholders.claude'), side, prompt.at)
     }
     case 'title':
     case 'note':

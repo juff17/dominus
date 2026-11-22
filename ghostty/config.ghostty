@@ -1,4 +1,29 @@
-theme = Catppuccin Mocha
+# Verdigris, the hub's palette (tui/palette.ts), for the terminal itself, so
+# the tabs, shells, btop and Claude Code sit on the hub's background. ANSI
+# 1 to 6 are its red, green, yellow, blue, rose and patina, the brights the
+# same; tests/contract/colours.test.mjs holds them to the palette.
+background = #161818
+foreground = #d9e9e3
+cursor-color = #5fcca9
+cursor-text = #0a0b0b
+selection-background = #373d3c
+selection-foreground = #d9e9e3
+palette = 0=#373d3c
+palette = 1=#f2647e
+palette = 2=#a6e35f
+palette = 3=#e6d27c
+palette = 4=#86afe2
+palette = 5=#d98bc4
+palette = 6=#5fcca9
+palette = 7=#bed3cc
+palette = 8=#61706c
+palette = 9=#f2647e
+palette = 10=#a6e35f
+palette = 11=#e6d27c
+palette = 12=#86afe2
+palette = 13=#d98bc4
+palette = 14=#5fcca9
+palette = 15=#a2bdb5
 
 # Every new split, tab and window runs ghostty-surface. In a new window it
 # starts the layout's tmux: btop on top, the tabs below. Other splits get your

@@ -104,7 +104,7 @@ function fileRow(file: DiffFile, i: number, most: number): string {
 const diffRow = (row: DiffRow): string => drawDiff(row, width())
 
 function statusRow(): string {
-  const left = `${C.pillBg}${C.crust}${C.bold} ${t('diff.pill')} ${C.reset}  ${hint([['enter', t('hints.open')], ['j k', t('hints.move')]])}`
+  const left = `${C.pillBg}${C.ink}${C.bold} ${t('diff.pill')} ${C.reset}  ${hint([['enter', t('hints.open')], ['j k', t('hints.move')]])}`
   if (!s.files.length) return left
   const position = `${s.cursor + 1}/${s.files.length} `
   return `${left}\x1b[${Math.max(1, width() - position.length + 1)}G${C.text}${position}${C.reset}`
@@ -113,7 +113,7 @@ function statusRow(): string {
 function draw(): void {
   const height = bodyHeight()
   const rows = bodyRows()
-  const path = s.root ? `${C.blue}${C.bold}${tilde(s.root)}${C.reset}${s.branch ? `${C.sub}  ${s.branch}${C.reset}` : ''}` : ''
+  const path = s.root ? `${C.accent}${C.bold}${tilde(s.root)}${C.reset}${s.branch ? `${C.sub}  ${s.branch}${C.reset}` : ''}` : ''
   const lines = [header(), path]
   if (s.message) {
     const total = height + 4

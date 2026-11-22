@@ -7,7 +7,7 @@ export type HintOptions = { noBreak?: boolean }
 export type ModeTab = string | { label: string }
 
 // As an escape-coded string, for Todo and Diff.
-export const keyHints = (pairs: readonly Hint[]): string => pairs.map(([key, what]) => `${FG.blue}${key}${FG.sub} ${what}${RESET}`).join('  ')
+export const keyHints = (pairs: readonly Hint[]): string => pairs.map(([key, what]) => `${FG.accent}${key}${FG.sub} ${what}${RESET}`).join('  ')
 export const keyHintsWidth = (pairs: readonly Hint[]): number => pairs.map(([key, what]) => `${key} ${what}`).join('  ').length
 
 // As spans, for the hub and the diagrams viewer. With noBreak each key keeps
@@ -33,7 +33,7 @@ const SWITCH_KEYS: Hint[] = [['tab', t('hints.switch')]]
 const SWITCH = keyHints(SWITCH_KEYS)
 // With `next`, Tab's hint is drawn from column `col`.
 export function modeHeader(modes: readonly ModeTab[], at: number, next?: number, col?: number): string {
-  const line = modes.map((m, i) => (i === at ? `${BG.text}${FG.crust}${BOLD}${labelOf(m)}${RESET}` : `${FG.sub}${BOLD}${labelOf(m)}${RESET}`)).join(' ')
+  const line = modes.map((m, i) => (i === at ? `${BG.accent}${FG.accentInk}${BOLD}${labelOf(m)}${RESET}` : `${FG.sub}${BOLD}${labelOf(m)}${RESET}`)).join(' ')
   return next ? `${line}\x1b[${col}G${SWITCH}` : line
 }
 export const switchCol = (cols: number): number => cols - keyHintsWidth(SWITCH_KEYS) + 1

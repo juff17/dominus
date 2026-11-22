@@ -129,7 +129,7 @@ overlay() {
   under=$(layout display -p -c "$client" '#{window_id}' 2>/dev/null)
   # The popup's own background is the dimmed window's, for the moment before
   # paint_backdrop draws it.
-  layout display-popup -c "$client" -E -B -w 100% -h 100% -s "bg=#11111b" -e "OV_UNDER=$under" "${start_in[@]}" \
+  layout display-popup -c "$client" -E -B -w 100% -h 100% -s "bg=#0a0b0b" -e "OV_UNDER=$under" "${start_in[@]}" \
     "$(printf '%q ' "$GHOSTTY_CONF/bin/$1" "${@:2}")" && return
   status=$?
   ah_log error "$AH_COMPONENT" "overlay failed" exit "$status" client "$client"

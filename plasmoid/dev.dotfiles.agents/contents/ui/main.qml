@@ -7,7 +7,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasma5support as P5Support
 import org.kde.taskmanager as TaskManager
-import "mocha.js" as M
+import "palette.js" as M
 import "reply.js" as R
 
 PlasmoidItem {

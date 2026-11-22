@@ -1,5 +1,5 @@
 import QtQuick
-import "mocha.js" as M
+import "palette.js" as M
 
 Text {
     textFormat: Text.PlainText

@@ -42,6 +42,26 @@ test('the window the rail sits in is the highlighted button', () => {
   assert.equal(work[1], hub[4].replace('◫', '▣'))
 })
 
+// Stand-ins for the gear's placeholder rows.
+const MARK = { cols: 4, rows: ['<a>', '<b>', '<c>'] }
+
+test('the gear tops a rail with room for it, centred, in the blank row’s place, with work right under it', () => {
+  const { lines, buttons } = frame(6, 30, 'work', none, ACTS, MARK)
+  assert.equal(lines.length, 30)
+  // Two columns spare: the gear starts in the second.
+  for (const [i, cells] of MARK.rows.entries()) {
+    assert.ok(lines[i].includes('\x1b[2G'), `row ${i} is centred`)
+    assert.ok(lines[i].endsWith(`${cells}\x1b[0m`), `row ${i} is ${cells}`)
+  }
+  assert.equal(text(lines[3]).trim(), '▣')
+  assert.deepEqual(by(buttons), { work: [4, 5], hub: [7, 8], new: [22, 23], help: [25, 26], set: [28, 29] })
+})
+
+test('a rail too short for the gear as well as every button leaves the gear out', () => {
+  assert.deepEqual(frame(6, 22, 'work', none, ACTS, MARK).lines, frame(6, 22, 'work', none, ACTS).lines)
+  assert.ok(frame(6, 23, 'work', none, ACTS, MARK).lines[0].includes('<a>'))
+})
+
 test('the bottom buttons fit exactly at 24 rows', () => {
   const { lines, buttons } = frame(6, 24, 'work', none, ACTS)
   assert.deepEqual(by(buttons), { work: [2, 3], hub: [5, 6], new: [16, 17], help: [19, 20], set: [22, 23] })

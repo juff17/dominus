@@ -1,5 +1,6 @@
-// Catppuccin Mocha, the one palette every terminal UI draws with. FG and BG
-// are made once, for views that would otherwise build them on every frame.
+// Verdigris, the one palette every terminal UI draws with: oxidised copper on
+// old iron, near-neutral greys with a faint cool cast. FG and BG are made
+// once, for views that would otherwise build them on every frame.
 
 import { t } from '../core/text.ts'
 
@@ -9,39 +10,54 @@ const rgb = (hex: string): string => channels(hex).join(';')
 export const fg = (hex: string): string => `\x1b[38;2;${rgb(hex)}m`
 export const bg = (hex: string): string => `\x1b[48;2;${rgb(hex)}m`
 
-// Mocha's names, except subtext0, which is `sub`. Subtext1 (#bac2de) is
-// left out: nothing here draws with it, and the colours contract test pins
-// it as the tray's alone.
+// The greys keep Catppuccin's names (crust darkest to text lightest;
+// subtext0 is `sub`), and each hue is named for what it looks like. Subtext1
+// is left out: nothing here draws with it, and the colours contract test
+// pins it as the tray's alone. What each hue means is STATE and MONITOR's,
+// below: peach is what needs you, blue what's working, green what's done,
+// rose a monitor watching.
 export const P = {
-  base: '#1e1e2e',
-  mantle: '#181825',
-  crust: '#11111b',
-  surface0: '#313244',
-  surface1: '#45475a',
-  surface2: '#585b70',
-  overlay0: '#6c7086',
-  overlay1: '#7f849c',
-  overlay2: '#9399b2',
-  sub: '#a6adc8',
-  text: '#cdd6f4',
-  blue: '#89b4fa',
-  sapphire: '#74c7ec',
-  sky: '#89dceb',
-  teal: '#94e2d5',
-  green: '#a6e3a1',
-  yellow: '#f9e2af',
-  peach: '#fab387',
-  red: '#f38ba8',
-  pink: '#f5c2e7',
-  mauve: '#cba6f7',
+  base: '#161818',
+  mantle: '#101212',
+  crust: '#0a0b0b',
+  surface0: '#262b2a',
+  surface1: '#373d3c',
+  surface2: '#4a5351',
+  overlay0: '#61706c',
+  overlay1: '#738f87',
+  overlay2: '#8aa59d',
+  sub: '#a2bdb5',
+  text: '#d9e9e3',
+  patina: '#5fcca9',
+  blue: '#86afe2',
+  sapphire: '#73bbe2',
+  sky: '#8fd3ea',
+  rose: '#d98bc4',
+  green: '#a6e35f',
+  yellow: '#e6d27c',
+  peach: '#ffa04d',
+  red: '#f2647e',
+  pink: '#eaa6d0',
+  mauve: '#bb9ee2',
 }
 
+// Faint washes of green and red over base, behind added and removed lines
+// and passed and failed checks.
 export const TINT = {
-  add: '#292e37',
-  del: '#2f2738',
-  ok: '#1f2b26',
-  bad: '#2b1f27',
+  add: '#242c1f',
+  del: '#2c2022',
+  ok: '#20261d',
+  bad: '#251d1f',
 }
+
+// The theme colour: focus, selection, titles, frames, buttons and keys, in
+// every view. Change it here to retheme; the copies TypeScript can't reach
+// (theme.conf for tmux, yazi's theme, the tray's palette.js, Ghostty's
+// config.ghostty) are held to it by tests/contract/colours.test.mjs. The
+// state colours below stay their own, so working stays blue.
+export const ACCENT = P.patina
+// Text drawn on an ACCENT fill.
+export const ACCENT_INK = P.crust
 
 export type ColorName = keyof typeof P
 export type TintName = keyof typeof TINT
@@ -51,8 +67,8 @@ function sequences<K extends string>(colors: Record<K, string>, seq: (hex: strin
   return Object.fromEntries(Object.entries<string>(colors).map(([name, hex]) => [name, seq(hex)])) as Record<K, string>
 }
 
-export const FG = sequences(P, fg)
-export const BG = sequences({ ...P, ...TINT }, bg)
+export const FG = sequences({ ...P, accent: ACCENT, accentInk: ACCENT_INK }, fg)
+export const BG = sequences({ ...P, ...TINT, accent: ACCENT }, bg)
 
 export const BOLD = '\x1b[1m'
 export const ITALIC = '\x1b[3m'
@@ -82,7 +98,7 @@ export const STATE = {
 export const STOPPED = { glyph: '■', color: P.overlay1, name: t('states.stopped') } satisfies Look
 export const MONITOR = {
   action: { glyph: '▲', color: P.peach, name: t('states.monitors.action') },
-  watching: { glyph: '◉', color: P.teal, name: t('states.monitors.watching') },
+  watching: { glyph: '◉', color: P.rose, name: t('states.monitors.watching') },
   stale: { glyph: '◌', color: P.sub, name: t('states.monitors.stale') },
   ended: { glyph: '✓', color: P.sub, name: t('states.monitors.ended') },
 } satisfies Record<string, Look>

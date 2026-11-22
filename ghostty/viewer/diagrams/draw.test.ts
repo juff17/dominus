@@ -7,7 +7,7 @@ import { type TestContext, test } from 'node:test'
 import { visible } from '../../tui/text.ts'
 import type { Diagram } from './diagram.ts'
 import { frame } from './draw.ts'
-import { transmitFile } from './kitty.ts'
+import { transmitFile } from '../../tui/kitty.ts'
 import { type DiagramState, type Size, config, createState } from './state.ts'
 
 process.env.AGENT_HUB_SETTINGS = join(mkdtempSync(join(tmpdir(), 'dv-draw-')), 'settings.json')

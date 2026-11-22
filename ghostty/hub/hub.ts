@@ -8,7 +8,7 @@
 
 import { readFileSync, unlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { type Question, actionsOf, pruneResults } from './actions.ts'
 import {
@@ -33,7 +33,7 @@ import { logCrashes } from '../core/crash.ts'
 import { type Action, AGENT_VIEW_KEY, DIAGRAMS_KEY, EDITOR_KEY, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction } from './keys.ts'
 import { peekOf } from './peek.ts'
 import { tmuxOf } from './tmux.ts'
-import { type ClickActs, type Hit, type HubPrefs, type HubUi, type Note, type Scroll, boardFrame, listFrame } from './view.ts'
+import { type ClickActs, type Hit, type HubPrefs, type HubUi, type Note, type Scroll, boardFrame, listFrame, quiet } from './view.ts'
 import { follow, markReviewed } from '../agents/client.ts'
 import { type Agent, attentionTags, brokeTags, lanes, monitorsOf } from '../agents/model.ts'
 import { errCode, logger } from '../core/log.ts'
@@ -41,8 +41,10 @@ import { RUN, hubOpen } from '../core/paths.ts'
 import { run } from '../core/proc.ts'
 import { load as settings } from '../settings/settings.ts'
 import { recents as recentsOf, remember as rememberIn, storePaths } from '../settings/prefs.ts'
+import { BOARD } from '../tui/gear-art.ts'
+import { BOARD_ID, type Cell, type GearCells, fit, gearFile, gearRow, sendGear } from '../tui/gear.ts'
 import type { Mouse } from '../tui/input.ts'
-import { P, enter, leave, paint, tokens } from '../tui/term.ts'
+import { ACCENT, P, enter, leave, out, paint, tokens } from '../tui/term.ts'
 
 const log = logger('hub')
 logCrashes(log)
@@ -72,6 +74,8 @@ let listSel: string | null = null // id in the list beside an open session
 let confirm: Question | null = null // skip names the setting that asks it, which answering a turns off
 let note: Note | null = null
 let hits: Hit[] = []
+// Sent ahead of the next frame: the board's gear, when it changes.
+let setup = ''
 
 const cols = () => process.stdout.columns || 120
 const rows = () => process.stdout.rows || 40
@@ -317,6 +321,47 @@ function clearFilter() {
   filterAt = undefined
 }
 
+// ------------------------------------------------------------ the gear
+
+// With nothing running the board shows the gear (view.ts splashFrame,
+// tui/gear.ts), its PNGs shared with every window.
+const GEARS = join(RUN, 'gear')
+const FOCUS_ON = '\x1b[?1004h'
+const FOCUS_OFF = '\x1b[?1004l'
+const FOCUS_IN = '\x1b[I'
+const FOCUS_OUT = '\x1b[O'
+// Known once tmux has a client to ask; there's no gear until then.
+let cell: Cell | null = null
+// What was last sent to the terminal, so it's sent again only when the size
+// or the theme colour changes, or the hub comes back into view.
+let sent = ''
+
+async function readCell() {
+  const r = await outer('display', '-p', '#{client_cell_width} #{client_cell_height}')
+  const [cw, ch] = r.out.trim().split(' ').map(Number)
+  if (!r.ok || !cw || !ch || (cw === cell?.cw && ch === cell?.ch)) return
+  cell = { cw, ch }
+  draw()
+}
+
+// About a quarter of the board's height, in whole multiples of its pixels.
+function gear(): GearCells | null {
+  const f = cell && fit(BOARD, cell, cols() - 4, Math.floor(rows() / 4))
+  if (!cell || !f) return null
+  const spec = `${f.scale} ${f.cols} ${f.rows} ${cell.cw} ${cell.ch} ${ACCENT}`
+  if (spec !== sent) {
+    sent = spec
+    try {
+      setup = sendGear(BOARD_ID, gearFile(GEARS, 'board', BOARD, f, cell), f)
+      log.debug('gear sent', { scale: f.scale, cols: f.cols, rows: f.rows, cw: cell.cw, ch: cell.ch })
+    } catch (err) {
+      log.warn('gear not drawn', { dir: GEARS, err })
+      return null
+    }
+  }
+  return { cols: f.cols, rows: Array.from({ length: f.rows }, (_, r) => gearRow(BOARD_ID, f, r)) }
+}
+
 // ------------------------------------------------------------ main
 
 function draw() {
@@ -325,13 +370,15 @@ function draw() {
   const s = settings()
   const prefs: HubPrefs = { shown: shownLanes(), doneCards: s['hub.doneCards'], monitorRows: s['hub.monitorRows'], broke: brokeTags(), attention: attentionTags() }
   const ui: HubUi = { agents: visible(), filter, filtering, filterAt, focus, selected, scroll, listSel, peek: peek.current, confirm, note, win: WIN, now: Date.now() }
+  if (!list && quiet(ui)) ui.splash = gear()
   const f = (list ? listFrame : boardFrame)(ui, prefs, { w: cols(), h: rows() }, clicks)
   focus = f.focus
   listSel = f.listSel
   Object.assign(selected, f.selected)
   Object.assign(scroll, f.scroll)
   hits = f.hits
-  paint(f.lines)
+  paint(f.lines, { before: setup })
+  setup = ''
   if (started) log.debug('redraw', { list, ms: Math.round((performance.now() - started) * 100) / 100 })
 }
 
@@ -342,6 +389,15 @@ if (!process.stdin.isTTY) {
 process.stdin.setRawMode(true)
 process.stdin.on('data', data => {
   for (const t of tokens(data)) {
+    // tmux drops what a hidden pane sends the terminal, so the gear is sent
+    // again each time the hub comes into view. Focus reports are never keys.
+    if (t.key === FOCUS_IN || t.key === FOCUS_OUT) {
+      if (t.key === FOCUS_IN) {
+        sent = ''
+        void readCell()
+      }
+      continue
+    }
     if (t.key === NEW_AGENT_KEY) {
       confirm = null
       filtering = false
@@ -365,6 +421,8 @@ process.stdin.on('data', data => {
 // resize out between the panes, so the hub puts its own width back, as the
 // rail does. Not once the session's pane is gone, when the hub should widen.
 process.stdout.on('resize', async () => {
+  // A font size change resizes the pane too.
+  void readCell()
   draw()
   const p = peek.current
   if (p && cols() !== listCols() && (await peek.paneAlive(p.pane)))
@@ -372,6 +430,7 @@ process.stdout.on('resize', async () => {
 })
 const bye = (signal: NodeJS.Signals) => {
   log.info('stopped', { signal })
+  out(FOCUS_OFF)
   leave()
   process.exit(0)
 }
@@ -379,7 +438,8 @@ process.on('SIGTERM', bye)
 process.on('SIGHUP', bye)
 log.info('started', { win: WIN })
 pruneResults(RUN, Date.now(), log)
-enter()
+enter({}, FOCUS_ON)
+void readCell()
 follow(s => {
   agents = s.agents
   if (wanted) {
