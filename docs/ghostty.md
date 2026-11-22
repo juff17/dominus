@@ -36,7 +36,7 @@ The hub is the window's second view (the rail's **hub**, `Ctrl+Shift+B` for its 
 
 The hub needs no Claude Code hooks. It reads what Claude already writes: each running session's `~/.claude/sessions/<pid>.json` (its status, what it's waiting for, its tmux pane) and its transcript (the prompt, the tool running, the last reply, the context used, and every Monitor with the events it delivered).
 
-The theme is Catppuccin Mocha.
+The theme is Verdigris, oxidised copper on old iron (`tui/palette.ts`): patina green for focus and buttons, copper for what needs you, blue for what's working, green for what's done and rose for a monitor watching, on near-neutral greys. Ghostty draws the terminal itself in it too (`config.ghostty`), so the tabs, shells, btop and Claude Code sit on the hub's background.
 
 ## Monitors
 

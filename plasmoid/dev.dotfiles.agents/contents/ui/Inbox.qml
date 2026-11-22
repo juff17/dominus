@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import "mocha.js" as M
+import "palette.js" as M
 import "reply.js" as R
 
 Rectangle {

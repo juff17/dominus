@@ -68,14 +68,14 @@ function viewTab(view: View, count: string, on: boolean): { top: Span[]; mid: Sp
   const num = `${count}  `
   const inner = spanWidth([[name + num]])
   const fill = on ? bg(P.surface1) : BASE
-  const edge = fg(on ? P.teal : P.surface1) + fill
+  const edge = fg(on ? P.rose : P.surface1) + fill
   const gap: Span = ['  ', BASE]
   return {
     top: [[`╭${'─'.repeat(inner)}╮`, edge], gap],
     mid: [
       ['│', edge],
       [name, BOLD + (on ? fg(P.text) : SUB) + fill],
-      [num, BOLD + fg(on ? P.teal : P.overlay2) + fill],
+      [num, BOLD + fg(on ? P.rose : P.overlay2) + fill],
       ['│', edge],
       gap,
     ],
@@ -236,7 +236,7 @@ const KIND_LOOK: Record<RunRow['kind'], [label: string, color: string]> = {
   other: ['', P.sub],
 }
 
-const GROUP_COLOR: Record<RunGroup, string> = { needs: P.peach, watching: P.teal, ended: P.green }
+const GROUP_COLOR: Record<RunGroup, string> = { needs: P.peach, watching: P.rose, ended: P.green }
 
 // A [pipeline] line is coloured by how it ended, not by its tag.
 function tagColor({ tag, line }: { tag: string; line: string }): string {
@@ -270,7 +270,7 @@ function runLine(r: RunRow, on: boolean, w: number, now: number, narrow = false)
   const [kind, kc] = KIND_LOOK[r.kind]
   const ev = r.m.event
   const lead =
-    cell([[on ? ' ▌' : '  ', fg(P.teal)]], 2, fill) +
+    cell([[on ? ' ▌' : '  ', fg(P.rose)]], 2, fill) +
     cell([[state, fg(sc)]], STATE_W, fill) +
     cell([[kind || r.m.kind.slice(0, 5), BOLD + fg(kc)]], KIND_W, fill)
   const target: Line = [...(r.forge ? ([[`${r.forge} `, DIM]] as Span[]) : []), ...lit(clean(r.target), r.hit, fg(P.text))]
@@ -488,9 +488,9 @@ export function branchText(b: Branch): [text: string, color: string] {
 
 const MON_LOOK: Record<string, [string, string]> = {
   action: [t('monitors.monitor.action'), P.peach],
-  watching: [t('monitors.monitor.watching'), P.teal],
+  watching: [t('monitors.monitor.watching'), P.rose],
   stale: [t('monitors.monitor.stale'), P.sub],
-  none: [t('monitors.monitor.attach'), P.teal],
+  none: [t('monitors.monitor.attach'), P.rose],
 }
 
 function prLine(row: PrRow, on: boolean, marked: boolean, layout: ReturnType<typeof prColumns>): string {
@@ -498,7 +498,7 @@ function prLine(row: PrRow, on: boolean, marked: boolean, layout: ReturnType<typ
   const { pr } = row
   const dim = pr.draft
   const text = (color: string) => fg(dim ? P.overlay1 : color)
-  const out = [cell([[on ? ' ▌' : '  ', fg(P.teal)]], 2, fill), cell([[marked ? '[x]' : '[ ]', fg(marked ? P.teal : P.overlay1)]], 4, fill), cell([[pr.forge, DIM]], 3, fill)]
+  const out = [cell([[on ? ' ▌' : '  ', fg(P.rose)]], 2, fill), cell([[marked ? '[x]' : '[ ]', fg(marked ? P.rose : P.overlay1)]], 4, fill), cell([[pr.forge, DIM]], 3, fill)]
   for (const c of layout.cols) {
     const spans: Span[] =
       c === 'ref'
@@ -528,7 +528,7 @@ function prHeader(s: MonitorsState, rows: readonly PrRow[], layout: ReturnType<t
     branch: t('monitors.cols.branch'),
     mon: t('monitors.cols.monitor'),
   }
-  const spans: Span[] = [['  '], [box.padEnd(4), fg(s.prs.marked.size ? P.teal : P.overlay1)], ['   ']]
+  const spans: Span[] = [['  '], [box.padEnd(4), fg(s.prs.marked.size ? P.rose : P.overlay1)], ['   ']]
   for (const c of layout.cols) spans.push([names[c].padEnd((c === 'title' ? layout.title : FIXED[c]) + 1), DIM])
   return render(spans, w, BASE)
 }
@@ -567,15 +567,15 @@ const shortRefs = (prs: readonly Pr[]): string => prs.map(p => `${p.forge === 'g
 
 function toggleChip(i: number, label: string, on: boolean): Span[] {
   const fill = on ? bg(TINT.ok) : BOX
-  return [[` ${i + 1}`, BOLD + fg(on ? P.teal : P.overlay1) + fill], [` ${label} `, fg(on ? P.text : P.overlay1) + fill], [' ', BOX]]
+  return [[` ${i + 1}`, BOLD + fg(on ? P.rose : P.overlay1) + fill], [` ${label} `, fg(on ? P.text : P.overlay1) + fill], [' ', BOX]]
 }
 
 function drawerLines(s: MonitorsState, d: Drawer, prs: readonly Pr[], offScreen: number, w: number): string[] {
   const inner = w - 4
   const marked = s.prs.marked.size
   const head: Span[] = marked
-    ? [[t('monitors.drawer.attachTo', { n: prs.length }), BOLD + fg(P.teal) + BOX], ...(offScreen ? ([[` ${t('monitors.drawer.offScreen', { n: offScreen })}`, fg(P.peach) + BOX]] as Span[]) : [])]
-    : [[t('monitors.drawer.attachOne', { ref: prs[0] ? refLabel(prs[0].forge, prs[0].repo.split('/').at(-1) ?? '', prs[0].number) : '' }), BOLD + fg(P.teal) + BOX]]
+    ? [[t('monitors.drawer.attachTo', { n: prs.length }), BOLD + fg(P.rose) + BOX], ...(offScreen ? ([[` ${t('monitors.drawer.offScreen', { n: offScreen })}`, fg(P.peach) + BOX]] as Span[]) : [])]
+    : [[t('monitors.drawer.attachOne', { ref: prs[0] ? refLabel(prs[0].forge, prs[0].repo.split('/').at(-1) ?? '', prs[0].number) : '' }), BOLD + fg(P.rose) + BOX]]
   const refs: Span = [`  ${shortRefs(prs)}`, SUB + BOX]
   const summary: Span[] = d.more
     ? [
@@ -593,10 +593,10 @@ function drawerLines(s: MonitorsState, d: Drawer, prs: readonly Pr[], offScreen:
         [` ${t('monitors.drawer.more')} `, DIM + BOX],
       ]
   const toggles: Span[] = [[`${t('monitors.drawer.watch')}`.padEnd(7), DIM + BOX], ...WATCH_KEYS.flatMap((k, i) => toggleChip(i, t(`monitors.drawer.toggles.${k}`), d.watch[k]))]
-  const start = button(t('monitors.drawer.start'), { key: ' ctrl+s', main: true, color: P.teal })
+  const start = button(t('monitors.drawer.start'), { key: ' ctrl+s', main: true, color: P.rose })
   const fieldW = Math.max(4, inner - 7 - spanWidth(start) - 2)
   const brief: Span[] = [
-    [`${t('monitors.drawer.brief')}`.padEnd(7), (d.focus === 'brief' ? fg(P.teal) : DIM) + BOX],
+    [`${t('monitors.drawer.brief')}`.padEnd(7), (d.focus === 'brief' ? fg(P.rose) : DIM) + BOX],
     ...field({ text: d.brief, at: d.at, w: fieldW, focused: d.focus === 'brief', placeholder: t('monitors.drawer.briefPlaceholder') }),
   ]
   return [
@@ -609,7 +609,7 @@ function drawerLines(s: MonitorsState, d: Drawer, prs: readonly Pr[], offScreen:
 }
 
 // Content is `w - 4` cells wide.
-const EDGE = render([['│', fg(P.teal)]], 1, BASE)
+const EDGE = render([['│', fg(P.rose)]], 1, BASE)
 const PAD = render([[' ']], 1, BOX)
 const boxed = (content: string): string => `${EDGE}${PAD}${content}${PAD}${EDGE}`
 

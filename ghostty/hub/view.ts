@@ -77,7 +77,7 @@ const LANE_BG = bg(P.mantle)
 const CARD_BG = bg(P.base)
 const SEL_BG = bg(P.surface0)
 const nothing = (name: Lane | 'monitors') => t(`hub.empty.${name}`)
-const MONITORS_LOOK: Look = { glyph: '◉', color: P.teal, name: t('hub.monitors') }
+const MONITORS_LOOK: Look = { glyph: '◉', color: P.rose, name: t('hub.monitors') }
 
 const kilo = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))
 const tint = (color: string) => mix(color, P.mantle, 0.2)
@@ -156,7 +156,7 @@ function cmdColor(name: Lane, a: Agent, broke: Set<string>) {
 // the other lanes its context size.
 function cardNote(name: Lane, a: Agent, raised: Monitor | null): Span[] {
   if (name !== 'needs') return a.ctx ? [[t('hub.card.ctx', { n: kilo(a.ctx) }), fg(P.overlay1)]] : []
-  if (a.need === 'monitor') return [[`◉ ${raised?.kind ?? t('hub.card.monitor')}`, fg(P.teal)]]
+  if (a.need === 'monitor') return [[`◉ ${raised?.kind ?? t('hub.card.monitor')}`, fg(P.rose)]]
   if (a.need === 'permission')
     return hint([
       ['a', t('hub.keys.allow')],
@@ -198,7 +198,7 @@ export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, 
   const named: Span = [label, BOLD + fg(P.text)]
   const lines: BoxLine[] =
     hgt >= 4 ? [[named], { left: doing, right: [['  ', ''], ...cardNote(name, a, raised)] }] : [[named, [' · ', fg(P.overlay1)], ...doing]]
-  const border = on ? ACCENT : a.need === 'monitor' ? P.teal : P.surface1
+  const border = on ? ACCENT : a.need === 'monitor' ? P.rose : P.surface1
   return box(title, right, lines, w, border, on ? SEL_BG : CARD_BG)
 }
 
@@ -261,7 +261,7 @@ function summary(b: Pick<Board, 'ui' | 'hits' | 'acts'>, c: Counts, W: number) {
     [`  ✻ ${t('hub.summary.working', { n: c.working })}`, fg(P.blue)],
     [`  ✓ ${t('hub.summary.done', { n: c.done })}`, fg(P.green)],
     [`  ○ ${t('hub.summary.idle', { n: c.idle })}`, fg(P.sub)],
-    [`  ◉ ${t('hub.summary.watching', { n: c.watching })}`, fg(P.teal)],
+    [`  ◉ ${t('hub.summary.watching', { n: c.watching })}`, fg(P.rose)],
   ]
   const right = filterSpans(ui)
   const button = newButton(t('hub.newAgent'))
@@ -309,7 +309,7 @@ function tagColor({ tag, line }: { tag: string; line: string }, prefs: HubPrefs)
   if (result === 'canceled' || result === 'skipped') return P.sub
   if (prefs.broke.has(tag)) return P.red
   if (prefs.attention.has(tag)) return P.peach
-  return /comment|review/.test(tag) ? P.mauve : P.teal
+  return /comment|review/.test(tag) ? P.mauve : P.rose
 }
 
 // Column widths of a monitor's row before its last event, which takes the rest.

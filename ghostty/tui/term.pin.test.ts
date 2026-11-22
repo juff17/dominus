@@ -100,7 +100,7 @@ test('mix: t of a over b, per channel, rounded', () => {
   assert.equal(mix('#ffffff', '#000000', 0.5), '#808080')
   assert.equal(mix('#ff0000', '#0000ff', 1), '#ff0000')
   assert.equal(mix('#ff0000', '#0000ff', 0), '#0000ff')
-  assert.equal(mix(P.peach, P.mantle, 0.2), '#453739')
+  assert.equal(mix(P.peach, P.mantle, 0.2), '#402e1e')
 })
 
 test('ago: empty for no time, then s, m, h with minutes, d; the future is 0s', () => {

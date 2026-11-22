@@ -59,9 +59,9 @@ export function stageStrip(stages: readonly Stage[], w: number): Span[] {
 const TONE: Record<NowLine['tone'], string> = { peach: P.peach, red: P.red, blue: P.blue, green: P.green, sub: P.sub }
 
 function monitorSpan(m: PipeMonitor): Span {
-  if (m.kind === 'watching') return [W('monitor.watching'), fg(P.teal)]
+  if (m.kind === 'watching') return [W('monitor.watching'), fg(P.rose)]
   if (m.kind === 'via') return [W('monitor.via', { ref: m.ref }), fg(P.overlay2)]
-  return [W('monitor.none'), fg(P.teal)]
+  return [W('monitor.none'), fg(P.rose)]
 }
 
 function pipeLine(it: Extract<PipeItem, { kind: 'pipe' }>, s: MonitorsState, on: boolean, near: boolean, layout: ReturnType<typeof pipeColumns>, now: number): string {
@@ -69,7 +69,7 @@ function pipeLine(it: Extract<PipeItem, { kind: 'pipe' }>, s: MonitorsState, on:
   const fill = on || near ? SEL : BASE
   const gates = shownGates(pipe, s.pipes.skipped)
   const nowLine = nowOf(pipe, gates, (k, vars) => W(`now.${k}`, vars))
-  const out = [cell([[on || near ? ' ▌' : '  ', fg(on ? P.teal : P.surface2)]], LEAD, fill), cell([[pipe.forge, DIM]], FORGE, fill)]
+  const out = [cell([[on || near ? ' ▌' : '  ', fg(on ? P.rose : P.surface2)]], LEAD, fill), cell([[pipe.forge, DIM]], FORGE, fill)]
   for (const c of layout.cols) {
     const spans: Span[] =
       c === 'project'
@@ -154,10 +154,10 @@ export const WATCH_ROWS = 3
 
 function watchBar(s: MonitorsState, w: number): string[] {
   const inner = w - 4
-  const edge = (x: string) => render([['│', fg(P.teal)]], 1, BASE) + render([[' ', BOX]], 1, BOX) + x + render([[' ', BOX]], 1, BOX) + render([['│', fg(P.teal)]], 1, BASE)
+  const edge = (x: string) => render([['│', fg(P.rose)]], 1, BASE) + render([[' ', BOX]], 1, BOX) + x + render([[' ', BOX]], 1, BOX) + render([['│', fg(P.rose)]], 1, BASE)
   const on = s.pipes.fromPrs
   const right: Span[] = [['P', BOLD + fg(P.text) + BOX], [` ${W('fromPrs')} `, SUB + BOX], [t(on ? 'controls.on' : 'controls.off'), fg(on ? P.green : P.overlay1) + BOX]]
-  const lead: Span = [`${W('watch')}  `, BOLD + fg(P.teal) + BOX]
+  const lead: Span = [`${W('watch')}  `, BOLD + fg(P.rose) + BOX]
   const room = Math.max(4, inner - spanWidth([lead, ...right]) - 3)
   const w8 = s.pipes.watch
   const input = field({ text: w8.text, at: w8.at, w: room, focused: w8.typing, placeholder: W('watchPlaceholder') })

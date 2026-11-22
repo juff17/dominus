@@ -1,7 +1,7 @@
 // `look`: "fill" (an answer, in `fill`), "accent" (an outline, to open
 // something), "link" (accent text alone) or "plain" (a grey outline).
 import QtQuick
-import "mocha.js" as M
+import "palette.js" as M
 
 Rectangle {
     id: b

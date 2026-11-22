@@ -192,14 +192,15 @@ pre-commit run it too). The settings are in `tsconfig.json`, with `strict` on.
   fails if any other source file lists model names.
 - **A tray item kind:** its row type in `tray/rows.ts`, a row builder in
   `tray/items.ts`; its buttons' actions in `tray/tray.ts`'s `ACTS` table;
-  its glyph and colour in `tui/palette.ts`, which `mocha.js` must match
+  its glyph and colour in `tui/palette.ts`, which the tray's `palette.js` must match
   (contract test).
 - **The theme colour:** `ACCENT` (and `ACCENT_INK`, the text on it) in
   `tui/palette.ts`. Focus, selection, titles, frames, buttons and keys use
-  it, never `P.blue`; the state colours (`STATE`, `MONITOR`) stay their own.
-  The copies outside TypeScript are tmux's `@accent` in `theme.conf`, yazi's
-  `init.lua` and `theme.toml`, and `mocha.js`'s `accent`; the colours
-  contract test holds each to `ACCENT`.
+  it, never a hue from `P`; the state colours (`STATE`, `MONITOR`) stay
+  their own. The copies outside TypeScript are tmux's `@accent` in
+  `theme.conf`, yazi's `init.lua` and `theme.toml`, the tray's `palette.js`,
+  and Ghostty's colours in `config.ghostty`; the colours contract test holds
+  each to the palette.
 - **A babysit proposal kind:** a kind in pr-babysit's `approval.py`, and
   a row in `tray/approvals.ts`'s `APPROVE` table. `ProposalKind` is that
   table's keys, so tsc then points at each other table (`GLYPH`, `DETAIL`,

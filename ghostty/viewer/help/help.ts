@@ -15,15 +15,15 @@ type SectionWords = { name?: string; where?: string; keys?: [key: string, what: 
 const COLORS: [id: string, color: string][] = [
   ['any', P.blue],
   ['tabs', P.green],
-  ['viewer', P.teal],
+  ['viewer', P.rose],
   ['diff', P.yellow],
   ['dv', P.sky],
   ['todo', P.mauve],
   ['hub', P.peach],
   ['new', P.pink],
   ['approvals', P.peach],
-  ['monitors', P.teal],
-  ['set', P.teal],
+  ['monitors', P.rose],
+  ['set', P.rose],
 ]
 
 const WORDS = text<Record<string, SectionWords | undefined>>('help.sections')

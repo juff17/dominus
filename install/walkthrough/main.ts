@@ -28,7 +28,7 @@ const log = logger('install')
 const RESET = '\x1b[0m'
 const c = (hex: string, s: string): string => `${fg(hex)}${s}\x1b[39m`
 
-// Catppuccin Mocha as the hub draws it, in the theme colour.
+// The hub's palette (tui/palette.ts), in the theme colour.
 const theme = {
   prefix: { idle: c(ACCENT, '?'), done: c(P.green, '✔') },
   icon: { checked: c(ACCENT, '◉'), unchecked: c(P.overlay2, '◯'), cursor: c(ACCENT, '❯') },
