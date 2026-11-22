@@ -109,6 +109,9 @@ test('every hex the tmux configs and the popup scripts use is a term.ts P colour
   for (const conf of ['layout.conf', 'tmux.conf']) {
     const text = readFileSync(join(CONF, conf), 'utf8')
     assert.match(text, /^set -g pane-border-style "fg=#373d3c"$/m)
+    // Selected text looks the same in the hub as in the workspace; unset,
+    // the layout's tmux drew it in its default yellow.
+    assert.match(text, /^set -g mode-style "bg=#373d3c,fg=#d9e9e3"$/m, conf)
   }
   assert.match(readFileSync(join(CONF, 'tmux.conf'), 'utf8'), /^set -g pane-active-border-style "fg=#\{@accent\}"$/m)
   const layout = readFileSync(join(CONF, 'layout.conf'), 'utf8')
