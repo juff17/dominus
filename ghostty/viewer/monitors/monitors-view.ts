@@ -16,7 +16,6 @@ import { logger } from '../../core/log.ts'
 import { MODEL_IDS } from '../../settings/models.ts'
 import { load as settings, row } from '../../settings/settings.ts'
 import { type Overlay, closes, openOverlay } from '../../tui/overlay.ts'
-import { P } from '../../tui/palette.ts'
 import { enter, leave, tokens } from '../../tui/term.ts'
 import { mayClose } from '../approvals/approvals.ts'
 import { logCrashes } from '../logging.ts'
@@ -68,7 +67,7 @@ const s = start({
 })
 
 // Typed, so TypeScript knows ov.quit() doesn't come back.
-const ov: Overlay = openOverlay({ name: 'monitors', key: 'keys.monitors', color: P.teal, box: () => ({ w: '90%', h: '85%' }) })
+const ov: Overlay = openOverlay({ name: 'monitors', key: 'keys.monitors', box: () => ({ w: '90%', h: '85%' }) })
 
 // Drawing decides the scroll positions and how much of a proposal has been
 // seen, so they are written back to the state here.

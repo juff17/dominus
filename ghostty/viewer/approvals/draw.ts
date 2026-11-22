@@ -7,7 +7,7 @@ import { t } from '../../core/text.ts'
 import { type ButtonSpec, buttons as buttonRow } from '../../tui/controls.ts'
 import { CARET_MARK, caretParts, length, withCaret } from '../../tui/line.ts'
 import { BG } from '../../tui/palette.ts'
-import { BOLD, type Line, P, type Span, ago, bg, clean, fg, render, spanWidth, split, width } from '../../tui/term.ts'
+import { ACCENT, ACCENT_INK, BOLD, type Line, P, type Span, ago, bg, clean, fg, render, spanWidth, split, width } from '../../tui/term.ts'
 import { wrapText as wrap } from '../../tui/text.ts'
 import type { Proposal, ProposalCommit } from '../../tray/approvals.ts'
 import { proposalLink } from '../../tray/links.ts'
@@ -60,7 +60,7 @@ function box(text: string, w: number, most = Number.POSITIVE_INFINITY, caret?: n
 
 function diffLines(d: DiffView, w: number, height: number): { lines: string[]; scroll: number } {
   const title: Line = [
-    [` ${t('approvals.diff.badge')} `, BOLD + fg(P.crust) + bg(P.blue)],
+    [` ${t('approvals.diff.badge')} `, BOLD + fg(ACCENT_INK) + bg(ACCENT)],
     [`  ${clean(d.title)}`, BOLD + fg(P.text)],
   ]
   const head = split(title, [[`${t('approvals.diff.files', { n: d.files.length })} `, fg(P.sub)]], w, BASE)
@@ -139,7 +139,7 @@ function commitRow(s: State, c: ProposalCommit, i: number, w: number): string {
   const right: Line = [
     [c.note ? `${clean(c.note)}  ` : '', fg(P.sub)],
     [`${stat(c)}  `, fg(P.sub)],
-    ['▸ ', fg(P.blue)],
+    ['▸ ', fg(ACCENT)],
   ]
   return render([], 1, BASE) + split(left, right, w - 2, i === s.commit ? SEL : BOX) + render([], 1, BASE)
 }

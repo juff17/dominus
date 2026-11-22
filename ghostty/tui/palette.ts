@@ -43,6 +43,15 @@ export const TINT = {
   bad: '#2b1f27',
 }
 
+// The theme colour: focus, selection, titles, frames, buttons and keys, in
+// every view. Change it here to retheme; the copies TypeScript can't reach
+// (theme.conf for tmux, yazi's theme, the tray's mocha.js) are held to it by
+// tests/contract/colours.test.mjs. The state colours below stay their own,
+// so working is blue even when the theme isn't.
+export const ACCENT = P.blue
+// Text drawn on an ACCENT fill.
+export const ACCENT_INK = P.crust
+
 export type ColorName = keyof typeof P
 export type TintName = keyof typeof TINT
 
@@ -51,8 +60,8 @@ function sequences<K extends string>(colors: Record<K, string>, seq: (hex: strin
   return Object.fromEntries(Object.entries<string>(colors).map(([name, hex]) => [name, seq(hex)])) as Record<K, string>
 }
 
-export const FG = sequences(P, fg)
-export const BG = sequences({ ...P, ...TINT }, bg)
+export const FG = sequences({ ...P, accent: ACCENT, accentInk: ACCENT_INK }, fg)
+export const BG = sequences({ ...P, ...TINT, accent: ACCENT }, bg)
 
 export const BOLD = '\x1b[1m'
 export const ITALIC = '\x1b[3m'

@@ -18,6 +18,10 @@ var green = "#a6e3a1"
 var mauve = "#cba6f7"
 var teal = "#94e2d5"
 
+// The theme colour, ACCENT in the hub's tui/palette.ts: the outlines and links
+// that open something. tests/contract/colours.test.mjs holds it equal.
+var accent = blue
+
 // Each section's colour, as on the hub's board and rail.
 var section = { you: peach, broke: red, work: blue, watch: teal, done: green }
 // The faint wash behind rows that need you, #AARRGGBB at about 8%.

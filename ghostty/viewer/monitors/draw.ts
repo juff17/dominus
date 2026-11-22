@@ -11,7 +11,7 @@ import { button, confirm, field, frameBottom, frameTop, select, spanWidth } from
 import { clampScroll, keepInView } from '../../tui/list.ts'
 import type { Size } from '../../tui/overlay.ts'
 import { MONITOR, TINT } from '../../tui/palette.ts'
-import { BOLD, ITALIC, type Line, P, type Span, ago, bg, clean, fg, render, split } from '../../tui/term.ts'
+import { ACCENT, BOLD, ITALIC, type Line, P, type Span, ago, bg, clean, fg, render, split } from '../../tui/term.ts'
 import { glyphOf } from '../../tray/approvals.ts'
 import { current } from '../approvals/approvals.ts'
 import { type Drawn, dots, panel as drawPanel, keysFor } from '../approvals/draw.ts'
@@ -149,7 +149,7 @@ function viewRows(s: MonitorsState, w: number, now: number): string[] {
 
 function filterRow(f: Filter, kept: number, total: number, w: number, placeholder: string): string {
   const count: Span[] = [[t('monitors.filter.count', { n: kept, total }), SUB], [' ']]
-  const lead: Span = [' / ', BOLD + fg(P.yellow) + BOX]
+  const lead: Span = [' / ', BOLD + fg(ACCENT) + BOX]
   const room = Math.max(1, w - spanWidth([lead, ...count]) - 2)
   return split([lead, ...field({ text: f.query, at: f.at, w: room, focused: f.typing, placeholder })], count, w, BOX)
 }
@@ -600,11 +600,11 @@ function drawerLines(s: MonitorsState, d: Drawer, prs: readonly Pr[], offScreen:
     ...field({ text: d.brief, at: d.at, w: fieldW, focused: d.focus === 'brief', placeholder: t('monitors.drawer.briefPlaceholder') }),
   ]
   return [
-    frameTop(w, { color: P.teal, fill: BASE }),
+    frameTop(w, { fill: BASE }),
     boxed(split([...head, refs], summary, inner, BOX)),
     boxed(render(toggles, inner, BOX)),
     boxed(split(brief, start, inner, BOX)),
-    frameBottom(w, { color: P.teal, fill: BASE }),
+    frameBottom(w, { fill: BASE }),
   ]
 }
 

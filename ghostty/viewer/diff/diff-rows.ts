@@ -15,16 +15,16 @@ export const C = {
   overlay: FG.overlay0,
   line: FG.surface1,
   track: FG.surface0,
-  blue: FG.blue,
+  accent: FG.accent,
   green: FG.green,
   red: FG.red,
   yellow: FG.yellow,
   mauve: FG.mauve,
-  crust: FG.crust,
+  ink: FG.accentInk,
   cursorBg: BG.surface0,
   addBg: BG.add,
   delBg: BG.del,
-  pillBg: BG.blue,
+  pillBg: BG.accent,
   bold: BOLD,
   reset: RESET,
 }
@@ -49,14 +49,14 @@ export function fileRow(file: DiffFile, { open, selected, width, most }: FileRow
   const right = ` ${' '.repeat(Math.max(0, 11 - cells(counts)))}${countsText}${C.reset}${back} ${changeBar(file, most)}${back} `
   const room = Math.max(4, width - 5 - 11 - BAR - 3)
   const { dir, name } = fitPath(file.path, room)
-  const nameColor = open ? C.blue : C.text
+  const nameColor = open ? C.accent : C.text
   const pad = ' '.repeat(Math.max(0, room - cells(dir) - cells(name)))
   const status = `${STATUS_COLORS[file.status] ?? C.text}${C.bold}${file.status}${C.reset}${back}`
   return `${back} ${C.overlay}${open ? '▾' : '▸'}${C.reset}${back} ${status} ${C.overlay}${dir}${C.reset}${back}${nameColor}${C.bold}${name}${C.reset}${back}${pad}${right}${C.reset}`
 }
 
 export function diffRow(row: DiffRow, width: number): string {
-  const edge = `   ${C.blue}▎${C.reset}`
+  const edge = `   ${C.accent}▎${C.reset}`
   const room = Math.max(1, width - 4 - 5 - 2)
   switch (row.kind) {
     case 'hunk':

@@ -13,7 +13,7 @@ import { matchesOf } from '../../tui/complete.ts'
 import { checks, chips, field, onOff, select, spanWidth } from '../../tui/controls.ts'
 import { clampScroll } from '../../tui/list.ts'
 import type { Size } from '../../tui/overlay.ts'
-import { BOLD, type Line, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
+import { ACCENT, BOLD, type Line, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
 import { type ForgeId, ready } from '../monitors/forge.ts'
 import { type FileInput, type Input, type Item, type SettingItem, type SettingsState, current, modeRows, pathGhost } from './state.ts'
 
@@ -37,7 +37,7 @@ const modeSub = (m: Mode): string => BUILTIN_MODES.find(b => b.id === m.id)?.sub
 function valueSpans(r: SettingItem, values: Settings, on: boolean, flag: number, capture: boolean): Span[] {
   switch (r.type) {
     case 'key': {
-      if (on && capture) return [[t('settings.ui.pressKey'), BOLD + fg(P.peach)], [t('settings.ui.escCancels'), fg(P.sub)]]
+      if (on && capture) return [[t('settings.ui.pressKey'), BOLD + fg(ACCENT)], [t('settings.ui.escCancels'), fg(P.sub)]]
       const v = values[r.key]
       return [[show(r, v), v ? (on ? BOLD : '') + fg(P.text) : fg(P.overlay1)]]
     }
@@ -86,7 +86,7 @@ const twoLines = (name: Line, value: Line, sub: string, w: number, fill: string,
 
 function heading(b: Body, r: Heading, w: number): void {
   if (b.lines.length) b.lines.push(render([], w, BASE))
-  b.lines.push(render([[r.head.toUpperCase(), BOLD + fg(P.peach)]], w, BASE))
+  b.lines.push(render([[r.head.toUpperCase(), BOLD + fg(ACCENT)]], w, BASE))
 }
 
 function prompt(b: Body, r: PromptLine, w: number): void {
@@ -106,9 +106,9 @@ function modes(b: Body, r: Extract<SettingRow, { type: 'modes' }>, s: SettingsSt
     const fill = on ? SEL : BASE
     const add = m.type === 'addMode'
     const name = add ? m.label : `⠿ ${m.index + 1}  ${m.label}`
-    const value: Span[] = add ? [['a', fg(P.blue)], [` ${t('hints.add')}`, fg(P.sub)]] : onOff(m.mode.on)
+    const value: Span[] = add ? [['a', fg(ACCENT)], [` ${t('hints.add')}`, fg(P.sub)]] : onOff(m.mode.on)
     b.at.push(b.lines.length)
-    b.lines.push(...twoLines([['  '], [name, (on ? BOLD : '') + fg(add ? P.blue : P.text)]], value, add ? t('settings.ui.addModeSub') : modeSub(m.mode), w, fill))
+    b.lines.push(...twoLines([['  '], [name, (on ? BOLD : '') + fg(add ? ACCENT : P.text)]], value, add ? t('settings.ui.addModeSub') : modeSub(m.mode), w, fill))
   }
   b.lines.push(render([[`  ${r.sub}`, fg(P.overlay1)]], w, BASE))
 }
@@ -122,7 +122,7 @@ function setting(b: Body, r: SettingItem, s: SettingsState, values: Settings, w:
   const sub = changed ? [r.sub, t('settings.ui.changedFrom', { value: show(r, r.default) })].filter(Boolean).join(' · ') : r.sub
   b.at.push(b.lines.length)
   b.lines.push(
-    ...twoLines([[changed ? '• ' : '  ', fg(P.peach)], [r.label, (on ? BOLD : '') + fg(P.text)]], valueSpans(r, values, on, s.flag, s.capture), sub, w, fill, vw),
+    ...twoLines([[changed ? '• ' : '  ', fg(ACCENT)], [r.label, (on ? BOLD : '') + fg(P.text)]], valueSpans(r, values, on, s.flag, s.capture), sub, w, fill, vw),
   )
 }
 
@@ -150,7 +150,7 @@ function scrollFor(s: SettingsState, { lines, at }: Body, height: number): numbe
 
 function navRow(s: SettingsState, i: number): string {
   const on = i === s.sec
-  return render([[` ${on ? '▸' : ' '} `, fg(P.blue)], [SECTIONS[i].name, on ? BOLD + fg(P.text) : fg(P.sub)]], NAV - 1, on ? SEL : BASE)
+  return render([[` ${on ? '▸' : ' '} `, fg(ACCENT)], [SECTIONS[i].name, on ? BOLD + fg(P.text) : fg(P.sub)]], NAV - 1, on ? SEL : BASE)
 }
 
 const H = (k: string) => t(`hints.${k}`)
@@ -202,7 +202,7 @@ function promptLine(s: SettingsState, input: Input, w: number): string {
   const right = s.note ? [[`${s.note.text} `, fg(s.note.color)] as const, ...keys] : keys
   const room = Math.max(1, w - spanWidth(right) - width(ask) - 1)
   const at = input.field === 'file' || input.field === 'hosts' || input.field === 'list' ? input.at : undefined
-  return split([[ask, BOLD + fg(P.blue)], ...field({ text: input.text, at, w: room, ghost: pathGhost(input) })], right, w, BASE)
+  return split([[ask, BOLD + fg(ACCENT)], ...field({ text: input.text, at, w: room, ghost: pathGhost(input) })], right, w, BASE)
 }
 
 function matchesLine(input: FileInput, w: number): string | null {
@@ -210,7 +210,7 @@ function matchesLine(input: FileInput, w: number): string | null {
   const m = menu ?? matchesOf(text, { files })
   if (!menu && !m.part && !text.endsWith('/')) return null
   const shown = m.names.map(n => `${n}${m.folders.has(n) ? '/' : ''}`)
-  const lead: Span[] = [[` ${t('settings.ui.matches')}  `, fg(P.blue)]]
+  const lead: Span[] = [[` ${t('settings.ui.matches')}  `, fg(ACCENT)]]
   return render(chips(shown, menu ? menu.i : -1, w, { lead, empty: t('settings.ui.noMatches') }), w, BASE)
 }
 

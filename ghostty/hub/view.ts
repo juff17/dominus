@@ -32,7 +32,7 @@ import { lookup, t } from '../core/text.ts'
 import { type Hint, hintSpans } from '../tui/chrome.ts'
 import { button as buttonSpans, confirm as question, field, frameBottom, frameRow, spanWidth } from '../tui/controls.ts'
 import type { Look } from '../tui/palette.ts'
-import { BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bar, bg, clean, fg, mix, render, split, width, wrap } from '../tui/term.ts'
+import { ACCENT, BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bar, bg, clean, fg, mix, render, split, width, wrap } from '../tui/term.ts'
 
 // A clickable region of a frame, its cells counted from 1; `wheel` is the
 // lane (4: the monitors strip) the wheel scrolls over it.
@@ -166,7 +166,7 @@ function lineCard(name: Lane, a: Agent, label: string, age: string, w: number, o
   const done = name === 'done'
   const mark: Span[] = done ? [['✓ ', fg(P.green)]] : a.stopped ? [[`${STOPPED.glyph} `, fg(STOPPED.color)]] : []
   const left: Span[] = [
-    [on ? ' ▌' : '  ', fg(P.blue)],
+    [on ? ' ▌' : '  ', fg(ACCENT)],
     ...mark,
     [clean(a.repo), fg(P.sub)],
     [` ${label}`, done ? fg(P.text) : a.stopped ? fg(P.sub) : BOLD + fg(P.text)],
@@ -182,7 +182,7 @@ export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, 
   const age = ago(name === 'working' ? a.stateSince : a.since, now)
   if (hgt === 1) return [lineCard(name, a, label, age, w, on, ctx.win)]
   const title: Span[] = [
-    [` ${clean(a.repo)}`, BOLD + fg(on ? P.blue : P.text)],
+    [` ${clean(a.repo)}`, BOLD + fg(on ? ACCENT : P.text)],
     [`${clean(placeOf(a))} `, fg(P.sub)],
   ]
   const right: Span[] = [[` ${where(a, ctx.win)} · ${age} `, fg(P.sub)]]
@@ -194,7 +194,7 @@ export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, 
   const named: Span = [label, BOLD + fg(P.text)]
   const lines: BoxLine[] =
     hgt >= 4 ? [[named], { left: doing, right: [['  ', ''], ...cardNote(name, a, raised)] }] : [[named, [' · ', fg(P.overlay1)], ...doing]]
-  const border = on ? P.blue : a.need === 'monitor' ? P.teal : P.surface1
+  const border = on ? ACCENT : a.need === 'monitor' ? P.teal : P.surface1
   return box(title, right, lines, w, border, on ? SEL_BG : CARD_BG)
 }
 
@@ -245,7 +245,7 @@ function filterSpans(ui: HubUi): Span[] {
   // caret is inside it, so the header doesn't shift as it moves.
   const fw = width(clean(ui.filter)) + 1
   const typed = field({ text: ui.filter, at: ui.filterAt, w: fw, focused: ui.filtering })
-  return [['/', fg(P.yellow)], ...typed, [' '.repeat(fw - spanWidth(typed) + 2), '']]
+  return [['/', fg(ACCENT)], ...typed, [' '.repeat(fw - spanWidth(typed) + 2), '']]
 }
 
 function summary(b: Board, c: Counts, W: number) {
@@ -319,7 +319,7 @@ function monitorRow(m: Monitored, on: boolean, w: number, ui: HubUi, prefs: HubP
   const ev = m.event
   const stateCol = render(
     [
-      [on ? ' ▌' : '  ', fg(P.blue)],
+      [on ? ' ▌' : '  ', fg(ACCENT)],
       [`${look.glyph} ${look.name}`, BOLD + fg(look.color)],
     ],
     STATE_COLS,
@@ -429,7 +429,7 @@ function listRows(it: ListItem, W: number, ui: HubUi, listSel: string | null): s
   return [
     split(
       [
-        open ? [' ▶ ', fg(P.blue)] : a.stopped ? [` ${STOPPED.glyph} `, fg(STOPPED.color)] : ['   ', ''],
+        open ? [' ▶ ', fg(ACCENT)] : a.stopped ? [` ${STOPPED.glyph} `, fg(STOPPED.color)] : ['   ', ''],
         [clean(a.title), BOLD + fg(a.stopped ? P.sub : P.text)],
       ],
       [[` ${ago(a.since, ui.now)} `, fg(P.sub)]],
@@ -448,7 +448,7 @@ export function listFrame(ui: HubUi, prefs: HubPrefs, { w: W, h: H }: Size, acts
   const { peek } = ui
   const button = newButton(t('hub.new'))
   const back: Span[] = [[' ', ''], ...buttonSpans(`◂ ${t('hub.board')}`, { key: 'ctrl+shift+b', color: P.text, round: true })]
-  const title: Span[] = [[` ${t('hub.title')}`, BOLD + fg(P.blue)]]
+  const title: Span[] = [[` ${t('hub.title')}`, BOLD + fg(ACCENT)]]
   const lines = [split(peek ? back : title, [...filterSpans(ui), ...button.spans], W), render([], W)]
   hits.push({ x1: W - button.cells + 1, x2: W, y1: 1, y2: 1, act: acts.newAgent })
   hits.push({ x1: 1, x2: spanWidth(back), y1: 1, y2: 1, act: acts.closePeek })

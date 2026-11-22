@@ -98,7 +98,7 @@ title=${title//#/##}
 layout set -su 'user-keys[0]'
 cmd=$(printf '%q ' "$GHOSTTY_CONF/bin/ghostty-term" --attach "$name" "$dir" "$WIN")
 ah_log info term "terminal opened" id "$name" win "$WIN" pane "$pane"
-layout display-popup -c "$client" -E -w 80% -h 80% -b rounded -S "fg=#89b4fa" -T "$title" -d "$dir" "$cmd" || {
+layout display-popup -c "$client" -E -w 80% -h 80% -b rounded -S "fg=$(layout show -gv @accent 2>/dev/null || echo default)" -T "$title" -d "$dir" "$cmd" || {
   status=$?
   ah_log error term "terminal popup failed" id "$name" exit "$status" client "$client"
   exit "$status"

@@ -5,7 +5,7 @@
 
 import { RESET, bg, fg } from './palette.ts'
 
-export { BOLD, ITALIC, MONITOR, P, RESET, STATE, STOPPED, bg, fg, mix } from './palette.ts'
+export { ACCENT, ACCENT_INK, BOLD, ITALIC, MONITOR, P, RESET, STATE, STOPPED, bg, fg, mix } from './palette.ts'
 export { tokens } from './input.ts'
 export { enter, leave, out, paint } from './screen.ts'
 

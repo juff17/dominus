@@ -1,4 +1,6 @@
 # Catppuccin Mocha, as the viewer's Files mode is drawn in the layout design.
+# Its #89b4fa is the theme colour, ACCENT in tui/palette.ts; TOML has no
+# variables, so tests/contract/colours.test.mjs holds each use to it.
 
 [mgr]
 cwd            = { fg = "#89b4fa", bold = true }

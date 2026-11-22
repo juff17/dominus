@@ -161,7 +161,7 @@ function watchBar(s: MonitorsState, w: number): string[] {
   const room = Math.max(4, inner - spanWidth([lead, ...right]) - 3)
   const w8 = s.pipes.watch
   const input = field({ text: w8.text, at: w8.at, w: room, focused: w8.typing, placeholder: W('watchPlaceholder') })
-  return [frameTop(w, { color: P.teal, fill: BASE }), edge(split([lead, ...input.map(([x, st]): Span => [x, `${st ?? ''}${BOX}`])], right, inner, BOX)), frameBottom(w, { color: P.teal, fill: BASE })]
+  return [frameTop(w, { fill: BASE }), edge(split([lead, ...input.map(([x, st]): Span => [x, `${st ?? ''}${BOX}`])], right, inner, BOX)), frameBottom(w, { fill: BASE })]
 }
 
 // item is -1 for a group heading. A lit gate takes three lines.

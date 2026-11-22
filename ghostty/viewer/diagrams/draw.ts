@@ -7,7 +7,7 @@ import { t } from '../../core/text.ts'
 import type { Box } from '../../tui/backdrop.ts'
 import type { Hint } from '../../tui/chrome.ts'
 import { closeLabel, compose } from '../../tui/overlay.ts'
-import { BOLD, CAP_L, CAP_R, ITALIC, P, type Span, bg, clean, fg, pill, render, spanWidth, split, width } from '../../tui/term.ts'
+import { ACCENT, BOLD, CAP_L, CAP_R, ITALIC, P, type Span, bg, clean, fg, pill, render, spanWidth, split, width } from '../../tui/term.ts'
 import { type View, clampView, fitChips, home, placement } from '../view.ts'
 import { type Diagram, dropPicture, fitHints, hints, placeIn, showFile, truncate } from './diagram.ts'
 import { gridRow } from './kitty.ts'
@@ -27,7 +27,7 @@ function header(s: DiagramState, cols: number): string {
 
 function chip(d: Diagram, i: number, index: number): { spans: Span[]; cells: number } {
   const on = i === index
-  const color = on ? P.blue : P.surface0
+  const color = on ? ACCENT : P.surface0
   const dim = fg(on ? P.surface0 : P.overlay1) + bg(color)
   const spans: Span[] = [
     [CAP_L, fg(color)],

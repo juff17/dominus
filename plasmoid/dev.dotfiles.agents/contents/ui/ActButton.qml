@@ -1,5 +1,5 @@
-// `look`: "fill" (an answer, in `fill`), "blue" (an outline, to open
-// something), "link" (blue text alone) or "plain" (a grey outline).
+// `look`: "fill" (an answer, in `fill`), "accent" (an outline, to open
+// something), "link" (accent text alone) or "plain" (a grey outline).
 import QtQuick
 import "mocha.js" as M
 
@@ -11,7 +11,7 @@ Rectangle {
     property string keyHint: ""
     signal clicked()
 
-    readonly property color ink: look === "fill" ? M.crust : look === "blue" || look === "link" ? M.blue : M.subtext1
+    readonly property color ink: look === "fill" ? M.crust : look === "accent" || look === "link" ? M.accent : M.subtext1
     implicitWidth: br.implicitWidth + 16
     implicitHeight: 24
     radius: 6
@@ -19,7 +19,7 @@ Rectangle {
     opacity: enabled ? 1 : 0.4
     color: look === "fill" ? (ma.containsMouse ? Qt.lighter(fill, 1.1) : fill) : ma.containsMouse ? M.surface0 : "transparent"
     border.width: look === "fill" || look === "link" ? 0 : 1
-    border.color: look === "blue" ? M.blue : M.surface1
+    border.color: look === "accent" ? M.accent : M.surface1
 
     Row {
         id: br

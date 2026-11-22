@@ -4,7 +4,7 @@
 import type { Lane } from '../../agents/model.ts'
 import { t } from '../../core/text.ts'
 import { type Mouse, leftPress } from '../../tui/input.ts'
-import { BOLD, P, type Span, bg, fg, render } from '../../tui/term.ts'
+import { ACCENT, BOLD, P, type Span, bg, fg, render } from '../../tui/term.ts'
 
 const BG = bg(P.crust)
 
@@ -17,7 +17,7 @@ export type Pressable<A> = { y1: number; y2: number; act: A }
 
 function button(icon: string, label: string, on: boolean, w: number, dot = false) {
   const fill = on ? bg(P.surface0) : BG
-  const color = fg(on ? P.blue : P.sub)
+  const color = fg(on ? ACCENT : P.sub)
   const mark: Span[] = dot ? [[' ●', fg(P.peach)]] : []
   return [
     render([[` ${icon}`, color], ...mark], w, fill),
