@@ -677,11 +677,11 @@
       },
       "monitors.githubHosts": {
         "label": "GitHub hosts",
-        "sub": "gh reads each; ✓ when gh is installed and its token is set; ↵ to change"
+        "sub": "gh reads each; ✓ when gh is installed and logged in there (gh auth login); ↵ to change"
       },
       "monitors.gitlabHosts": {
         "label": "GitLab hosts",
-        "sub": "glab reads each; ✓ when glab is installed and GITLAB_TOKEN is set; ↵ to add one"
+        "sub": "glab reads each; ✓ when glab is installed and logged in there (glab auth login); ↵ to add one"
       },
       "monitors.startOn": {
         "label": "Start on",

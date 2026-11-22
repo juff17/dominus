@@ -314,7 +314,7 @@ def watch(args, forge, pid, ref, path):
     except SetupError as e:
         return give_up(args, "setup", str(e))
     except AuthError as e:
-        return give_up(args, "auth", f"{forge.cli} rejected the token: {e}")
+        return give_up(args, "auth", f"{forge.login_hint()} ({e})")
     except (ApiError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError, AttributeError) as e:
         log.error("first poll failed", err=e)
         return give_up(args, "setup", f"cannot read the pipeline on {forge.host} through {forge.cli}: {e}")
@@ -356,7 +356,7 @@ def watch(args, forge, pid, ref, path):
                 log.debug("poll done", ms=round((time.monotonic() - started) * 1000), status=snap["status"])
         except AuthError as e:
             log.error("token refused", err=e)
-            return give_up(args, "auth", f"{forge.cli} rejected the token: {e}")
+            return give_up(args, "auth", f"{forge.login_hint()} ({e})")
         # Off the network, a 5xx, or a body of an unexpected shape: retried.
         except (ApiError, subprocess.TimeoutExpired, ValueError, KeyError, IndexError, TypeError,
                 AttributeError, OSError) as e:

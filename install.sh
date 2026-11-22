@@ -215,3 +215,7 @@ if ((plugin || diagrams)); then ensure_marketplace; fi
 if ((plugin)); then install_plugin "$PLUGIN"; fi
 if ((diagrams)); then install_diagrams; fi
 echo "==> Done"
+if [[ $mode == install ]]; then
+  echo "    The PR and pipeline features call GitHub and GitLab through gh and glab: log each in to your hosts"
+  echo "    (gh auth login, glab auth login --use-keyring). README.md, under Tokens, lists the permissions each needs."
+fi

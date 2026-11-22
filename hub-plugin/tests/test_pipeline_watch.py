@@ -175,7 +175,6 @@ class Cli(unittest.TestCase):
         for argv, env, want in (
                 (["https://github.com/o/app/pull/4"], {}, "[setup] https://github.com/o/app/pull/4 is a PR or MR"),
                 (["gitlab.com/grp/app@gone"], {}, "[setup] no pipeline on gone in gitlab.com/grp/app"),
-                ([GH_URL], {"GITHUB_TOKEN": None}, "[setup] GH_TOKEN or GITHUB_TOKEN is not set."),
                 (["https://gitlab.com/grp/app/-/pipelines/404"], {}, "[setup] cannot read the pipeline on gitlab.com through glab: HTTP 404"),
         ):
             with self.subTest(argv):
@@ -187,7 +186,7 @@ class Cli(unittest.TestCase):
     def test_a_refused_token_is_auth(self):
         self.box.routes({GH_RUN: {"_exit": 1, "_stderr": "HTTP 401: Bad credentials (https://api.github.com/...)"}})
         code, lines, _ = self.watch(GH_URL, "--once")
-        self.assertEqual((code, lines), (2, ["[auth] gh rejected the token: HTTP 401: Bad credentials (https://api.github.com/...)"]))
+        self.assertEqual((code, lines), (2, ["[auth] gh isn't logged in to github.com, or its token lacks a permission this needs. Run `gh auth login --hostname github.com` in a terminal (the README's Tokens section lists the permissions), then try again (HTTP 401: Bad credentials (https://api.github.com/...))"]))
 
     def test_session_is_required_unless_once(self):
         code, _, err = self.watch(GH_URL)

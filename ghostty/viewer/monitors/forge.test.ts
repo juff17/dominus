@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { type RunResult, type Runner, run } from '../../core/proc.ts'
-import { type Pr, forgeClient, githubPipeline, gitlabPipeline, onPath, parseGithub, ready, whyFailed } from './forge.ts'
+import { type Pr, forgeClient, githubPipeline, gitlabPipeline, loggedIn, onPath, parseGithub, whyFailed } from './forge.ts'
 
 const FIXTURES = join(import.meta.dirname, '../../../tests/fixtures/viewer/monitors')
 const FAKE = join(FIXTURES, 'fake-forge.mjs')
@@ -107,7 +107,7 @@ test('a host that can’t be read shows no rows; one that failed this time keeps
   assert.deepEqual([!gone.ok && gone.why, gone.prs.length], ['missing', 0])
 })
 
-test('ready: the CLI on PATH and the token set, read only for whether it is', () => {
+test('onPath: finds an executable in a PATH folder', () => {
   const dir = mkdtempSync(join(tmpdir(), 'forge-path-'))
   try {
     mkdirSync(join(dir, 'bin'))
@@ -116,10 +116,23 @@ test('ready: the CLI on PATH and the token set, read only for whether it is', ()
     const PATH = join(dir, 'bin')
     assert.equal(onPath('glab', PATH), true)
     assert.equal(onPath('gh', PATH), false)
-    assert.deepEqual(ready('gl', 'gitlab.example.com', { PATH, GITLAB_TOKEN: 'x' }), { cli: true, token: true })
-    assert.deepEqual(ready('gh', 'github.com', { PATH, GH_TOKEN: 'x' }), { cli: false, token: true })
-    assert.deepEqual(ready('gh', 'ghe.corp.example', { PATH, GITHUB_TOKEN: 'x' }), { cli: false, token: false })
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('loggedIn: asks the CLI for the user on that host, and keeps only whether it worked', async () => {
+  const calls: string[][] = []
+  const answer =
+    (ok: boolean): Runner =>
+    async args => {
+      calls.push(args)
+      return { ok, out: ok ? '{"login":"me"}' : '', err: ok ? '' : 'To get started with GitHub CLI, please run:  gh auth login', exit: ok ? 0 : 4 }
+    }
+  assert.equal(await loggedIn('gh', 'ghe.corp.example', answer(true)), true)
+  assert.equal(await loggedIn('gl', 'gitlab.example.com', answer(false)), false)
+  assert.deepEqual(calls, [
+    ['gh', 'api', '--hostname', 'ghe.corp.example', 'user'],
+    ['glab', 'api', '--hostname', 'gitlab.example.com', 'user'],
+  ])
 })

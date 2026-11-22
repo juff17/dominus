@@ -471,3 +471,29 @@ test('Environments: backspace clears it to local alone, which it always keeps', 
   press(s, '\r')
   assert.deepEqual(get('monitors.logs.envs'), ['local', 'qa'])
 })
+
+test('askLogins asks each listed host once, keeps the answer, and redraws as each comes', async () => {
+  const asked: string[] = []
+  const before = nav.effects.loggedIn
+  nav.effects.loggedIn = async (forge, host) => {
+    asked.push(`${forge} ${host}`)
+    if (host === 'down.example') throw new Error('spawn failed')
+    return host === 'github.com'
+  }
+  try {
+    let redraws = 0
+    const values = { 'monitors.githubHosts': ['github.com', 'down.example'], 'monitors.gitlabHosts': ['gitlab.example.com'] }
+    nav.askLogins(values, () => redraws++)
+    nav.askLogins(values, () => redraws++)
+    await new Promise(resolve => setImmediate(resolve))
+    assert.deepEqual(asked, ['gh github.com', 'gh down.example', 'gl gitlab.example.com'], 'a host being asked is not asked again')
+    const got = (forge: 'gh' | 'gl', host: string) => nav.logins.get(nav.loginKey(forge, host))
+    assert.deepEqual([got('gh', 'github.com'), got('gh', 'down.example'), got('gl', 'gitlab.example.com')], [true, false, false])
+    assert.equal(redraws, 3)
+    nav.askLogins(values, () => redraws++)
+    assert.equal(asked.length, 3, 'an answered host is not asked again')
+  } finally {
+    nav.effects.loggedIn = before
+    nav.logins.clear()
+  }
+})

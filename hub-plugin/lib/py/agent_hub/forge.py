@@ -1,8 +1,9 @@
 """GitHub and GitLab through the gh and glab CLIs, for the skill scripts that
 watch them (pr-babysit's watch_pr.py, pipeline-watch's watch_pipeline.py).
 
-Every call is `gh api` / `glab api --hostname <host>`, authenticated only by
-the token in the environment (GITHUB_TOKEN or GH_TOKEN, GITLAB_TOKEN). This
+Every call is `gh api` / `glab api --hostname <host>`, authenticated by the
+CLI's own login for that host (`gh auth login`, `glab auth login`), or by a
+token in the environment, which both CLIs prefer. No token is read here. This
 module reads; nothing here retries, plays, cancels or approves a job.
 
 Jobs come out of both hosts in one shape (see GitHub.check and GitLab.job),
@@ -11,7 +12,6 @@ stage, or on GitHub the part of a job's name before " / " (a reusable
 workflow call)."""
 
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -118,30 +118,27 @@ class Forge:
                 return items
             page += 1
 
-    def token_vars(self):
-        return []
-
     def problem(self):
-        """Why calls can't be made from here (the CLI or the token missing),
-        as a line to show the user, or None. The token is only tested for
-        presence, never read."""
+        """Why calls can't be made from here (the CLI missing), as a line to
+        show the user, or None. A missing login shows on the first call, as an
+        AuthError: see login_hint()."""
         if not shutil.which(self.cli):
             return f"{self.cli} is not installed. Install it, then start the watcher again."
-        names = self.token_vars()
-        if not any(os.environ.get(n) for n in names):
-            return (f"{' or '.join(names)} is not set. Export it from a file your shell loads "
-                    "(for example ~/.zshenv or ~/.profile), then restart Claude Code.")
         return None
+
+    def login_hint(self):
+        """What to tell the user when the host refused the CLI's login, or it
+        has none there."""
+        where = f" to {self.host}" if self.host else ""
+        login = f"{self.cli} auth login" + (f" --hostname {self.host}" if self.host else "")
+        return (f"{self.cli} isn't logged in{where}, or its token lacks a permission this needs. "
+                f"Run `{login}` in a terminal (the README's Tokens section lists the permissions), "
+                "then try again")
 
 
 class GitHub(Forge):
     cli = "gh"
     kind = "github"
-
-    def token_vars(self):
-        if self.host == "github.com":
-            return ["GH_TOKEN", "GITHUB_TOKEN"]
-        return ["GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"]
 
     def repo(self):
         return f"repos/{self.project}"
@@ -211,9 +208,6 @@ class GitLab(Forge):
         "manual": "manual",
         "pending": "pending",
     }
-
-    def token_vars(self):
-        return ["GITLAB_TOKEN"]
 
     def proj(self):
         return f"projects/{urllib.parse.quote(self.project, safe='')}"

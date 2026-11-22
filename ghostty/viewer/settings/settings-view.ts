@@ -12,7 +12,7 @@ import { openOverlay } from '../../tui/overlay.ts'
 import { tokens } from '../../tui/term.ts'
 import { logCrashes } from '../logging.ts'
 import { frame } from './draw.ts'
-import { follow, mayClose, onKey, start, typeText } from './state.ts'
+import { askLogins, follow, mayClose, onKey, start, typeText } from './state.ts'
 
 logCrashes(logger('settings-panel'))
 
@@ -30,6 +30,7 @@ const ov = openOverlay({
 function draw() {
   // A resize draws with no key first, and the file may have changed since.
   follow(s)
+  askLogins(load(), draw)
   const f = frame(s, ov.size())
   s.scroll = f.scroll
   ov.paint(f.lines, f.title)

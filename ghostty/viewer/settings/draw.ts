@@ -14,8 +14,8 @@ import { checks, chips, field, onOff, select, spanWidth } from '../../tui/contro
 import { clampScroll } from '../../tui/list.ts'
 import type { Size } from '../../tui/overlay.ts'
 import { ACCENT, BOLD, type Line, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
-import { type ForgeId, ready } from '../monitors/forge.ts'
-import { type FileInput, type Input, type Item, type SettingItem, type SettingsState, current, modeRows, pathGhost } from './state.ts'
+import { CLI, type ForgeId, onPath } from '../monitors/forge.ts'
+import { type FileInput, type Input, type Item, type SettingItem, type SettingsState, current, loginKey, logins, modeRows, pathGhost } from './state.ts'
 
 export const NAV = 22
 // Gap, the section's note, gap above the body; footer below it. The title
@@ -62,16 +62,17 @@ function valueSpans(r: SettingItem, values: Settings, on: boolean, flag: number,
   }
 }
 
-// ✓ when the CLI is on PATH and its token is set (whether it is, never its
-// value).
+// ✓ when the CLI is on PATH and logged in to the host, … while that is still
+// being asked (askLogins).
 function hostSpans(forge: ForgeId, hosts: readonly string[], on: boolean): Span[] {
   if (!hosts.length) return [[t('settings.ui.none'), fg(P.overlay1)]]
+  const cli = onPath(CLI[forge])
   return hosts.flatMap((h, i): Span[] => {
-    const r = ready(forge, h)
+    const login = cli ? logins.get(loginKey(forge, h)) : false
     return [
       [`${i ? '  ' : ''}${h} `, (on ? BOLD : '') + fg(P.text)],
-      [forge === 'gh' ? 'gh' : 'glab', fg(P.overlay1)],
-      [r.cli && r.token ? ' ✓' : ' ✗', fg(r.cli && r.token ? P.green : P.peach)],
+      [CLI[forge], fg(P.overlay1)],
+      login === undefined ? [' …', fg(P.overlay1)] : [login ? ' ✓' : ' ✗', fg(login ? P.green : P.peach)],
     ]
   })
 }

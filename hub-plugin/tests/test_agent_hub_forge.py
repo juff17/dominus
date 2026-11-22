@@ -50,19 +50,24 @@ class Preflight(unittest.TestCase):
     def setUp(self):
         self.box = Sandbox(self)
 
-    def test_a_missing_cli_or_token_is_one_line_for_the_user(self):
+    def test_a_missing_cli_is_one_line_for_the_user(self):
         gh = forge.GitHub("github.com", "o/app")
         with mock.patch.dict(os.environ, self.box.env(PATH=str(self.box.tools)), clear=True):
             self.assertEqual(gh.problem(), "gh is not installed. Install it, then start the watcher again.")
-        with mock.patch.dict(os.environ, self.box.env(), clear=True):
-            self.assertRegex(gh.problem(), r"^GH_TOKEN or GITHUB_TOKEN is not set\. Export it")
-            self.assertRegex(forge.GitLab("gitlab.com", "g/app").problem(), r"^GITLAB_TOKEN is not set")
-        with mock.patch.dict(os.environ, self.box.env(GITHUB_TOKEN="dummy"), clear=True):
-            self.assertIsNone(gh.problem())
 
-    def test_enterprise_github_also_takes_its_own_token(self):
-        self.assertEqual(forge.GitHub("github.acme.com", "o/app").token_vars()[:2],
-                         ["GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"])
+    def test_no_token_in_the_environment_is_no_problem_the_login_answers_on_the_first_call(self):
+        with mock.patch.dict(os.environ, self.box.env(), clear=True):
+            self.assertIsNone(forge.GitHub("github.com", "o/app").problem())
+            self.assertIsNone(forge.GitLab("gitlab.com", "g/app").problem())
+
+    def test_the_login_hint_names_the_host_to_log_in_to(self):
+        self.assertIn("Run `gh auth login --hostname github.acme.com` in a terminal",
+                      forge.GitHub("github.acme.com", "o/app").login_hint())
+        self.assertIn("Run `glab auth login --hostname gitlab.com` in a terminal",
+                      forge.GitLab("gitlab.com", "g/app").login_hint())
+        self.assertEqual(forge.GitLab("", "").login_hint(),
+                         "glab isn't logged in, or its token lacks a permission this needs. Run `glab auth login` "
+                         "in a terminal (the README's Tokens section lists the permissions), then try again")
 
 
 class Run(unittest.TestCase):

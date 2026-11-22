@@ -125,7 +125,7 @@ class GitHubOnce(Cli):
         self.routes["user"] = {"_exit": 1, "_stderr": "HTTP 401: Bad credentials (https://api.github.com/user)"}
         self.box.routes(self.routes)
         code, lines, _ = self.watch(GH_URL, "--once")
-        self.assertEqual((code, lines), (2, ["[auth] gh rejected the token: HTTP 401: Bad credentials (https://api.github.com/user)"]))
+        self.assertEqual((code, lines), (2, ["[auth] gh isn't logged in to github.com, or its token lacks a permission this needs. Run `gh auth login --hostname github.com` in a terminal (the README's Tokens section lists the permissions), then try again (HTTP 401: Bad credentials (https://api.github.com/user))"]))
 
     def test_an_unreachable_host_is_setup(self):
         self.routes["user"] = {"_exit": 1, "_stderr": "error connecting to api.github.com\ncheck your internet connection"}
@@ -137,7 +137,7 @@ class GitHubOnce(Cli):
         self.routes[f"{GH}/pulls/91"] = {"_exit": 1, "_stderr": "gh: Bad credentials (HTTP 401)"}
         self.box.routes(self.routes)
         code, lines, _ = self.watch(GH_URL, "--session", "s1")
-        self.assertEqual((code, lines), (2, ["[auth] gh rejected the token: gh: Bad credentials (HTTP 401)"]))
+        self.assertEqual((code, lines), (2, ["[auth] gh isn't logged in to github.com, or its token lacks a permission this needs. Run `gh auth login --hostname github.com` in a terminal (the README's Tokens section lists the permissions), then try again (gh: Bad credentials (HTTP 401))"]))
 
     def poll_failures(self):
         log = self.box.root / "state" / "agent-hub" / "logs" / "watch_pr.log"
@@ -214,23 +214,19 @@ class Preflight(Cli):
         code, lines, _ = self.watch(GL_URL, "--once", PATH=str(self.box.tools))
         self.assertEqual(lines, ["[setup] glab is not installed. Install it, then start the watcher again."])
 
-    def test_no_token(self):
-        tail = (" is not set. Export it from a file your shell loads (for example ~/.zshenv or ~/.profile), "
-                "then restart Claude Code.")
-        clone = self.box.clone(("gh", "git@github.com:u/gad.git"), ("gl", "git@gitlab.com:grp/sub/gad.git"),
-                               ("ghe", "git@github.example.com:u/gad.git"))
-        for url, names in ((GH_URL, "GH_TOKEN or GITHUB_TOKEN"),
-                           ("https://github.example.com/u/gad/pull/91",
-                            "GH_ENTERPRISE_TOKEN or GITHUB_ENTERPRISE_TOKEN or GH_TOKEN or GITHUB_TOKEN"),
-                           (GL_URL, "GITLAB_TOKEN")):
-            code, lines, _ = self.watch(url, "--once", clone=clone, GITHUB_TOKEN="", GITLAB_TOKEN="")
-            self.assertEqual((code, lines), (2, [f"[setup] {names}{tail}"]), url)
-        self.assertEqual(self.box.calls(), [])
-
-    def test_an_empty_token_is_no_token_but_any_one_name_will_do(self):
-        _, lines, _ = self.watch(GH_URL, "--once", GITHUB_TOKEN="", GH_TOKEN="x")
+    def test_no_token_in_the_environment_still_calls_the_cli_whose_own_login_may_answer(self):
+        _, lines, _ = self.watch(GH_URL, "--once", GITHUB_TOKEN="", GH_TOKEN="", GITLAB_TOKEN="")
         # Past preflight: the fake gh has no routes, so the first call fails.
         self.assertEqual(lines, ["[setup] cannot reach github.com through gh: HTTP 404: Not Found (fake: no route for user)"])
+
+    def test_gh_with_no_login_is_auth_and_says_how_to_log_in(self):
+        self.box.routes({"user": {"_exit": 4, "_stderr": "To get started with GitHub CLI, please run:  gh auth login"}})
+        code, lines, _ = self.watch("https://github.example.com/u/gad/pull/91", "--once",
+                                    clone=self.box.clone(("ghe", "git@github.example.com:u/gad.git")))
+        self.assertEqual(code, 2)
+        self.assertEqual(len(lines), 1, lines)
+        self.assertTrue(lines[0].startswith("[auth] gh isn't logged in to github.example.com, "), lines[0])
+        self.assertIn("Run `gh auth login --hostname github.example.com` in a terminal", lines[0])
 
     def test_no_remote_for_the_pr(self):
         clone = self.box.clone(("origin", "git@github.com:someone/else.git"))

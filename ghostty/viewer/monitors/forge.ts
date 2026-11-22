@@ -54,10 +54,6 @@ export type ForgeClient = { fetch: (forge: ForgeId, host: string, before?: HostR
 
 // ------------------------------------------------------------ ready
 
-// The env vars each host's CLI reads its token from.
-export const tokenVars = (forge: ForgeId, host: string): string[] =>
-  forge === 'gl' ? ['GITLAB_TOKEN'] : host === 'github.com' ? ['GITHUB_TOKEN', 'GH_TOKEN'] : ['GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN']
-
 export function onPath(cmd: string, path = process.env.PATH ?? ''): boolean {
   return path.split(delimiter).some(dir => {
     if (!dir) return false
@@ -71,11 +67,14 @@ export function onPath(cmd: string, path = process.env.PATH ?? ''): boolean {
   })
 }
 
-// Only checks that the token is set; its value is never read.
-export const ready = (forge: ForgeId, host: string, env: Record<string, string | undefined> = process.env): { cli: boolean; token: boolean } => ({
-  cli: onPath(CLI[forge], env.PATH),
-  token: tokenVars(forge, host).some(v => Boolean(env[v])),
-})
+// The CLI is logged in to the host (gh auth login / glab auth login) when it
+// can read the user there. A real call, since a stored login can be expired or
+// revoked; only its exit status is kept, so the hub never handles a token.
+export const loginArgs = (forge: ForgeId, host: string): string[] => [CLI[forge], 'api', '--hostname', host, 'user']
+
+export async function loggedIn(forge: ForgeId, host: string, run: Runner, timeoutMs = 10000): Promise<boolean> {
+  return (await run(loginArgs(forge, host), { timeout: timeoutMs })).ok
+}
 
 // ------------------------------------------------------------ parsing
 

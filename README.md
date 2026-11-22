@@ -55,6 +55,48 @@ Elastic, added by hand once per machine ([elastic.md](hub-plugin/skills/log-watc
 Claude Code sends no desktop notifications: what needs you
 shows in the Agents widget (see [docs/ghostty.md](docs/ghostty.md#agents-widget)).
 
+## Tokens
+
+Everything that talks to GitHub or GitLab runs the `gh` or `glab` CLI (`gh api …`,
+`glab api …`), so it uses the CLI's own login. The hub keeps no tokens and reads none. Log each
+CLI in to every host you list in Settings → Monitors:
+
+```bash
+gh auth login                                   # github.com; add --hostname for GitHub Enterprise
+glab auth login --use-keyring                   # gitlab.com; add --hostname for a self-managed GitLab
+```
+
+`gh` keeps its token in the system keyring, and `glab` does too with `--use-keyring`. Settings →
+Monitors shows ✓ by each host the CLI can reach. Don't also export `GH_TOKEN`, `GITHUB_TOKEN`
+or `GITLAB_TOKEN` from your shell profile. Both CLIs prefer them over the login, and every agent's
+shell would then hold the token, where one `env` puts it in a transcript.
+
+**GitHub.** `gh auth login` in the browser gives `repo`, `read:org` and `gist`, which covers
+everything. For a narrower token, make one and pass it with `gh auth login --with-token`:
+
+| Feature | Fine-grained token | Classic token |
+|---|---|---|
+| Monitors (Alt+M): your PRs, reviews and pipelines | Metadata, Contents, Pull requests, Checks, Commit statuses, Actions: Read | `repo`, `read:org` |
+| pipeline-watch, and pr-babysit's watching | the same, Read | `repo` |
+| pr-babysit approvals: replies to review comments | Pull requests: Read and write | `repo` |
+| Retrying a job, approving a workflow run, cancelling a stuck run | Actions: Read and write | `repo` |
+| Approving a deployment (pr-babysit, Alt+M) | Deployments: Read and write, and you must be one of the environment's reviewers | `repo` |
+
+A fine-grained token covers one owner (you or one organisation), so PRs in other owners'
+repos won't show. Use a classic token or the browser login when you work across several.
+
+**GitLab.** A personal access token with `api` covers everything: replies, retrying and playing
+jobs, and approving from Alt+M. `read_api` is enough if you only watch (Monitors, pipeline-watch,
+pr-babysit without approvals). `glab auth login` asks for `api` and `write_repository`. The hub
+doesn't need `write_repository`: pushes run plain `git push` with your git credentials (an SSH
+key or a credential helper), for GitHub too.
+
+**Kibana (optional).** log-watcher's Discover links need no token. For short `/r/s/…` links,
+export `KIBANA_API_KEY`, an API key allowed to create short URLs. Every agent's shell then sees
+it, so leave it unset unless you want short links. The Elastic MCP connector holds its own key,
+with `feature_agentBuilder.read` and read access to the log indices
+([elastic.md](hub-plugin/skills/log-watcher/references/elastic.md)).
+
 ## Tests
 
 Run every suite before committing a change, agents included:

@@ -4,6 +4,7 @@ import { accessSync, constants, statSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
 import { errorMessage, logger } from '../../core/log.ts'
+import { run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { type Menu, complete, suggestion } from '../../tui/complete.ts'
 import { editField, insertAt, length } from '../../tui/line.ts'
@@ -31,6 +32,7 @@ import {
   toggleFlag,
 } from '../../settings/settings.ts'
 import { type KeybindRow, apply, captured, clash } from '../../settings/keybinds.ts'
+import { type ForgeId, loggedIn } from '../monitors/forge.ts'
 
 const log = logger('settings-panel')
 
@@ -47,7 +49,43 @@ function onPath(cmd: string): boolean {
 }
 
 // Tests put stand-ins here.
-export const effects: { applyKeys: () => string; hasYazi: () => boolean } = { applyKeys: () => apply(), hasYazi: () => onPath('yazi') }
+export const effects: { applyKeys: () => string; hasYazi: () => boolean; loggedIn: (forge: ForgeId, host: string) => Promise<boolean> } = {
+  applyKeys: () => apply(),
+  hasYazi: () => onPath('yazi'),
+  loggedIn: (forge, host) => loggedIn(forge, host, run),
+}
+
+// Whether gh or glab is logged in to each host the hosts rows list, by
+// loginKey(). A host still being asked has no entry yet. Asked once per panel,
+// so a login made while it is open shows the next time it opens.
+export const logins = new Map<string, boolean>()
+const asking = new Set<string>()
+export const loginKey = (forge: ForgeId, host: string): string => `${forge} ${host}`
+
+// Asks every listed host with no answer yet; changed() redraws once one comes.
+export function askLogins(values: Pick<Settings, 'monitors.githubHosts' | 'monitors.gitlabHosts'>, changed: () => void): void {
+  const hosts = [...values['monitors.githubHosts'].map(h => ['gh', h] as const), ...values['monitors.gitlabHosts'].map(h => ['gl', h] as const)]
+  for (const [forge, host] of hosts) {
+    const key = loginKey(forge, host)
+    if (logins.has(key) || asking.has(key)) continue
+    asking.add(key)
+    const started = performance.now()
+    effects
+      .loggedIn(forge, host)
+      .then(ok => {
+        log.debug('login checked', { forge, host, ok, ms: Math.round(performance.now() - started) })
+        logins.set(key, ok)
+      })
+      .catch((err: unknown) => {
+        log.warn('login check failed', { forge, host, err: errorMessage(err) })
+        logins.set(key, false)
+      })
+      .finally(() => {
+        asking.delete(key)
+        changed()
+      })
+  }
+}
 
 type ModesKey = Extract<SettingRow, { type: 'modes' }>['key']
 type FileRow = Extract<SettingRow, { type: 'file' }>

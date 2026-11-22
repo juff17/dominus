@@ -162,8 +162,9 @@ const failure = (r: RunResult, timedOut: boolean): string =>
 export type ApprovalScript = Partial<Pick<Proposal, 'id' | 'kind' | 'script'>>
 
 // Runs the approval.py that wrote the proposal, so a babysit from a
-// worktree's skill is approved by the same code. Under zsh, since ~/.zshenv
-// exports the tokens and the panel that runs this didn't load it.
+// worktree's skill is approved by the same code. Under zsh, so what ~/.zshenv
+// sets (PATH, or a token exported in place of a gh/glab login) reaches it: the
+// panel that runs this didn't load it.
 export async function runApproval(p: ApprovalScript | null | undefined, args: string[], exec: Runner = runGroup, timeout = APPROVAL_MS): Promise<ApprovalResult> {
   if (!p?.script || !/\/approval\.py$/.test(p.script) || !existsSync(p.script)) {
     log.error('approval script gone', { id: p?.id, kind: p?.kind, path: p?.script, args })

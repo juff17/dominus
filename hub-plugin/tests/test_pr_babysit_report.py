@@ -299,6 +299,9 @@ class Forge:
     def me(self):
         return "me"
 
+    def login_hint(self):
+        return "log in"
+
     def snapshot(self, number):
         if self.before:
             self.before(len(self.snaps))
@@ -439,7 +442,7 @@ class Loop(Case):
 
     def test_an_auth_error_mid_watch_ends_it(self):
         code, lines = self.watch(Forge(snap(), w.AuthError("HTTP 401: Bad credentials")), "--session", "s1", "--interval", "15")
-        self.assertEqual((code, lines[-1]), (2, "[auth] gh rejected the token: HTTP 401: Bad credentials"))
+        self.assertEqual((code, lines[-1]), (2, "[auth] log in (HTTP 401: Bad credentials)"))
 
 
 if __name__ == "__main__":

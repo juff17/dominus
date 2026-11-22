@@ -570,7 +570,7 @@ def main():
     try:
         me = forge.me()
     except AuthError as e:
-        emit("auth", f"{forge.cli} rejected the token: {e}")
+        emit("auth", f"{forge.login_hint()} ({e})")
         sys.exit(2)
     except (ApiError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError) as e:
         emit("setup", f"cannot reach {forge.host} through {forge.cli}: {e}")
@@ -621,7 +621,7 @@ def main():
                 log.info("watch ended", state=snap["state"], expired=len(expired))
                 return 0
         except AuthError as e:
-            emit("auth", f"{forge.cli} rejected the token: {e}")
+            emit("auth", f"{forge.login_hint()} ({e})")
             log.error("token refused", err=e)
             return 2
         # A body of an unexpected shape (None, a list) or a state file that

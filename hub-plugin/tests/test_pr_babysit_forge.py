@@ -264,12 +264,6 @@ class CheckStatus(unittest.TestCase):
                 ("completed", "startup_failure", "failed"), ("completed", None, "failed")):
             self.assertEqual(w.GitHub.check_status({"status": status, "conclusion": conclusion}), want, (status, conclusion))
 
-    def test_token_vars_differ_for_enterprise_hosts(self):
-        self.assertEqual(w.GitHub("github.com", "u/gad").token_vars(), ["GH_TOKEN", "GITHUB_TOKEN"])
-        self.assertEqual(w.GitHub("github.example.com", "u/gad").token_vars(),
-                         ["GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"])
-        self.assertEqual(w.GitLab("gitlab.com", "a/b").token_vars(), ["GITLAB_TOKEN"])
-
 
 # ------------------------------------------------------------------ GitLab
 

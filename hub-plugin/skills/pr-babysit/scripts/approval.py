@@ -624,8 +624,7 @@ def approve(pid, body=None, drop=(), auto=False):
 
 
 def token_hint(p):
-    forge = (w.GitHub if p["pr"]["forge"] == "github" else w.GitLab)(p["pr"].get("host", ""), "")
-    return f"{' or '.join(forge.token_vars())} was refused or isn't set where this ran; export it from ~/.zshenv"
+    return (w.GitHub if p["pr"]["forge"] == "github" else w.GitLab)(p["pr"].get("host", ""), "").login_hint()
 
 
 def reject(pid):

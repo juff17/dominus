@@ -257,27 +257,23 @@ class Environments(Case):
 
 
 class TokenHint(Case):
-    def test_a_refused_token_names_the_variables(self):
-        # On an Enterprise host gh reads GH_ENTERPRISE_TOKEN first (watch_pr's token_vars).
+    def test_a_refused_login_says_how_to_log_in_to_that_host(self):
         url = "https://github.example.com/u/gad/pull/91"
         self.serve(**{"repos/u/gad/actions/jobs/77": {"name": "unit"},
                       "POST repos/u/gad/actions/jobs/77/rerun": {"_exit": 1, "_stderr": "HTTP 401: Bad credentials"}})
         _, _, pid = self.propose("retry", url, "--job", "77", "--name", "unit")
         code, result = self.approve(pid)
-        self.assertEqual((code, result["message"]), (1, "GH_ENTERPRISE_TOKEN or GITHUB_ENTERPRISE_TOKEN or GH_TOKEN or GITHUB_TOKEN "
-                                                        "was refused or isn't set where this ran; "
-                                                        "export it from ~/.zshenv (HTTP 401: Bad credentials)"))
+        self.assertEqual(code, 1)
+        self.assertTrue(result["message"].startswith("gh isn't logged in to github.example.com, "), result["message"])
+        self.assertTrue(result["message"].endswith(" (HTTP 401: Bad credentials)"), result["message"])
         self.assertTrue(all(c["argv"][2] == "github.example.com" for c in self.box.calls()))
 
     def test_the_hint_for_each_forge(self):
-        self.assertEqual(ap.token_hint({"pr": {"forge": "github", "host": "github.com"}}),
-                         "GH_TOKEN or GITHUB_TOKEN was refused or isn't set where this ran; export it from ~/.zshenv")
-        # Enterprise reads its own variables first, as watch_pr.py's preflight says.
-        self.assertEqual(ap.token_hint({"pr": {"forge": "github", "host": "github.example.com"}}),
-                         "GH_ENTERPRISE_TOKEN or GITHUB_ENTERPRISE_TOKEN or GH_TOKEN or GITHUB_TOKEN was refused "
-                         "or isn't set where this ran; export it from ~/.zshenv")
-        self.assertEqual(ap.token_hint({"pr": {"forge": "gitlab"}}),
-                         "GITLAB_TOKEN was refused or isn't set where this ran; export it from ~/.zshenv")
+        self.assertIn("Run `gh auth login --hostname github.com`",
+                      ap.token_hint({"pr": {"forge": "github", "host": "github.com"}}))
+        self.assertIn("Run `glab auth login --hostname gitlab.example.com`",
+                      ap.token_hint({"pr": {"forge": "gitlab", "host": "gitlab.example.com"}}))
+        self.assertIn("Run `glab auth login` in a terminal", ap.token_hint({"pr": {"forge": "gitlab"}}))
 
     def test_an_unexpected_error_still_settles_the_proposal(self):
         self.serve(**{"repos/u/gad/actions/jobs/77": {"name": "unit"}})
