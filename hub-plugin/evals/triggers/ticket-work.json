@@ -1,0 +1,50 @@
+[
+ {
+  "query": "From the hub: Ask through AskUserQuestion.\nTicket: ENG-412 (jira)\nLink: https://acme.atlassian.net/browse/ENG-412\nSite: https://acme.atlassian.net\nAssign to: account 5b10ac8d82e05b22cc7d4ef5 (Jane Doe)\nUnassigned: yes\nStarted column: In Progress (status ids 3, 10001)\nBoard: Payments, Sprint 42\nFolder: ~/projects\nMy prompt:\n/dominus:ticket-work https://acme.atlassian.net/browse/ENG-412",
+  "should_trigger": true
+ },
+ {
+  "query": "From the hub: Ask through AskUserQuestion.\nTicket: OPS-77 (jira)\nLink: https://acme.atlassian.net/browse/OPS-77\nSite: https://acme.atlassian.net\nAssign to: account 5b10ac8d82e05b22cc7d4ef5 (Jane Doe)\nUnassigned: no\nStarted column: none found\nBoard: Platform, Sprint 9\nFolder: ~/work\nMy prompt:\n/dominus:ticket-work https://acme.atlassian.net/browse/OPS-77",
+  "should_trigger": true
+ },
+ {
+  "query": "work on ENG-412",
+  "should_trigger": true
+ },
+ {
+  "query": "pick up https://acme.atlassian.net/browse/PAY-88 and get it ready for an MR",
+  "should_trigger": true
+ },
+ {
+  "query": "can you do ticket OPS-1203? it's the flaky retry thing in the payouts service",
+  "should_trigger": true
+ },
+ {
+  "query": "start on the jira ticket ENG-77 for me, assign it to me and get going",
+  "should_trigger": true
+ },
+ {
+  "query": "write a jira ticket for the login redirect bug",
+  "should_trigger": false
+ },
+ {
+  "query": "implement ENG-1, ENG-2 and ENG-3 in parallel, each on its own branch",
+  "should_trigger": false
+ },
+ {
+  "query": "move ENG-412 to done",
+  "should_trigger": false
+ },
+ {
+  "query": "what's in my current sprint?",
+  "should_trigger": false
+ },
+ {
+  "query": "summarize the comments on ENG-412",
+  "should_trigger": false
+ },
+ {
+  "query": "babysit my MR for ENG-412 until it merges",
+  "should_trigger": false
+ }
+]

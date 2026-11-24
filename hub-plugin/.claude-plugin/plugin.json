@@ -1,5 +1,5 @@
 {
   "name": "dominus",
   "version": "1.0.0",
-  "description": "What Agent Hub needs from Claude Code: the pr-babysit, pipeline-watch, log-watcher and todo skills, and the hooks that tell the hub when a session starts, stops or asks."
+  "description": "What Agent Hub needs from Claude Code: the pr-babysit, pipeline-watch, log-watcher, todo and ticket-work skills, and the hooks that tell the hub when a session starts, stops or asks, and hold a ticket session to one move."
 }
