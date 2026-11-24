@@ -41,8 +41,10 @@ Ubuntu or Kubuntu, with Node.js 24 or later (the hub, tray and viewer run on it;
   missing.
 - **Your Claude setup stays yours.** The only Claude Code change is the `dominus` plugin; your
   settings, skills and other plugins aren't touched.
-- **Live.** The Ghostty files are symlinks into this checkout, and the plugin loads in place from
-  it, so edits apply at once. Install from the main checkout, not a worktree.
+- **Live.** The Ghostty files are symlinks into this checkout, so edits apply at once. The plugin
+  is a copy Claude Code makes when it installs it: after a pull that changes `hub-plugin/` (a new
+  skill or hook), run `./install.sh` again, which updates it, then restart Claude Code or run
+  `/reload-plugins`. Install from the main checkout, not a worktree.
 - **Safe.** A file of yours in the way is moved to `.install-backup/<timestamp>/` (gitignored),
   keeping its path. A link left from the dotfiles repo's old layout is replaced, and one whose file
   is gone is removed.

@@ -31,10 +31,10 @@ const CLAUDE_INSTALLER = `mkdir -p "$HOME/.local/bin"
 printf '#!/bin/sh\\necho "claude $*" >> "$LOG"\\ncase "$*" in *"list --json"*) echo "[]" ;; esac\\n' > "$HOME/.local/bin/claude"
 chmod +x "$HOME/.local/bin/claude"`
 
-function install(args, { claude = true } = {}) {
+function install(args, { claude = true, more = {} } = {}) {
   const box = sandbox('install')
   const bin = join(box.root, 'stub-bin')
-  const stubs = claude ? STUBS : { ...STUBS, claude: undefined, curl: `cat <<'EOF'\n${CLAUDE_INSTALLER}\nEOF` }
+  const stubs = { ...(claude ? STUBS : { ...STUBS, claude: undefined, curl: `cat <<'EOF'\n${CLAUDE_INSTALLER}\nEOF` }), ...more }
   for (const [name, body] of Object.entries(stubs)) {
     if (body === undefined) continue
     const path = box.write(join(bin, name), `#!/bin/sh\necho "${name} $*" >> "$LOG"\n${body}\n`)
@@ -49,7 +49,7 @@ function install(args, { claude = true } = {}) {
 }
 
 // The calls that change the machine; the rest only look.
-const changes = calls => calls.filter(c => /^(sudo|apt-get|snap install|curl|npm ci|claude plugin (install|marketplace add))\b/.test(c))
+const changes = calls => calls.filter(c => /^(sudo|apt-get|snap install|curl|npm ci|claude plugin (install|update|marketplace add))\b/.test(c))
 
 test('without a terminal or --yes, it shows the review and installs nothing', () => {
   const { r, calls, box } = install([])
@@ -113,6 +113,18 @@ test('the walkthrough’s npm ci keeps the dev tools, since it replaces node_mod
   const body = script.slice(script.indexOf('ensure_prompts() {'), script.indexOf('\n}\n', script.indexOf('ensure_prompts() {')))
   assert.match(body, /npm ci /)
   assert.doesNotMatch(body, /--omit=dev|--production/)
+})
+
+test('a plugin installed already is updated, since Claude Code runs a copy made when it was installed', () => {
+  const listed = 'case "$*" in "plugin list --json") echo \'[{"id":"dominus@dominus","scope":"user"}]\' ;; *"list --json"*) echo "[]" ;; esac'
+  const { r, calls, box } = install(['--yes'], { more: { claude: listed } })
+  try {
+    assert.equal(r.status, 0, r.stderr + r.stdout)
+    const plugin = changes(calls).filter(c => c.startsWith('claude plugin') && !c.includes('diagram-pane'))
+    assert.deepEqual(plugin, [`claude plugin marketplace add ${REPO}`, 'claude plugin update dominus@dominus --scope user'])
+  } finally {
+    box.cleanup()
+  }
 })
 
 test('--links only links: no questions, sudo or installers', () => {

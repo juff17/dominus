@@ -1,12 +1,12 @@
 {
   "name": "dominus",
-  "description": "Agent Hub's own Claude Code plugins, installed by ./install.sh. They load in place from this checkout, so edits apply at the next session.",
+  "description": "Agent Hub's own Claude Code plugins, installed by ./install.sh, which updates them on a later run so skills added here reach Claude Code.",
   "owner": { "name": "dominus" },
   "plugins": [
     {
       "name": "dominus",
       "source": "./hub-plugin",
-      "description": "The hub's skills (pr-babysit, pipeline-watch, log-watcher, todo), its start and notify hooks, and the fetch before a new worktree."
+      "description": "The hub's skills (pr-babysit, pipeline-watch, log-watcher, todo, ticket-work), its start and notify hooks, the fetch before a new worktree, and the one-move guard for ticket sessions."
     },
     {
       "name": "diagram-pane",

@@ -131,10 +131,18 @@ ensure_marketplace() {
   fi
 }
 
-# Each plugin loads in place from its folder here.
+# Claude Code installs a copy of each plugin's folder here.
 install_plugin() { # install_plugin <plugin@marketplace>
   echo "==> Claude Code plugin $1"
   "$(claude_cmd)" plugin install "$1" --scope user
+}
+
+# An installed plugin is that copy, made when it was installed, so skills and
+# hooks added here since (ticket-work, ticket-guard) reach it only through an
+# update. A failed update is said, not fatal: the old copy still works.
+refresh_plugin() { # refresh_plugin <plugin@marketplace>
+  echo "==> Claude Code plugin $1 (update)"
+  "$(claude_cmd)" plugin update "$1" --scope user || echo "    couldn't update $1: run claude plugin update $1 --scope user" >&2
 }
 
 # diagram-pane renders with mermaid-cli, from npm; it uses the system Chrome,
@@ -211,8 +219,11 @@ if ((claude)); then
 fi
 echo "==> [hub] link -> $DEST"
 link_ghostty "$widget"
-if ((plugin || diagrams)); then ensure_marketplace; fi
+refresh=0
+if ((!plugin)) && [[ $mode == install && -x $(claude_cmd) ]]; then refresh=1; fi
+if ((plugin || diagrams || refresh)); then ensure_marketplace; fi
 if ((plugin)); then install_plugin "$PLUGIN"; fi
+if ((refresh)); then refresh_plugin "$PLUGIN"; fi
 if ((diagrams)); then install_diagrams; fi
 echo "==> Done"
 if [[ $mode == install ]]; then
