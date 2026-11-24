@@ -23,6 +23,7 @@ const COLORS: [id: string, color: string][] = [
   ['new', P.pink],
   ['approvals', P.peach],
   ['monitors', P.rose],
+  ['tickets', P.blue],
   ['set', P.rose],
 ]
 

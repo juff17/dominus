@@ -91,6 +91,7 @@ type ModesKey = Extract<SettingRow, { type: 'modes' }>['key']
 type FileRow = Extract<SettingRow, { type: 'file' }>
 type HostsRow = Extract<SettingRow, { type: 'hosts' }>
 type ListRow = Extract<SettingRow, { type: 'list' }>
+type TextRow = Extract<SettingRow, { type: 'text' }>
 type SteppedRow = Extract<SettingRow, { type: 'choice' | 'number' | 'bool' }>
 
 // Each mode row carries the list's key, so a row knows which setting it's in.
@@ -106,7 +107,8 @@ export type ModeInput = { field: 'name' | 'cmd'; key: ModesKey; name: string; te
 export type FileInput = { field: 'file'; key: FileRow['key']; label: string; text: string; files: boolean; menu: Menu | null; at?: number }
 export type HostsInput = { field: 'hosts'; key: HostsRow['key']; label: string; text: string; at?: number }
 export type ListInput = { field: 'list'; key: ListRow['key']; label: string; text: string; at?: number }
-export type Input = ModeInput | FileInput | HostsInput | ListInput
+export type TextInput = { field: 'text'; key: TextRow['key']; label: string; text: string; at?: number }
+export type Input = ModeInput | FileInput | HostsInput | ListInput | TextInput
 // The longest command or path set() takes.
 const LONGEST = 500
 
@@ -295,7 +297,7 @@ function inputKey(s: SettingsState, input: Input, key: string) {
   }
   if (key === '\r') return submit(s, input)
   if (input.field === 'file') return pathKey(input, key)
-  if (input.field === 'hosts' || input.field === 'list') return void editField(input, 'text', key)
+  if (input.field === 'hosts' || input.field === 'list' || input.field === 'text') return void editField(input, 'text', key)
   if (key === '\x7f' || key === '\b') {
     input.text = [...input.text].slice(0, -1).join('')
     return
@@ -310,6 +312,7 @@ function submit(s: SettingsState, input: Input) {
   if (input.field === 'file') return saveFile(s, input.key, text)
   if (input.field === 'hosts') return saveHosts(s, input.key, text)
   if (input.field === 'list') return saveList(s, input.key, text)
+  if (input.field === 'text') return saveText(s, input.key, text)
   if (!text) return say(s, t(input.field === 'name' ? 'settings.ui.nameFirst' : 'settings.ui.commandFirst'))
   if (input.field === 'name') {
     s.input = { field: 'cmd', key: input.key, name: text.slice(0, 24), text: '' }
@@ -352,6 +355,18 @@ function saveList(s: SettingsState, key: ListRow['key'], text: string) {
   const list = parseList(row(key), text)
   if (!list) return say(s, t('settings.ui.notList'))
   if (save(s, key, list)) s.input = null
+}
+
+// '' clears it; anything else must fit the row's pattern.
+function saveText(s: SettingsState, key: TextRow['key'], text: string) {
+  const r = row(key)
+  if (text && (text.length > r.max || !r.item.test(text))) return say(s, t('settings.ui.notText', { label: r.label }))
+  if (save(s, key, text)) s.input = null
+}
+
+function startText(s: SettingsState, r: TextRow): void {
+  s.input = { field: 'text', key: r.key, label: r.label, text: load()[r.key] }
+  s.note = null
 }
 
 function startList(s: SettingsState, r: ListRow): void {
@@ -417,7 +432,7 @@ export function typeText(s: SettingsState, text: string): void {
   if (!s.input) return
   const most = s.input.field === 'name' ? 24 : LONGEST
   const clean = text.replace(/[\t\r\n]/g, ' ')
-  if (s.input.field === 'file' || s.input.field === 'hosts' || s.input.field === 'list') {
+  if (s.input.field === 'file' || s.input.field === 'hosts' || s.input.field === 'list' || s.input.field === 'text') {
     if (s.input.field === 'file') s.input.menu = null
     const r = insertAt(s.input.text, s.input.at, clean)
     s.input.text = r.text.slice(0, most)
@@ -446,7 +461,7 @@ export function pickRow(s: SettingsState, i: number): void {
 
 export function change(s: SettingsState, dir: -1 | 1): void {
   const r = current(s)
-  if (r.type === 'key' || r.type === 'file' || r.type === 'hosts' || r.type === 'list' || r.type === 'addMode') return
+  if (r.type === 'key' || r.type === 'file' || r.type === 'hosts' || r.type === 'list' || r.type === 'text' || r.type === 'addMode') return
   if (r.type === 'mode') flipMode(s, r)
   else if (r.type === 'flags') s.flag = (s.flag + dir + r.choices.length) % r.choices.length
   else save(s, r.key, stepped(r, dir))
@@ -464,6 +479,7 @@ export function toggle(s: SettingsState) {
   if (r.type === 'file') return startFile(s, r)
   if (r.type === 'hosts') return startHosts(s, r)
   if (r.type === 'list') return startList(s, r)
+  if (r.type === 'text') return startText(s, r)
   if (r.type === 'flags') save(s, r.key, toggleFlag(r, load()[r.key], r.choices[s.flag].value))
   else save(s, r.key, stepped(r, 1))
 }
@@ -487,6 +503,7 @@ function clearRow(s: SettingsState): void {
   else if (r.type === 'file') save(s, r.key, '')
   else if (r.type === 'hosts') save(s, r.key, [])
   else if (r.type === 'list') save(s, r.key, [...r.keep])
+  else if (r.type === 'text') save(s, r.key, '')
 }
 
 // Typing a path or mode, or capturing a keybind, takes every key, so the

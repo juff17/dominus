@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs'
 import { tilde } from '../../core/paths.ts'
 import { t } from '../../core/text.ts'
 import { fileOf, instructions } from '../../settings/prompts.ts'
-import { BUILTIN_MODES, type FixedLine, type Heading, type Mode, type PromptLine, SECTIONS, type SettingRow, type Settings, load, settingsFile, show } from '../../settings/settings.ts'
+import { BUILTIN_MODES, type EnvLine, type FixedLine, type Heading, type Mode, type PromptLine, SECTIONS, type SettingRow, type Settings, load, settingsFile, show } from '../../settings/settings.ts'
 import { type Hint, hintSpansAfter } from '../../tui/chrome.ts'
 import { matchesOf } from '../../tui/complete.ts'
 import { checks, chips, field, onOff, select, spanWidth } from '../../tui/controls.ts'
@@ -15,6 +15,7 @@ import { clampScroll } from '../../tui/list.ts'
 import type { Size } from '../../tui/overlay.ts'
 import { ACCENT, BOLD, type Line, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
 import { CLI, type ForgeId, onPath } from '../monitors/forge.ts'
+import { type JiraKey, envFile, envSet } from '../tickets/env.ts'
 import { type FileInput, type Input, type Item, type SettingItem, type SettingsState, current, loginKey, logins, modeRows, pathGhost } from './state.ts'
 
 export const NAV = 22
@@ -57,6 +58,10 @@ function valueSpans(r: SettingItem, values: Settings, on: boolean, flag: number,
       const v = values[r.key]
       return [[show(r, v), v.length ? (on ? BOLD : '') + fg(P.text) : fg(P.overlay1)]]
     }
+    case 'text': {
+      const v = values[r.key]
+      return [[show(r, v), v ? (on ? BOLD : '') + fg(P.text) : fg(P.overlay1)]]
+    }
     default:
       return select(show(r, values[r.key]), on)
   }
@@ -97,6 +102,13 @@ function prompt(b: Body, r: PromptLine, w: number): void {
   b.lines.push(...twoLines([[`  ${t('settings.ui.instructions')}`, fg(P.text)]], [[value, fg(count ? P.text : P.overlay1)]], tilde(fileOf(r.prompt)), w, BASE))
 }
 
+// Set or missing in .env, and where that file is; never the value.
+function envRow(b: Body, r: EnvLine, w: number): void {
+  const set = envSet()[r.env as JiraKey] ?? false
+  const value: Span[] = [[set ? `✓ ${t('settings.ui.envSet')}` : `✗ ${t('settings.ui.envMissing')}`, fg(set ? P.green : P.peach)]]
+  b.lines.push(...twoLines([[`  ${r.label}`, fg(P.text)]], value, [r.sub, tilde(envFile())].filter(Boolean).join(' · '), w, BASE))
+}
+
 function fixed(b: Body, r: FixedLine, w: number): void {
   b.lines.push(...twoLines([[`  ${r.label}`, fg(P.text)]], [[r.fixed, fg(P.sub)]], r.sub, w, BASE))
 }
@@ -133,6 +145,7 @@ function content(s: SettingsState, w: number, values: Settings): Body {
     if ('head' in r) heading(b, r, w)
     else if ('prompt' in r) prompt(b, r, w)
     else if ('fixed' in r) fixed(b, r, w)
+    else if ('env' in r) envRow(b, r, w)
     else if (r.type === 'modes') modes(b, r, s, values, w)
     else setting(b, r, s, values, w)
   }
@@ -173,6 +186,8 @@ function rowHints(r: Item, capture: boolean): Hint[] {
       return [['↵', K('typeHosts')], ['backspace', H('clear')]]
     case 'list':
       return [['↵', K('typeList')], ['backspace', H('clear')]]
+    case 'text':
+      return [['↵', K('typeText')], ['backspace', H('clear')]]
     case 'flags':
       return [['←→', H('pick')], ['space', H('turnOnOff')]]
     case 'bool':
@@ -192,6 +207,7 @@ function asking(input: Input): [ask: string, done: string] {
   if (input.field === 'file') return [t('settings.ui.askFile', { label: input.label }), t('hints.save')]
   if (input.field === 'hosts') return [t('settings.ui.askHosts', { label: input.label }), t('hints.save')]
   if (input.field === 'list') return [t('settings.ui.askList', { label: input.label }), t('hints.save')]
+  if (input.field === 'text') return [t('settings.ui.askText', { label: input.label }), t('hints.save')]
   if (input.field === 'name') return [t('settings.ui.askName'), t('hints.next')]
   return [t('settings.ui.askCommand', { name: input.name }), t('hints.add')]
 }
@@ -202,7 +218,7 @@ function promptLine(s: SettingsState, input: Input, w: number): string {
   const keys = hintSpansAfter([...(input.field === 'file' ? [['tab', t('hints.complete')] as const] : []), ['↵', done], ['esc', t('hints.cancel')]])
   const right = s.note ? [[`${s.note.text} `, fg(s.note.color)] as const, ...keys] : keys
   const room = Math.max(1, w - spanWidth(right) - width(ask) - 1)
-  const at = input.field === 'file' || input.field === 'hosts' || input.field === 'list' ? input.at : undefined
+  const at = input.field === 'file' || input.field === 'hosts' || input.field === 'list' || input.field === 'text' ? input.at : undefined
   return split([[ask, BOLD + fg(ACCENT)], ...field({ text: input.text, at, w: room, ghost: pathGhost(input) })], right, w, BASE)
 }
 

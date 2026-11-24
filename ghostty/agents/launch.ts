@@ -3,7 +3,7 @@
 import { basename } from 'node:path'
 import { skillCommand } from '../core/hub-skills.ts'
 import { type Image, imageList, imagesLine, withoutImages } from '../core/images.ts'
-import { type PromptId, compose, withTyped } from '../settings/prompts.ts'
+import { HUB, type PromptId, compose, instructions, withTyped } from '../settings/prompts.ts'
 import { short } from './text.ts'
 
 // `model`, `mode` and `effort` are claude's --model, --permission-mode and
@@ -35,7 +35,12 @@ export type MonitorSpec = SpecBase & {
   lines?: string[]
   typed?: { label: string; text: string }
 }
-export type LaunchSpec = TaskSpec | MonitorSpec
+// A ticket from Tickets (Alt+J): the prompt starts with the ticket-work
+// skill and the ticket's link, so the skill runs, then `lines` (the ticket's
+// facts, viewer/tickets/tracker.ts factLines), one each, then your
+// instructions for ticket agents (prompts/ticket.md).
+export type TicketSpec = SpecBase & { kind: 'ticket'; url: string; lines: string[] }
+export type LaunchSpec = TaskSpec | MonitorSpec | TicketSpec
 
 // Every agent runs in the background: `claude --bg`, which prints its id and
 // returns. The hub opens it beside its list with `claude attach`.
@@ -115,6 +120,11 @@ function job(spec: LaunchSpec): { prompt: string; name: string } {
     const images = imagesLine(imageList(spec.images))
     const head = [first, ...(spec.lines ?? []), images].filter(Boolean).join('\n')
     return { prompt: spec.typed ? withTyped(head, spec.typed.label, spec.typed.text) : head, name }
+  }
+  if (spec.kind === 'ticket') {
+    const own = instructions('ticket').replace(/\s*\n\s*/g, ' ').trim()
+    const prompt = [`${skillCommand('ticket-work')} ${spec.url.trim()}`, ...spec.lines, own && `${HUB} ${own}`].filter(Boolean).join('\n')
+    return { prompt, name: spec.name || slug(spec.url) }
   }
   const typed = spec.prompt ?? ''
   // A name given is a slug already: the todo list's hand-off sends one.

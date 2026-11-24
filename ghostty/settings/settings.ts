@@ -40,8 +40,10 @@ export type FileRow<K extends string = string> = Row<K, 'file', string> & { dir:
 export type HostsRow<K extends string = string> = Row<K, 'hosts', string[]> & { cli: 'gh' | 'glab' }
 // `empty` is what the panel shows for none.
 export type ListRow<K extends string = string> = Row<K, 'list', string[]> & { item: RegExp; max: number; keep: string[]; empty: string }
+// One line of text, '' for none. `empty` is what the panel shows for ''.
+export type TextRow<K extends string = string> = Row<K, 'text', string> & { item: RegExp; max: number; empty: string }
 // Any setting. SettingRow, further down, is the ones there are, by key.
-export type Setting = ChoiceRow | NumberRow | BoolRow | FlagsRow | KeyRow | ModesRow | FileRow | HostsRow | ListRow
+export type Setting = ChoiceRow | NumberRow | BoolRow | FlagsRow | KeyRow | ModesRow | FileRow | HostsRow | ListRow | TextRow
 export type SettingValue = Setting['default']
 
 // A FixedLine is a value set somewhere else (KDE, layout.conf) or not up to
@@ -49,7 +51,10 @@ export type SettingValue = Setting['default']
 export type Heading = { head: string }
 export type PromptLine = { prompt: PromptId }
 export type FixedLine = { fixed: string; label: string; sub: string }
-export type SectionRow = SettingRow | Heading | PromptLine | FixedLine
+// A value kept in .env rather than here (a tracker's credentials): the panel
+// says only whether it's set, never what it holds.
+export type EnvLine = { env: string; label: string; sub: string }
+export type SectionRow = SettingRow | Heading | PromptLine | FixedLine | EnvLine
 export type Section = { id: string; name: string; where: string; rows: SectionRow[] }
 
 export const isSetting = <R extends object>(r: R): r is Extract<R, { key: string }> => 'key' in r
@@ -66,6 +71,7 @@ type SectionWords = {
   heads?: Record<string, string>
   fixed?: Record<string, Named & { value?: string }>
   aliases?: Record<string, Named>
+  env?: Record<string, Named>
 }
 type SettingsText = { rows?: Record<string, RowWords>; sections?: Record<string, SectionWords>; modes?: Record<string, { name?: string; sub?: string }> }
 const T = text<SettingsText>('settings')
@@ -96,17 +102,21 @@ const hosts = <K extends string>(key: K, cli: HostsRow['cli'], def: string[]): H
 // `keep` is in the list always: typing it out or clearing the row leaves it.
 type ListOptions = { item: RegExp; max?: number; keep?: string[] }
 const list = <K extends string>(key: K, def: string[], { item, max = 12, keep = [] }: ListOptions): ListRow<K> => ({ key, ...named(key), type: 'list', item, max, keep, empty: words(key).empty ?? '', default: def })
+type TextOptions = { item?: RegExp; max?: number }
+const textRow = <K extends string>(key: K, { item = /^.+$/, max = 200 }: TextOptions = {}): TextRow<K> => ({ key, ...named(key), type: 'text', item, max, empty: words(key).empty ?? '', default: '' })
 
 // The lines below as written, before their section's words are put in:
 // headings and fixed rows by their ids in the text file, and an alias, one
 // setting shown in a second section under its own name there, by its key.
 type FixedDef = { fixedId: string }
 type AliasDef = { alias: string }
-type Def = Setting | Heading | PromptLine | FixedDef | AliasDef
+type EnvDef = { envKey: string }
+type Def = Setting | Heading | PromptLine | FixedDef | AliasDef | EnvDef
 const head = (id: string): Heading => ({ head: id })
 const prompt = (id: PromptId): PromptLine => ({ prompt: id })
 const fixed = (id: string): FixedDef => ({ fixedId: id })
 const alias = (key: string): AliasDef => ({ alias: key })
+const envLine = (key: string): EnvDef => ({ envKey: key })
 const define = <D extends Def>(id: string, rows: D[]) => ({ id, rows })
 
 // The viewer pane's modes (bin/ghostty-viewer): these four, and any you add,
@@ -144,6 +154,10 @@ const ENV = /^[\w.-]+$/
 const ENV_GLOB = /^[\w.*?-]+$/
 const EVENTS = ['failed', 'manual', 'stuck', 'conflict', 'error', 'crash', 'auth', 'setup', 'blocked']
 const BROKE = ['failed', 'stuck', 'conflict', 'error', 'crash']
+// A Jira board's id, a Team field's UUID, a site's cloud id.
+const DIGITS = /^\d{1,12}$/
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const CLOUD_ID = /^[\w-]{8,64}$/
 
 const DEFINED = [
   define('general', [head('folders'), file('general.folder', { dir: true })]),
@@ -246,6 +260,30 @@ const DEFINED = [
     number('todo.keepDone', 7, { min: 1, max: 60 }),
     number('todo.noteSecs', 4, { min: 2, max: 30 }),
   ]),
+  // Alt+J. Its credentials are in .env (viewer/tickets/env.ts), shown here
+  // only as set or missing.
+  define('tickets', [
+    head('tracker'),
+    choice('tickets.provider', ['jira'], 'jira'),
+    envLine('JIRA_SITE'),
+    envLine('JIRA_EMAIL'),
+    envLine('JIRA_API_TOKEN'),
+    envLine('JIRA_TOKEN_KIND'),
+    head('board'),
+    textRow('jira.team', { max: 100 }),
+    textRow('jira.board', { item: DIGITS }),
+    textRow('jira.teamId', { item: UUID }),
+    textRow('jira.cloudId', { item: CLOUD_ID }),
+    number('tickets.refreshSecs', 60, { min: 30, max: 600, step: 15 }),
+    bool('tickets.showDone', false),
+    alias('keys.jira'),
+    head('agents'),
+    file('tickets.folder', { dir: true }),
+    choice('tickets.handoff.model', MODEL_IDS, 'opus'),
+    choice('tickets.handoff.mode', MODE, 'auto'),
+    choice('tickets.handoff.effort', EFFORT, 'medium'),
+    prompt('ticket'),
+  ]),
   define('hub', [
     head('lanes'),
     number('hub.doneCards', 2, { min: 0, max: 6 }),
@@ -337,6 +375,7 @@ const DEFINED = [
     keybind('keys.newAgent', 'alt', 'alt+n'),
     keybind('keys.editor', 'alt', 'alt+e'),
     keybind('keys.monitors', 'alt', 'alt+m'),
+    keybind('keys.jira', 'alt', 'alt+j'),
     head('ghostty'),
     keybind('keys.workspace', 'ghostty', 'ctrl+shift+w', 'csi:9009~'),
     keybind('keys.hub', 'ghostty', 'ctrl+shift+a', 'csi:9007~'),
@@ -373,6 +412,7 @@ function section(id: string, defs: readonly Defined[]): Section {
 
 function sectionRow(d: Defined, w: SectionWords): SectionRow {
   if ('head' in d) return { head: w.heads?.[d.head] ?? d.head }
+  if ('envKey' in d) return { env: d.envKey, label: w.env?.[d.envKey]?.label ?? d.envKey, sub: w.env?.[d.envKey]?.sub ?? '' }
   if ('fixedId' in d) {
     const f = w.fixed?.[d.fixedId] ?? {}
     return { fixed: f.value ?? '', label: f.label ?? d.fixedId, sub: f.sub ?? '' }
@@ -413,6 +453,8 @@ export function valid<R extends Setting>(r: R, v: unknown): v is R['default'] {
       return validHosts(v)
     case 'list':
       return validList(r, v)
+    case 'text':
+      return v === '' || (isText(v, r.max) && r.item.test(v))
   }
 }
 
@@ -649,5 +691,7 @@ export function show(r: Setting, v: SettingValue): string {
       return (v as string[]).join(', ') || t('settings.ui.none')
     case 'list':
       return (v as string[]).join(', ') || r.empty || t('settings.ui.none')
+    case 'text':
+      return String(v) || r.empty || t('settings.ui.none')
   }
 }

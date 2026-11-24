@@ -26,7 +26,7 @@ const defaults = () => Object.fromEntries(KEY_ROWS.map(r => [r.key, r.default]))
 test('the alt keys layout.conf binds, M-Left and M-Right among them', () => {
   assert.deepEqual(
     [...statements(CONF).keys()].sort(),
-    ['M-Left', 'M-Right', 'M-a', 'M-d', 'M-e', 'M-h', 'M-m', 'M-n', 'M-s', 'M-t', 'M-v'],
+    ['M-Left', 'M-Right', 'M-a', 'M-d', 'M-e', 'M-h', 'M-j', 'M-m', 'M-n', 'M-s', 'M-t', 'M-v'],
   )
 })
 

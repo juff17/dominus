@@ -16,7 +16,7 @@ points up.
 |---|---|---|---|
 | 1. core | `core/` | No UI and no app logic: logging, crash logging, paths, running programs (`run`, and `runSync` for a screen that must wait), checking parsed JSON, escape-key codes, pasted images (`images.ts`), and every word the screens show (`text.json`) | node only |
 | 2. settings | `settings/` | The Settings schema and store, the model list, keybinds, prompts | core |
-| 3. tui | `tui/` | The terminal kit: palette, rendering, input, screen, line editor, path completion, lists, footers, the controls (radio, select, field, chips, button, confirm, header, frame), the overlay every popup runs in, the app shell | core, settings |
+| 3. tui | `tui/` | The terminal kit: palette, rendering, input, screen, line editor, path completion, lists, footers, the controls (radio, select, field, chips, button, confirm, header, frame, card, lane header), the overlay every popup runs in, the app shell | core, settings |
 | 4. agents | `agents/` | The model of Claude sessions: agentd and its scan, transcripts, classifying, lanes, launching, the client, and the babysit proposal files (`proposals.ts`, re-exported by `tray/approvals.ts`) | core, settings, tui (glyphs only) |
 | 5. apps | `hub/`, `tray/`, `viewer/` | Programs you see: the hub and rail, the tray command, the viewer modes and popups | everything below; never each other, except through `tray/approvals.ts` and `tray/navigate.ts`, which are libraries |
 
@@ -39,7 +39,8 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │                            chrome (mode header, key hints), line (the line editor),
 │                            complete (path completion for path fields),
 │                            controls (the shared radio, select, field, chips, button,
-│                            confirm, header and frame), overlay (every popup's frame,
+│                            confirm, header, frame, and the hub's card and lane
+│                            header, which Tickets draws too), overlay (every popup's frame,
 │                            keys and clicks), backdrop (the window behind it, dimmed),
 │                            kitty (the graphics protocol), png, gear and gear-art (the
 │                            Dominus gear the rail and the empty board draw)
@@ -64,6 +65,9 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
     │                        Monitors opens beside Running
     ├── help/                help-view (entry), state, draw, help (the sections)
     ├── settings/            settings-view (entry), state, draw
+    ├── tickets/             tickets-view (entry), state, draw, effects: the Alt+J popup;
+    │                        tracker (the words any tracker fills), jira (the one adapter:
+    │                        reads Jira, never writes), env (.env, where its token lives)
     └── monitors/            monitors-view (entry), state, draw, effects: the Alt+M popup;
                              rows (Running's and PRs' rows, and the proposals on each), forge (gh and glab: PRs),
                              checkout (clones), attach (the drawer's options and their records),
@@ -109,7 +113,7 @@ a screen that builds strings takes them through `ansi()`.
 
 Every popup is an overlay, built on `tui/overlay.ts`: Help (Alt+H),
 Settings (Alt+S), Todo (Alt+T), Monitors (Alt+M,
-and Alt+A, which opens it on its approvals panel), New agent (Alt+N) and the
+and Alt+A, which opens it on its approvals panel), Tickets (Alt+J), New agent (Alt+N) and the
 Diagrams window (Alt+D). Each is a rounded frame in the middle of the
 screen, its title and the key that closes it in the top edge, over the
 window it opened from, dimmed. A change to how popups look or close is made
@@ -133,7 +137,7 @@ there once.
   from the frame's inside.
 - **Size.** Each entry gives the frame's size in cells or percent: Settings'
   `layout.helpPercent`, `settingsPercent`, `todoWidth` and `todoHeight`,
-  `layout.diagramsPercent`, 70% × 85% for Approvals, 90% × 85% for Monitors, the form's size for
+  `layout.diagramsPercent`, 70% × 85% for Approvals, 90% × 85% for Monitors and Tickets, the form's size for
   New agent, and the tab list's height for the picker. A screen under 70 × 20
   gets the whole of it.
 - **Closing.** Inside a popup tmux's own bindings don't apply, so the
@@ -201,6 +205,10 @@ pre-commit run it too). The settings are in `tsconfig.json`, with `strict` on.
   `theme.conf`, yazi's `init.lua` and `theme.toml`, the tray's `palette.js`,
   and Ghostty's colours in `config.ghostty`; the colours contract test holds
   each to the palette.
+- **A tracker:** an adapter beside `viewer/tickets/jira.ts` that fills
+  `tracker.ts`'s types, a value of `tickets.provider`, and a reference file
+  for the ticket-work skill (`hub-plugin/skills/ticket-work/references/`).
+  The popup, the hand-off and the skill read only the neutral types.
 - **A babysit proposal kind:** a kind in pr-babysit's `approval.py`, and
   a row in `tray/approvals.ts`'s `APPROVE` table. `ProposalKind` is that
   table's keys, so tsc then points at each other table (`GLYPH`, `DETAIL`,

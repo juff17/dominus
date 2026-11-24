@@ -21,4 +21,4 @@ export type { Agent, AgentKind, AgentState, Monitor, MonitorState, Need, Proc } 
 export { cardHeights, counts, lanes, monitorsOf, scrollTo, watches } from './board.ts'
 export type { Counts, Lane, Lanes, StripMonitor } from './board.ts'
 export { launch, slug } from './launch.ts'
-export type { LaunchPlan, LaunchSpec, MonitorSpec, TaskSpec } from './launch.ts'
+export type { LaunchPlan, LaunchSpec, MonitorSpec, TaskSpec, TicketSpec } from './launch.ts'

@@ -5,6 +5,9 @@
 # your instructions for agents, copied from prompts/*.md.example at install
 ghostty/prompts/*.md
 
+# your tracker credentials, copied from .env.example at install
+.env
+
 # python runtime artifacts
 __pycache__/
 *.pyc

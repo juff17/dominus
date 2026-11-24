@@ -199,3 +199,25 @@ copy_prompt_examples() {
     [[ -e ${example%.example} ]] || cp "$example" "${example%.example}"
   done
 }
+
+# copy_env_example [root]: .env.example at the repo root copied to .env, kept
+# to you alone (0600), where there's no .env yet. A .env there already keeps
+# every line you wrote, and gets each key the example has that it lacks,
+# empty, at its end. Git ignores .env; Tickets reads it (viewer/tickets/env.ts).
+copy_env_example() {
+  local root=${1:-$(cd "$GHOSTTY_CONF/.." && pwd)} key
+  local example=$root/.env.example env=$root/.env
+  [[ -e $example ]] || return 0
+  if [[ ! -e $env ]]; then
+    (umask 077 && cp "$example" "$env")
+    chmod 600 "$env"
+    echo "  copied  .env from .env.example: fill in the JIRA_ lines for Alt+J"
+    return 0
+  fi
+  while IFS= read -r key; do
+    grep -qE "^[[:space:]]*(export[[:space:]]+)?$key=" "$env" || printf '%s=\n' "$key" >>"$env"
+  done < <(sed -nE 's/^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=.*/\1/p' "$example")
+  if [[ -n $(find "$env" -perm /077 2>/dev/null) ]]; then
+    echo "  warning .env can be read by others: chmod 600 $env" >&2
+  fi
+}

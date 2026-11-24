@@ -133,10 +133,11 @@ test('Settings › Keybinds’ alt rows are exactly the M-<letter> keys layout.c
       ['keys.newAgent', 'alt+n'],
       ['keys.editor', 'alt+e'],
       ['keys.monitors', 'alt+m'],
+      ['keys.jira', 'alt+j'],
     ],
   )
   const bound = [...statements(layout).keys()]
-  assert.deepEqual(bound, ['M-Left', 'M-Right', 'M-s', 'M-a', 'M-m', 'M-n', 'M-d', 'M-v', 'M-h', 'M-t', 'M-e'])
+  assert.deepEqual(bound, ['M-Left', 'M-Right', 'M-s', 'M-a', 'M-m', 'M-j', 'M-n', 'M-d', 'M-v', 'M-h', 'M-t', 'M-e'])
   // No Alt+digit is the layout's: they reach the program in the pane, and a row may take one.
   for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9]) assert.equal(RESERVED[`alt+${n}`], undefined)
   assert.deepEqual(
@@ -153,6 +154,7 @@ test('Settings › Keybinds’ alt rows are exactly the M-<letter> keys layout.c
     'keys.viewer': 'ghostty-viewer-toggle',
     'keys.editor': 'ghostty-editor',
     'keys.monitors': 'ghostty-monitors',
+    'keys.jira': 'ghostty-tickets',
   }
   const all = statements(layout)
   for (const [key, script] of Object.entries(runs)) assert.match(all.get(tmuxKey(alt.find(r => r.key === key).default)), new RegExp(`#\\{@conf\\}/bin/${script}"`))

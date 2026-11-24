@@ -34,6 +34,7 @@ source "$repo/ghostty/bin/ghostty-lib.sh"
 
 copy_prompt_examples
 echo "  copied  any missing prompts/*.md from their .example"
+copy_env_example "$repo"
 
 [ "$DEST" = "$HOME" ] && pgrep -x ghostty >/dev/null || exit 0
 

@@ -58,8 +58,9 @@ shows in the Agents widget (see [docs/ghostty.md](docs/ghostty.md#agents-widget)
 ## Tokens
 
 Everything that talks to GitHub or GitLab runs the `gh` or `glab` CLI (`gh api …`,
-`glab api …`), so it uses the CLI's own login. The hub keeps no tokens and reads none. Log each
-CLI in to every host you list in Settings → Monitors:
+`glab api …`), so it uses the CLI's own login. The hub keeps no tokens, and reads one only
+for Jira, from `.env`, to fetch your board (below). Log each CLI in to every host you list in
+Settings → Monitors:
 
 ```bash
 gh auth login                                   # github.com; add --hostname for GitHub Enterprise
@@ -90,6 +91,33 @@ jobs, and approving from Alt+M. `read_api` is enough if you only watch (Monitors
 pr-babysit without approvals). `glab auth login` asks for `api` and `write_repository`. The hub
 doesn't need `write_repository`: pushes run plain `git push` with your git credentials (an SSH
 key or a credential helper), for GitHub too.
+
+**Jira (optional, for Alt+J).** Tickets shows your team's sprint board and reads it itself, with a
+read-only API token. Install copies `.env.example` to `.env` at the repo root (git ignores it,
+and it's kept at 0600); open it and fill in `JIRA_SITE`, `JIRA_EMAIL` and `JIRA_API_TOKEN`. Make
+the token at [Atlassian's API token page](https://id.atlassian.com/manage-profile/security/api-tokens)
+as a token with scopes, and tick these, all read-only:
+
+```text
+read:jira-work
+read:jira-user
+read:project:jira
+read:board-scope:jira-software
+read:board-scope.admin:jira-software   # the board's column config
+read:sprint:jira-software
+read:issue-details:jira
+read:jql:jira
+```
+
+A token made without scopes works too: set `JIRA_TOKEN_KIND=classic`. Only the board fetch reads
+`.env`; Settings → Tickets and Alt+J's setup screen show whether each value is set, never the
+value, and nothing logs it. Tokens expire within a year, and Alt+J says when Jira refuses one.
+Agents never use this token: their two writes to a ticket (assigning it to you, one move to the
+started column) go through the Atlassian MCP server, which holds its own login:
+
+```bash
+claude mcp add --transport http atlassian https://mcp.atlassian.com/v2/mcp   # then /mcp to sign in
+```
 
 **Kibana (optional).** log-watcher's Discover links need no token. For short `/r/s/…` links,
 export `KIBANA_API_KEY`, an API key allowed to create short URLs. Every agent's shell then sees

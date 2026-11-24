@@ -83,6 +83,7 @@ test('the references found are the ones there are today', () => {
     'bin/ghostty-surface',
     'bin/ghostty-tabs',
     'bin/ghostty-term',
+    'bin/ghostty-tickets',
     'bin/ghostty-todo',
     'bin/ghostty-todo-panel',
     'bin/ghostty-viewer',
@@ -104,6 +105,7 @@ test('the references found are the ones there are today', () => {
     'viewer/modes.ts',
     'viewer/monitors/monitors-view.ts',
     'viewer/settings/settings-view.ts',
+    'viewer/tickets/tickets-view.ts',
     'viewer/todo/todo-view.ts',
   ])
 })
@@ -141,6 +143,7 @@ test('every bin/ script that sources ghostty-lib.sh finds it beside its own real
     'ghostty-surface',
     'ghostty-tabs',
     'ghostty-term',
+    'ghostty-tickets',
     'ghostty-todo-panel',
     'ghostty-viewer',
     'ghostty-viewer-toggle',

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # The settings panel (viewer/settings/settings-view.ts) as an overlay, from
-# Alt+S (layout.conf) or the rail's ⚙ button (hub/rail/rail.ts), sized by
-# Settings' layout.settingsPercent.
-#   ghostty-settings <client>        open it on that tmux client
-#   ghostty-settings --panel         what runs inside the overlay
+# Alt+S (layout.conf), the rail's ⚙ button (hub/rail/rail.ts) or Tickets' s
+# (viewer/tickets/effects.ts), sized by Settings' layout.settingsPercent.
+#   ghostty-settings <client> [section]   open it on that tmux client, on that section
+#   ghostty-settings --panel [section]    what runs inside the overlay
 
 source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
 
 if [[ $1 == --panel ]]; then
-  run_panel Settings "$GHOSTTY_CONF/viewer/settings/settings-view.ts"
+  run_panel Settings "$GHOSTTY_CONF/viewer/settings/settings-view.ts" "${@:2}"
 fi
 
-overlay "$1" ghostty-settings --panel
+overlay "$1" ghostty-settings --panel "${@:2}"

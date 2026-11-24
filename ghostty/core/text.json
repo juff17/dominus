@@ -97,6 +97,39 @@
           "list": "List"
         }
       },
+      "tickets": {
+        "name": "Tickets",
+        "where": "Alt+J: your sprint board, and agents started on its tickets",
+        "heads": {
+          "tracker": "Tracker",
+          "board": "Board",
+          "agents": "Agents"
+        },
+        "env": {
+          "JIRA_SITE": {
+            "label": "Site",
+            "sub": "JIRA_SITE, like https://<site>.atlassian.net"
+          },
+          "JIRA_EMAIL": {
+            "label": "Email",
+            "sub": "JIRA_EMAIL, the account the token belongs to"
+          },
+          "JIRA_API_TOKEN": {
+            "label": "API token",
+            "sub": "JIRA_API_TOKEN, a scoped read-only token (README › Tokens lists its 8 scopes)"
+          },
+          "JIRA_TOKEN_KIND": {
+            "label": "Token kind",
+            "sub": "JIRA_TOKEN_KIND: scoped (the default) or classic"
+          }
+        },
+        "aliases": {
+          "keys.jira": {
+            "label": "Open Tickets",
+            "sub": "the key that opens and closes it"
+          }
+        }
+      },
       "hub": {
         "name": "Hub & monitors",
         "where": "the agent hub’s board and its Monitors tray",
@@ -782,6 +815,61 @@
       "keys.monitors": {
         "label": "Monitors popup",
         "sub": "what's running, and your PRs and MRs"
+      },
+      "tickets.provider": {
+        "label": "Tracker",
+        "sub": "the only one for now",
+        "choices": {
+          "jira": "Jira"
+        }
+      },
+      "jira.team": {
+        "label": "Team",
+        "sub": "your sprint team's name: b in Alt+J searches boards for it",
+        "empty": "not set"
+      },
+      "jira.board": {
+        "label": "Board",
+        "sub": "its id; b in Alt+J picks it from a list",
+        "empty": "not chosen"
+      },
+      "jira.teamId": {
+        "label": "Team id",
+        "sub": "a Team field UUID, only for a board several teams share",
+        "empty": "none"
+      },
+      "jira.cloudId": {
+        "label": "Cloud id",
+        "sub": "found on first use for a scoped token; set it only to override",
+        "empty": "found on first use"
+      },
+      "tickets.refreshSecs": {
+        "label": "Refresh every",
+        "sub": "only while Alt+J is open; r refreshes now",
+        "unit": "s"
+      },
+      "tickets.showDone": {
+        "label": "Show Done",
+        "sub": "off: Done columns show only a count"
+      },
+      "tickets.folder": {
+        "label": "Agent folder",
+        "sub": "where a ticket's agent starts and looks for the repo",
+        "empty": "the Default folder"
+      },
+      "tickets.handoff.model": {
+        "label": "Model",
+        "sub": "a on a ticket asks only y/n; this is the model it uses"
+      },
+      "tickets.handoff.mode": {
+        "label": "Permission mode"
+      },
+      "tickets.handoff.effort": {
+        "label": "Effort"
+      },
+      "keys.jira": {
+        "label": "Tickets popup",
+        "sub": "your sprint board (Jira)"
       }
     },
     "modes": {
@@ -847,12 +935,17 @@
         "addMode": "add a mode",
         "typePath": "type a path",
         "typeHosts": "type hosts",
-        "typeList": "type them"
+        "typeList": "type them",
+        "typeText": "type it"
       },
       "notHosts": "Not a list of hosts: names like github.com, comma apart",
       "askHosts": "{label}, comma apart: ",
       "askList": "{label}, comma apart:",
-      "notList": "Not a list it takes: check each one, comma apart"
+      "notList": "Not a list it takes: check each one, comma apart",
+      "notText": "That isn't a {label}",
+      "askText": "{label}:",
+      "envSet": "set in .env",
+      "envMissing": "missing from .env"
     },
     "keybinds": {
       "takenBy": "{key} is taken by {what}",
@@ -984,6 +1077,10 @@
           [
             "alt+m",
             "Monitors: what runs, your PRs and MRs, pipelines waiting on you, and a log watcher to start"
+          ],
+          [
+            "alt+j",
+            "Tickets: your team's sprint board from Jira, and an agent for any ticket"
           ],
           [
             "alt+s",
@@ -1531,6 +1628,54 @@
           [
             "ctrl+v",
             "In the attach drawer’s brief or Logs’ Watch for: paste an image as [Image #n] for the monitor’s agent"
+          ]
+        ]
+      },
+      "tickets": {
+        "name": "Tickets",
+        "where": "the Alt+J popup",
+        "keys": [
+          [
+            "← → / h l",
+            "Column"
+          ],
+          [
+            "↑ ↓ / j k",
+            "Card in the column"
+          ],
+          [
+            "tab",
+            "Unassigned or Mine"
+          ],
+          [
+            "o",
+            "Open the ticket in the browser"
+          ],
+          [
+            "a",
+            "Start an agent on it (y/n); one with an agent goes to it"
+          ],
+          [
+            "↵",
+            "Go to its agent in the hub, or open it with none"
+          ],
+          [
+            "r",
+            "Refresh now: tickets, columns and sprint"
+          ],
+          [
+            "b",
+            "Pick the board, by your team's name",
+            true
+          ],
+          [
+            "s",
+            "Settings › Tickets"
+          ],
+          [
+            "e",
+            "On the setup screen: open .env in your editor",
+            true
           ]
         ]
       }
@@ -2551,6 +2696,130 @@
     "attached": {
       "one": "{n} image attached",
       "other": "{n} images attached"
+    }
+  },
+  "tickets": {
+    "title": "Tickets",
+    "ends": "ends {date}",
+    "alsoActive": "also active: {names}, not shown",
+    "card": {
+      "ended": "ended · a starts a new agent",
+      "points": {
+        "one": "{n} pt",
+        "other": "{n} pts"
+      }
+    },
+    "board": {
+      "doneHidden": {
+        "one": "{n} done · hidden",
+        "other": "{n} done · hidden"
+      },
+      "above": "{n} above",
+      "more": "{n} more",
+      "hidden": "{n} more",
+      "loading": "Loading the board…",
+      "notLoaded": "The board couldn't be loaded."
+    },
+    "lanes": {
+      "unassigned": "Unassigned",
+      "mine": "Mine"
+    },
+    "empty": {
+      "unassigned": "Everything in this sprint has an owner",
+      "mine": "Nothing of yours in this sprint yet: a on an unassigned ticket starts one"
+    },
+    "keys": {
+      "env": "open .env",
+      "settings": "settings",
+      "board": "board",
+      "check": "check again",
+      "openBoard": "open the board",
+      "close": "close",
+      "pickBoard": "board",
+      "search": "search",
+      "choose": "choose",
+      "cancel": "cancel",
+      "column": "column",
+      "card": "card",
+      "lane": "lane",
+      "open": "open",
+      "agent": "agent",
+      "go": "go to agent",
+      "refresh": "refresh",
+      "start": "start"
+    },
+    "confirm": {
+      "start": "Start an agent on {key} in {folder} ({model} · {effort})?",
+      "noMcp": "the Atlassian MCP looks missing: it can't assign or move the ticket"
+    },
+    "status": {
+      "refreshing": "refreshing… board, sprint and tickets",
+      "lastGood": "board from {ago} ago",
+      "notLoaded": "not loaded",
+      "updated": "updated {ago} ago"
+    },
+    "banner": {
+      "auth": "Jira refused the token ({status}). It may have expired: tokens last at most a year.",
+      "limited": "Jira asked us to wait {secs} s.",
+      "missing": "Missing: {what}.",
+      "failed": "Couldn't reach Jira: {err}.",
+      "authHint": "s settings · r retry",
+      "retryHint": "r retry now"
+    },
+    "noSprint": {
+      "title": "{board} has no active sprint",
+      "next": "The next one, {name}, is planned to start {date}.",
+      "none": "No sprint is planned yet.",
+      "after": "The board shows here as soon as a sprint starts; r checks now.",
+      "short": "no active sprint"
+    },
+    "setup": {
+      "title": "setup",
+      "needs": "Tickets needs a few things before it can show your board",
+      "ready": "Tickets is ready",
+      "intro": "Credentials live in {path}, never in Settings. e opens it; r checks again.",
+      "set": "set in .env",
+      "notSet": "not set in .env",
+      "board": "Team board",
+      "boardId": "board {id}",
+      "boardNone": "not chosen: b picks it",
+      "mcp": "Atlassian MCP",
+      "mcpChecking": "checking…",
+      "mcpOk": "set up",
+      "mcpMissing": "not found as \"atlassian\": you can browse, but agents can't assign or move tickets",
+      "check": "Test call",
+      "checking": "asking Jira who you are…",
+      "checked": "Jira says you are {name}",
+      "checkAuth": "Jira refused the token: {err}. Check its scopes below",
+      "checkFailed": "couldn't reach Jira: {err}",
+      "checkIdle": "r runs it"
+    },
+    "picker": {
+      "title": "pick your board",
+      "heading": "Scrum boards whose name contains this",
+      "name": "Name:",
+      "searching": "searching for \"{query}\"…",
+      "auth": "Jira refused the token: {err}",
+      "failed": "couldn't search: {err}",
+      "none": "No scrum boards match \"{query}\". Edit the name and press ↵.",
+      "row": "project {project} · board {id}",
+      "after": "Your choice is saved in Settings › Tickets › Board. b on the board opens this list again."
+    },
+    "tooSmall": {
+      "title": "Window too small",
+      "need": "Tickets needs at least {cols} × {rows} cells. This window is {now}."
+    },
+    "notes": {
+      "notSaved": "Couldn't save the board: {err}",
+      "boardPicked": "Board set to {name}",
+      "noOpener": "No xdg-open to open the browser with",
+      "opened": "✓ Opened {key} in your browser",
+      "noMe": "Couldn't ask Jira who you are: {err}",
+      "starting": "Starting an agent on {key}…",
+      "startFailed": "{key}: the agent didn't start: {err}",
+      "started": "✻ Started {key} · it's in the hub as a background agent",
+      "notOpened": "Couldn't open the agent",
+      "noEditor": "Couldn't run {editor}"
     }
   }
 }
