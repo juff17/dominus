@@ -448,12 +448,13 @@ export function hubUnlinkArgs(text: string | null): string[][] {
 // runs under the pane's process. Claude records whichever session the pane
 // was in when it started, which can be a peek-N or hubtabs-N. Those hold the
 // tab session's windows too, so they count, even after the peek is gone. It
-// can also be term-N, the hub's terminal popup (bin/ghostty-term), whose
-// window Ctrl+Shift+T moves into the workspace with Claude still in it.
+// can also be term-<job>, a background agent's terminal popup
+// (bin/ghostty-term), whose window Ctrl+Shift+T moves into the workspace
+// with Claude still in it.
 export function paneOf(s: Pick<Session, 'tmux' | 'pid'>, panes: Map<string, Pane>, parent = (pid: number) => parentPid(readStat(pid))): Pane | null {
   const m = String(s.tmux ?? '').match(/^([^:]+):(@\d+)\.(%\d+)$/)
   const p = m && panes.get(m[3])
-  if (!m || !p || (p.session !== m[1] && !/^(?:peek|hubtabs|term)-\d+$/.test(m[1])) || p.window !== m[2]) return null
+  if (!m || !p || (p.session !== m[1] && !/^(?:(?:peek|hubtabs)-\d+|term-[\w-]+)$/.test(m[1])) || p.window !== m[2]) return null
   let pid = s.pid
   for (let i = 0; i < 16 && pid > 1; i++) {
     if (pid === p.pid) return p

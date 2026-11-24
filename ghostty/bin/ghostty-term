@@ -1,37 +1,84 @@
 #!/usr/bin/env bash
 # Ctrl+Shift+T in a background agent's session beside the hub (layout.conf).
 # That agent has no tabs to add one to, so a terminal opens in a popup over
-# the window, in the agent's folder. Esc closes it; Ctrl+Shift+T in it moves
-# it to the workspace as a new tab and shows the workspace.
-#   ghostty-term <client> <%pane>   open it on that client, in the folder of
-#                                   the agent that pane shows
+# the window, in the agent's folder. Each agent has one terminal: Esc hides
+# it, shell and all, and Ctrl+Shift+T on that agent again shows the same one.
+# Ctrl+Shift+T in it makes it a workspace tab and shows the workspace; after
+# that, Ctrl+Shift+T on the agent shows that tab in the popup.
+#   ghostty-term <client> <%pane>   show it on that client, for the agent
+#                                   that pane shows
 #   ghostty-term --tab <session>    what Ctrl+Shift+T runs inside it
-#   ghostty-term --attach <session> <dir> <win>   what the popup runs
+#   ghostty-term --attach <session> what the popup runs
 #
-# The terminal is a session of its own on the tab server, term-<pane>, whose
-# key table (popterm, tmux.conf) holds those two keys; every other key goes
-# to the shell. Ghostty sends Ctrl+Shift+T as \e[9001~, which the layout
-# server reads as User0 (user-keys[0]), and tmux drops a user key on its way
-# into a popup. So while a terminal is open the layout server stops reading
-# it as one, and the bytes reach the popup as they came.
+# The terminal is a session of its own on the tab server, term-<job>, named
+# for the agent's job id (or term-pane<N> for a pane with no job), whose key
+# table (popterm, tmux.conf) holds those two keys; every other key goes to
+# the shell. Its tmux window carries the same id (@term_agent), which stays
+# with it when it becomes a workspace tab, so the agent's terminal is found
+# there too. While it is only in the popup, its session outlives the popup
+# (destroy-unattached off). Once it is a tab, the popup shows it through a
+# term-<job> session that links the tab's window and ends when the popup
+# closes, which leaves the tab where it is.
+#
+# Ghostty sends Ctrl+Shift+T as \e[9001~, which the layout server reads as
+# User0 (user-keys[0]), and tmux drops a user key on its way into a popup. So
+# while a terminal is showing the layout server stops reading it as one, and
+# the bytes reach the popup as they came.
 
 source "$(dirname "$(readlink -f "$0")")/ghostty-lib.sh"
 
 NEW_TAB=$'\e[9001~'
 
+# windows_of <window id>: each session holding that window, with how many
+# windows the session has, one "<session> <count>" a line.
+windows_of() {
+  tab_server list-windows -a -F '#{window_id} #{session_name} #{session_windows}' 2>/dev/null |
+    awk -v id="$1" '$1 == id { print $2, $3 }'
+}
+
 if [[ ${1:-} == --tab ]]; then
   name=$2
   # set and show take a pane, so the session is named as its current one's.
   win=$(tab_server show -qv -t "=$name:" @term_win 2>/dev/null)
-  # Without -d the moved window is the workspace's active tab. The session,
-  # left with no window, ends, and so does the popup attached to it.
-  if [[ -z $win ]] || ! err=$(tab_server move-window -s "=$name:" -t "=ghostty-$win:" 2>&1); then
-    ah_log error term "terminal not moved" id "$name" win "$win" err "${err:-no window number}"
+  wid=$(tab_server display -p -t "=$name:" '#{window_id}' 2>/dev/null)
+  if [[ -z $win || -z $wid ]]; then
+    ah_log error term "terminal not moved" id "$name" win "$win" err "no window number"
     tab_server display -t "=$name:" "$(words shell.term.moveFailed win="$win")"
     exit 1
   fi
-  ah_log info term "terminal moved to a tab" id "$name" win "$win"
+  here=ghostty-$win in_here='' others=()
+  while read -r session count; do
+    if [[ $session == "$here" ]]; then
+      in_here=1
+    elif [[ $session =~ ^ghostty-[0-9]+$ ]]; then
+      others+=("$session:$count")
+    fi
+  done < <(windows_of "$wid")
+  # Without -d the linked window is the workspace's active tab.
+  how=linked move=(link-window -s "$wid" -t "=$here:")
+  [[ -n $in_here ]] && how=selected move=(select-window -t "=$here:$wid")
+  if ! err=$(tab_server "${move[@]}" 2>&1); then
+    ah_log error term "terminal not moved" id "$name" win "$win" err "$err"
+    tab_server display -t "=$name:" "$(words shell.term.moveFailed win="$win")"
+    exit 1
+  fi
+  # A tab in another window's workspace comes here. A workspace it was the
+  # last tab of keeps a new one, as closing a tab there would (close_tab in
+  # lib/tabs.sh), so that window stays open.
+  for other in "${others[@]}"; do
+    session=${other%:*}
+    if ((${other##*:} == 1)) && ! err=$(tab_server new-window -d -t "=$session:" -c "$HOME" 2>&1); then
+      ah_log warn term "workspace not kept open" id "$name" session "$session" err "$err"
+      continue
+    fi
+    err=$(tab_server unlink-window -t "=$session:$wid" 2>&1) ||
+      ah_log warn term "tab not taken from workspace" id "$name" session "$session" err "$err"
+  done
   layout select-window -t "=layout-$win:work"
+  # Ending the session ends the popup attached to it. The window, linked in
+  # the workspace now, stays.
+  tab_server kill-session -t "=$name"
+  ah_log info term "terminal moved to a tab" id "$name" win "$win" window "$wid" how "$how" from "${others[*]}"
   exit 0
 fi
 
@@ -49,16 +96,17 @@ fi
 # they came. So the client names a terminal tmux.conf gives no features to,
 # and takes the others itself (-T).
 if [[ ${1:-} == --attach ]]; then
-  name=$2 dir=$3 win=$4
+  name=$2
   unset TMUX TMUX_PANE
   export TERM=screen-256color
-  exec tmux -L "$TABS_SOCKET" -f "$GHOSTTY_CONF/tmux.conf" -T RGB,clipboard,hyperlinks,usstyle,focus,sync \
-    new-session -A -s "$name" -c "$dir" \; \
-    set -t "=$name:" key-table popterm \; set -t "=$name:" status off \; set -t "=$name:" @term_win "$win"
+  # Showing a workspace tab (its window is linked in another session too),
+  # the session goes back to the global destroy-unattached on, so it ends
+  # when the popup closes and the tab stays where it is.
+  exec tmux -L "$TABS_SOCKET" -f "$GHOSTTY_CONF/tmux.conf" -T RGB,clipboard,hyperlinks,usstyle,focus,sync attach-session -t "=$name" \; \
+    if -F -t "=$name:" '#{>:#{window_linked_sessions},1}' "set -u -t '=$name:' destroy-unattached"
 fi
 
 client=$1 pane=$2
-name="term-${pane#%}"
 session_window "$(layout display -p -c "$client" '#{client_session}' 2>/dev/null)" layout- || {
   ah_log warn term "terminal not opened" client "$client" pane "$pane" reason "not in a layout window"
   exit 1
@@ -68,36 +116,88 @@ session_window "$(layout display -p -c "$client" '#{client_session}' 2>/dev/null
 # session opened (into a worktree, or out of one that's gone). The folder
 # the hub named on the pane when it opened (@peek_bg) stands in while
 # agentd doesn't have the job, and the home folder when neither is there.
-dir='' from=home
-if [[ $(layout display -p -t "$pane" '#{pane_start_command}' 2>/dev/null) =~ ghostty-hub\ attach\ ([[:alnum:]_-]+) ]] && find_node; then
+dir='' from=home job=''
+if [[ $(layout display -p -t "$pane" '#{pane_start_command}' 2>/dev/null) =~ ghostty-hub\ attach\ ([[:alnum:]_-]+) ]]; then
   job=${BASH_REMATCH[1]}
-  dir=$("$NODE" -e '
-    const [state, job] = process.argv.slice(1)
-    const a = JSON.parse(require("node:fs").readFileSync(state, "utf8")).agents?.find(x => x.jobId === job)
-    if (a?.cwd) console.log(a.cwd)' "${XDG_RUNTIME_DIR:-/tmp}/agent-hub/state.json" "$job" 2>/dev/null)
-  [[ -d $dir ]] && from=agentd
+  if find_node; then
+    dir=$("$NODE" -e '
+      const [state, job] = process.argv.slice(1)
+      const a = JSON.parse(require("node:fs").readFileSync(state, "utf8")).agents?.find(x => x.jobId === job)
+      if (a?.cwd) console.log(a.cwd)' "${XDG_RUNTIME_DIR:-/tmp}/agent-hub/state.json" "$job" 2>/dev/null)
+    [[ -d $dir ]] && from=agentd
+  fi
 fi
 if [[ $from == home ]]; then
   dir=$(layout display -p -t "$pane" '#{@peek_bg}' 2>/dev/null)
   [[ -d $dir ]] && from=pane
 fi
 [[ $from == home ]] && dir=$HOME
-ah_log info term "folder chosen" id "$name" job "${job:-}" dir "$dir" from "$from"
+# The job id is the agent's for as long as it runs, whichever pane shows it.
+agent=${job:-pane${pane#%}}
+name=term-$agent
+ah_log info term "folder chosen" id "$name" job "$job" dir "$dir" from "$from"
 
-# Reads Ctrl+Shift+T as a key again once no terminal is open in any window.
+# Reads Ctrl+Shift+T as a key again once no terminal shows in any window. A
+# hidden one's session is still there, unattached.
 restore() {
-  tab_server list-sessions -F '#{session_name}' 2>/dev/null | grep -q '^term-' && return
+  tab_server list-sessions -F '#{session_name} #{session_attached}' 2>/dev/null | awk '$1 ~ /^term-/ && $2 > 0 { found = 1 } END { exit !found }' && return
   layout set -s 'user-keys[0]' "$NEW_TAB"
 }
 trap restore EXIT
 
+# The session gets its shell outside the layout server, as the popup's would.
+# The tab server ends a session with no client (destroy-unattached), so one
+# made detached ends as soon as it's made, unless the same command turns that
+# off. --attach turns it back on for a session showing a workspace tab.
+new_session() {
+  (
+    unset TMUX TMUX_PANE
+    tab_server new-session -d -P -F '#{window_id}' -s "$name" -c "$dir" \; set -t "=$name:" destroy-unattached off
+  )
+}
+
+if tab_server has-session -t "=$name" 2>/dev/null; then
+  how=reopened
+  wid=$(tab_server display -p -t "=$name:" '#{window_id}' 2>/dev/null)
+else
+  # The agent's terminal as a workspace tab: a window with its id outside a
+  # term- session (there are none of those now).
+  wid=$(tab_server list-windows -a -F '#{window_id} #{session_name} #{@term_agent}' 2>/dev/null |
+    awk -v agent="$agent" '$3 == agent && $2 !~ /^term-/ { print $1; exit }')
+  if [[ -n $wid ]]; then
+    how=tab
+    # A new session comes with a window of its own; the tab's takes its place.
+    if ! made=$(new_session 2>&1) || ! err=$(tab_server link-window -s "$wid" -t "=$name:" \; kill-window -t "$made" 2>&1); then
+      ah_log error term "terminal not opened" id "$name" window "$wid" err "${err:-$made}"
+      tab_server kill-session -t "=$name" 2>/dev/null
+      exit 1
+    fi
+  else
+    how=new
+    if ! wid=$(new_session 2>&1) || ! err=$(tab_server set -w -t "$wid" @term_agent "$agent" 2>&1); then
+      ah_log error term "terminal not opened" id "$name" err "${err:-$wid}"
+      tab_server kill-session -t "=$name" 2>/dev/null
+      exit 1
+    fi
+  fi
+fi
+# @term_win is the window it shows in now, the workspace Ctrl+Shift+T in it
+# takes it to.
+if ! err=$(tab_server set -t "=$name:" key-table popterm \; set -t "=$name:" status off \; set -t "=$name:" @term_win "$WIN" 2>&1); then
+  ah_log error term "terminal not opened" id "$name" err "$err"
+  exit 1
+fi
+
 key=$(setting keys.newTab '' ctrl+shift+t)
-title=$(words shell.term.title dir="${dir/#"$HOME"/\~}" key="${key:-ctrl+shift+t}")
+# A workspace tab's window is linked in its workspace too.
+text=title
+(($(tab_server display -p -t "=$name:" '#{window_linked_sessions}' 2>/dev/null || echo 1) > 1)) && text=tabTitle
+title=$(words "shell.term.$text" dir="${dir/#"$HOME"/\~}" key="${key:-ctrl+shift+t}")
 # tmux reads the title as a format, where # starts one.
 title=${title//#/##}
 layout set -su 'user-keys[0]'
-cmd=$(printf '%q ' "$GHOSTTY_CONF/bin/ghostty-term" --attach "$name" "$dir" "$WIN")
-ah_log info term "terminal opened" id "$name" win "$WIN" pane "$pane"
+cmd=$(printf '%q ' "$GHOSTTY_CONF/bin/ghostty-term" --attach "$name")
+ah_log info term "terminal opened" id "$name" win "$WIN" pane "$pane" window "$wid" how "$how"
 layout display-popup -c "$client" -E -w 80% -h 80% -b rounded -S "fg=$(layout show -gv @accent 2>/dev/null || echo default)" -T "$title" -d "$dir" "$cmd" || {
   status=$?
   ah_log error term "terminal popup failed" id "$name" exit "$status" client "$client"
