@@ -169,7 +169,7 @@ test('the images pasted into Watch for, still named there, go with the spec', ()
   assert.match(plan.argv.at(-1)!, /\nFor: 2h\nThe prompt has images attached: \[Image #1\] is \/i\/a\.png\. Read each one with the Read tool before you start\.\n\nWatch for:\nerrors like \[Image #1\]$/)
 })
 
-test('a protected environment asks once more: y starts it, anything else goes back', () => {
+test('a protected environment asks once more: ctrl+s again starts it, anything else goes back', () => {
   const l = form()
   keys(l, '\x1b[C', '\x1b[C', '\x1b[C')
   assert.equal(l.env, 'eu')
@@ -180,7 +180,9 @@ test('a protected environment asks once more: y starts it, anything else goes ba
   assert.equal(keys(l, 'x'), null)
   assert.equal(l.confirm, false)
   keys(l, '\x13')
-  const act = keys(l, 'y')
+  assert.equal(keys(l, 'y'), null, 'y is no longer yes')
+  keys(l, '\x13')
+  const act = keys(l, '\x13')
   assert.equal(act?.do, 'logs')
   assert.equal(act?.spec.env, 'eu')
   assert.equal(act?.spec.source, 'kubernetes')

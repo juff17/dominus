@@ -100,8 +100,8 @@ is filled from the values passed; a string that differs for one and many is
 and default. The Agents widget gets its part through `ghostty-hub tray text`.
 Key names, glyphs, colours, stored values and log messages stay in code.
 
-Every radio, select, on/off, checkbox, text field, chip row, button, y/n
-question, popup header and rounded frame is drawn by `tui/controls.ts`, so
+Every radio, select, on/off, checkbox, text field, chip row, button,
+question (answered by pressing its key again, `pressAgain`), popup header and rounded frame is drawn by `tui/controls.ts`, so
 they look the same on every screen. A control returns spans for `render()`;
 a screen that builds strings takes them through `ansi()`.
 

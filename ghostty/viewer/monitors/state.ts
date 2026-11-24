@@ -39,6 +39,8 @@ export type Drawer = AttachOptions & { at?: number; more: boolean; focus: Focus;
 // A line the footer says until the next key.
 export type Note = { text: string; tone: 'green' | 'red' | 'peach' | 'sub' }
 export type Ask = { key: string; name: string; title: string }
+// Stops the selected monitor, and once more when it asks first.
+export const STOP_KEY = 'x'
 
 // sel is a monitor's key or a PR's address; drawing sets scroll to fit the
 // cursor.
@@ -463,10 +465,10 @@ function stop(s: MonitorsState): Act {
   return null
 }
 
-// a stops it and stops asking from then on.
+// x once more stops it; a stops it and stops asking from then on.
 function answer(s: MonitorsState, ask: Ask, key: string): Act {
   s.ask = null
-  if (key === 'y') return { do: 'stop', key: ask.key, remember: false }
+  if (key === STOP_KEY) return { do: 'stop', key: ask.key, remember: false }
   if (key === 'a') return { do: 'stop', key: ask.key, remember: true }
   return null
 }
@@ -502,7 +504,7 @@ function runningKey(s: MonitorsState, key: string): Act {
     case 'a':
       openPanel(s)
       return null
-    case 'x':
+    case STOP_KEY:
       return stop(s)
     case 'o':
       return r ? browse(r.url, s) : null

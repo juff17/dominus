@@ -244,15 +244,16 @@ test('the filter shows in the summary, with its caret while typing', () => {
 
 test('the footer: a question first, then a live note, else the keys', () => {
   const keys: Hint[] = [['↵', 'open']]
-  const ask = footer({ confirm: { text: 'Stop it?', skip: 'hub.askStopMonitor' }, note: null, now: NOW }, keys, 80).map(text)
-  assert.deepEqual(ask, [" Stop it?  y yes  n no  a yes, don't ask again".padEnd(80)])
-  const plain = footer({ confirm: { text: 'Close it?' }, note: null, now: NOW }, keys, 80).map(text)
+  const ask = footer({ confirm: { text: 'Stop it?', skip: 'hub.askStopMonitor', key: 'x' }, note: null, now: NOW }, keys, 80).map(text)
+  assert.deepEqual(ask, [" Stop it?  x yes  other keys no  a yes, don't ask again".padEnd(80)])
+  const plain = footer({ confirm: { text: 'Close it?', key: '\x18' }, note: null, now: NOW }, keys, 80).map(text)
+  assert.match(plain[0], /Close it\? {2}ctrl\+x.yes {2}other.keys.no/)
   assert.doesNotMatch(plain[0], /don't/)
   const note = { text: 'Allowed it', color: P.green, until: NOW + 1 }
   assert.equal(text(footer({ confirm: null, note, now: NOW }, keys, 40)[0]).trim(), 'Allowed it')
   assert.equal(text(footer({ confirm: null, note, now: NOW + 1 }, keys, 40)[0]).trim(), '↵ open')
   // A long question wraps rather than being cut.
-  assert.equal(footer({ confirm: { text: 'word '.repeat(30) }, note: null, now: NOW }, keys, 40).length, 4)
+  assert.equal(footer({ confirm: { text: 'word '.repeat(30), key: 'x' }, note: null, now: NOW }, keys, 40).length, 4)
 })
 
 test('the list beside an open session: groups, the open agent marked, its clicks', () => {

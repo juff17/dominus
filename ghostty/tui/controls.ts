@@ -120,13 +120,23 @@ export function button(label: string, { key, main = false, focused = false, colo
 
 export const buttons = (list: readonly ButtonSpec[]): Span[] => list.flatMap((b, i): Span[] => [...(i ? [['  ', ''] as const] : []), ...button(b.label, b)])
 
-export const confirm = (
-  question: string,
-  answers: readonly Hint[] = [
-    ['y', t('controls.yes')],
-    ['n', t('controls.no')],
-  ],
-): Span[] => [[`${question}  `, BOLD + fg(P.peach)], ...hintSpans(answers)]
+export const confirm = (question: string, answers: readonly Hint[]): Span[] => [[`${question}  `, BOLD + fg(P.peach)], ...hintSpans(answers)]
+
+// A key as a hint names it: Ctrl+X arrives as \x18.
+export function keyName(key: string): string {
+  if (key === '\r') return '↵'
+  if (key === '\t') return 'tab'
+  const code = key.length === 1 ? key.charCodeAt(0) : 0
+  return code >= 1 && code <= 26 ? `ctrl+${String.fromCharCode(96 + code)}` : key
+}
+
+// Every question is answered by pressing the key that asked it once more, so
+// a hand already on x (or Ctrl+X) confirms without moving to y. Any other
+// key says no.
+export const pressAgain = (key: string, yes = t('controls.yes')): Hint[] => [
+  [keyName(key), yes],
+  [t('controls.otherKeys'), t('controls.no')],
+]
 
 const closeHint = (key: string, fill = ''): Span[] => [
   [key, fg(P.text) + fill],

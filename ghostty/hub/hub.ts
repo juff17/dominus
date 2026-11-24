@@ -10,7 +10,7 @@ import { readFileSync, unlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { type Question, actionsOf, pruneResults } from './actions.ts'
+import { type Asked, actionsOf, pruneResults } from './actions.ts'
 import {
   type Focus,
   LANES,
@@ -71,7 +71,7 @@ let filter = ''
 let filtering = false
 let filterAt: number | undefined // the filter's caret, as tui/line.ts keeps it; none is the end
 let listSel: string | null = null // id in the list beside an open session
-let confirm: Question | null = null // skip names the setting that asks it, which answering a turns off
+let confirm: Asked | null = null // skip names the setting that asks it, which answering a turns off
 let note: Note | null = null
 let hits: Hit[] = []
 // Sent ahead of the next frame: the board's gear, when it changes.
@@ -191,12 +191,12 @@ function moveIn(n: number) {
 }
 
 // x on a monitor stops it, on an agent closes it; either may ask first, and
-// the question waits in the footer for the next key.
-function close() {
+// the question waits in the footer for the next key: `key` once more is yes.
+function close(key: string) {
   const m = focusedMonitor()
   const a = m ? null : focused()
   const question = m ? act.stopMonitor(m) : act.closeAgent(a, a && where(a), () => a && showNext(a))
-  if (question) confirm = question
+  if (question) confirm = { ...question, key }
 }
 
 // Closing the agent open beside the list would take its session with it and
@@ -211,7 +211,7 @@ async function showNext(a: Agent) {
   await peek.showInstead(next.agent)
 }
 
-const actions: Record<Action, () => unknown> = {
+const actions: Record<Action, (key: string) => unknown> = {
   laneLeft: () => moveLane(-1),
   laneRight: () => moveLane(1),
   down: () => moveIn(1),
@@ -228,9 +228,9 @@ const actions: Record<Action, () => unknown> = {
   goToTab: () => peek.goToTab(focused()),
   close,
   restart: () => act.restart(focused()),
-  restartAll: () => {
+  restartAll: key => {
     const question = act.restartAll()
-    if (question) confirm = question
+    if (question) confirm = { ...question, key }
   },
   new: () => act.newAgent(),
   filter: () => ((filtering = true), (filter = ''), (filterAt = undefined)),
@@ -255,7 +255,7 @@ function onKey(key: string) {
     return
   }
   const action = keyAction(key)
-  if (action) void actions[action]()
+  if (action) void actions[action](key)
 }
 
 function onMouse(m: Mouse) {

@@ -4,7 +4,7 @@
 // clock, the settings or the terminal, so a frame can be tested from a fixed
 // state (view.test.ts).
 
-import type { Question } from './actions.ts'
+import type { Asked } from './actions.ts'
 import {
   type Focus,
   LANE_GAP,
@@ -31,7 +31,7 @@ import type { Counts } from '../agents/model.ts'
 import { pipelineResult } from '../agents/transcript.ts'
 import { lookup, t } from '../core/text.ts'
 import { type Hint, hintSpans } from '../tui/chrome.ts'
-import { button as buttonSpans, confirm as question, field, frameBottom, frameRow, spanWidth } from '../tui/controls.ts'
+import { button as buttonSpans, confirm as question, field, frameBottom, frameRow, pressAgain, spanWidth } from '../tui/controls.ts'
 import type { Look } from '../tui/palette.ts'
 import { ACCENT, BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bar, bg, clean, fg, mix, render, split, width, wrap } from '../tui/term.ts'
 
@@ -52,7 +52,7 @@ export type HubUi = {
   scroll: Scroll
   listSel: string | null
   peek: Peek | null
-  confirm: Question | null
+  confirm: Asked | null
   note: Note | null
   win: number
   now: number
@@ -208,7 +208,7 @@ const FOOTER_ROWS = 4
 const wrapped = (spans: Line, w: number) => wrap(spans, w - 1, FOOTER_ROWS).map(l => render([[' '], ...l], w))
 
 export function footer(
-  { confirm, note, now }: { confirm: Pick<Question, 'text' | 'skip'> | null; note: Note | null; now: number },
+  { confirm, note, now }: { confirm: Pick<Asked, 'text' | 'skip' | 'key'> | null; note: Note | null; now: number },
   keys: readonly Hint[],
   w: number,
 ): string[] {
@@ -217,8 +217,10 @@ export function footer(
   // question breaks only between answers.
   if (confirm) {
     const skip: Hint[] = confirm.skip ? [['a', t('hub.dontAskAgain')]] : []
-    const [ask, ...answers] = question(confirm.text, [['y', t('controls.yes')], ['n', t('controls.no')], ...skip])
-    const held = answers.map(([s, style]): Span => [s.startsWith('  ') ? s : s.replaceAll(' ', ' '), style])
+    const [ask, ...answers] = question(confirm.text, [...pressAgain(confirm.key), ...skip])
+    // The gap before an answer stays a break; a key of two words (other keys) holds together.
+    const hold = (s: string): string => s.replaceAll(' ', ' ')
+    const held = answers.map(([s, style]): Span => [s.startsWith('  ') ? `  ${hold(s.slice(2))}` : hold(s), style])
     return wrapped([ask, ...held], w)
   }
   if (note && note.until > now) return wrapped([[note.text, fg(note.color)]], w)

@@ -421,7 +421,7 @@ test('Logs: without kubectl or an Elastic MCP the rest gray out and one dim line
   p.logs.task = 'OOM kills'
   onKey(p, '\x13')
   t = text(draw(p))
-  assert.match(t.split('\n').at(-1)!, /eu is protected\. Start a read-only log watcher there\? +y start it +n no/)
+  assert.match(t.split('\n').at(-1)!, /eu is protected\. Start a read-only log watcher there\? +ctrl\+s start it +other keys no/)
 })
 
 // ------------------------------------------------------------ approvals

@@ -22,8 +22,10 @@ import { P, clean } from '../tui/term.ts'
 
 // The setting that turns a question off, when it can be ("don't ask again").
 export type AskSetting = 'hub.askStopMonitor'
-// A question for the footer: y runs `yes`.
+// A question for the footer: pressing its key again runs `yes`.
 export type Question = { text: string; yes: () => unknown; skip?: AskSetting }
+// A question as the hub holds it: `key` is the key that asked it.
+export type Asked = Question & { key: string }
 
 // What start reads of a spawned claude --bg.
 export type Child = {
