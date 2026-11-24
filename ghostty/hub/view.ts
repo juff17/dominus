@@ -188,7 +188,7 @@ export function footer(
     return wrapped([ask, ...held], w)
   }
   if (note && note.until > now) return wrapped([[note.text, fg(note.color)]], w)
-  return wrapped(hint(keys), w)
+  return keys.length ? wrapped(hint(keys), w) : []
 }
 
 // ------------------------------------------------------------ the board
@@ -355,16 +355,13 @@ const boardKeys = (focus: Focus, agents: readonly Agent[]): Hint[] => [
 // No agent at all, and no filter hiding any: the board shows the gear.
 export const quiet = (ui: Pick<HubUi, 'agents' | 'filter'>): boolean => ui.agents.length === 0 && !ui.filter
 
-const SPLASH_KEYS: Hint[] = [
-  ['n', t('hub.keys.new')],
-  ['q', t('hub.keys.workspace')],
-]
-
 // In place of the lanes and the monitors: the gear (left out until hub.ts
 // can draw it, or when it won't fit), the name, and a way to start an agent.
 function splashFrame(ui: HubUi, { w: W, h: H }: Size, acts: ClickActs): HubFrame {
   const hits: Hit[] = []
-  const foot = footer(ui, SPLASH_KEYS, W)
+  // No key bar: the button and the q under the words say it already. The
+  // footer still shows a question or a note.
+  const foot = footer(ui, [], W)
   // Under the summary and its blank row, over a blank row and the footer.
   const panel = Math.max(0, H - 3 - foot.length)
   const blank = render([], W, LANE_BG)

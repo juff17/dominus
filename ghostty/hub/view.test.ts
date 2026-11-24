@@ -107,7 +107,7 @@ test('with nothing running the board shows the gear, the name and a New agent bu
   const s = screen(f)
   assert.ok(!s.includes('Needs you'), 'no lanes')
   assert.match(plain(f.lines[0]), /^ 0 tasks · 0 monitors/)
-  assert.match(plain(f.lines.at(-1) ?? ''), /n new +q workspace/)
+  assert.ok(!plain(f.lines.at(-1) ?? '').includes('n new'), 'no key bar')
   // The New agent under the words, as well as the summary's.
   const button = f.hits.find(h => h.y1 === at + 10)
   assert.ok(button)
