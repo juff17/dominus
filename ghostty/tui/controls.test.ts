@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { ansi, button, card, checks, chips, confirm, field, frameBottom, frameRow, frameTop, header, laneHeader, onOff, radio, select, spanWidth } from './controls.ts'
+import { ansi, button, card, checks, chips, confirm, field, frameBottom, frameRow, frameTop, header, keyName, laneHeader, onOff, pressAgain, radio, select, spanWidth } from './controls.ts'
 import { type Line, render } from './term.ts'
 
 const plain = (s: string): string => s.replace(/\x1b\[[0-9;]*m/g, '')
@@ -48,7 +48,16 @@ test('chips keep the picked one in view and count the rest', () => {
 test('button and confirm', () => {
   assert.equal(words(button('Push', { key: 'a', main: true })), ' Push a ')
   assert.equal(words(button('Push', { key: 'a', main: true, round: true })), '\ue0b6 Push a \ue0b4')
-  assert.equal(words(confirm('Stop it?')), 'Stop it?  y yes  n no')
+  assert.equal(words(confirm('Stop it?', pressAgain('x'))), 'Stop it?  x yes  other keys no')
+  assert.equal(words(confirm('Start it?', pressAgain('\x13', 'start it'))), 'Start it?  ctrl+s start it  other keys no')
+})
+
+test('keyName: control keys by their letter, Enter and Tab by name', () => {
+  assert.equal(keyName('\x18'), 'ctrl+x')
+  assert.equal(keyName('\x13'), 'ctrl+s')
+  assert.equal(keyName('\r'), '\u21b5')
+  assert.equal(keyName('\t'), 'tab')
+  assert.equal(keyName('R'), 'R')
 })
 
 test('header, frame and ansi', () => {

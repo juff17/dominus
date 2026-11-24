@@ -7,7 +7,7 @@ import { tilde } from '../../core/paths.ts'
 import { t } from '../../core/text.ts'
 import { load as settings } from '../../settings/settings.ts'
 import { type Hint, hintSpansAfter } from '../../tui/chrome.ts'
-import { button, confirm, field, frameBottom, frameTop, select, spanWidth } from '../../tui/controls.ts'
+import { button, confirm, field, frameBottom, frameTop, pressAgain, select, spanWidth } from '../../tui/controls.ts'
 import { clampScroll, keepInView } from '../../tui/list.ts'
 import type { Size } from '../../tui/overlay.ts'
 import { MONITOR, TINT } from '../../tui/palette.ts'
@@ -19,6 +19,7 @@ import { WATCH_KEYS } from './attach.ts'
 import { babysitBranch, repoKey } from './checkout.ts'
 import type { Branch, HostResult, Pipeline, Pr, Reviews } from './forge.ts'
 import { logsBody } from './draw-logs.ts'
+import { CTRL_S } from './logs-state.ts'
 import { heading, rule } from './heading.ts'
 import { pipesBody } from './draw-pipes.ts'
 import { lit } from './lit.ts'
@@ -31,6 +32,7 @@ import {
   type MonitorsState,
   type Note,
   type Panel,
+  STOP_KEY,
   VIEWS,
   type View,
   allRunning,
@@ -200,16 +202,12 @@ function noteOf(s: MonitorsState, drawn: Drawn | null): Note | null {
 
 function footer(s: MonitorsState, w: number, drawn: Drawn | null): string {
   if (s.view === 'logs' && s.logs.confirm) {
-    const q = confirm(t('monitors.logs.confirm', { env: s.logs.env }), [
-      ['y', t('monitors.logs.startAnyway')],
-      ['n', t('controls.no')],
-    ])
+    const q = confirm(t('monitors.logs.confirm', { env: s.logs.env }), pressAgain(CTRL_S, t('monitors.logs.startAnyway')))
     return render([[' '], ...q], w, BASE)
   }
   if (s.ask) {
     const q = confirm(t('hub.notes.stopMonitorAsk', { name: clean(s.ask.name), title: clean(s.ask.title) }), [
-      ['y', t('controls.yes')],
-      ['n', t('controls.no')],
+      ...pressAgain(STOP_KEY),
       ['a', t('hub.dontAskAgain')],
     ])
     return render([[' '], ...q], w, BASE)

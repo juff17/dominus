@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { DIAGRAMS_KEY, KEYS, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction } from './keys.ts'
-import type { Question } from './actions.ts'
+import type { Asked } from './actions.ts'
 import type { Hit } from './view.ts'
 import { tokens } from '../tui/term.ts'
 
@@ -46,17 +46,21 @@ test('the keys the layout and the tray send arrive as one token each', () => {
   for (const k of keys) assert.equal(keyAction(k), null)
 })
 
-test('a question: y yes, n or any other key no', () => {
-  const c: Pick<Question, 'skip'> = {}
-  assert.deepEqual(answerConfirm(c, 'y'), { yes: true, remember: null })
-  for (const k of ['n', 'Y', 'a', '\r', '\x1b', 'j']) assert.deepEqual(answerConfirm(c, k), { yes: false, remember: null }, k)
+test('a question: its key again yes, or another key for the same action; any other key no', () => {
+  const close: Pick<Asked, 'skip' | 'key'> = { key: '\x18' }
+  assert.deepEqual(answerConfirm(close, '\x18'), { yes: true, remember: null })
+  assert.deepEqual(answerConfirm(close, 'x'), { yes: true, remember: null }, 'x closes too')
+  for (const k of ['y', 'n', 'X', 'a', '\r', '\x1b', 'j', 'R']) assert.deepEqual(answerConfirm(close, k), { yes: false, remember: null }, k)
+  const restart: Pick<Asked, 'skip' | 'key'> = { key: 'R' }
+  assert.deepEqual(answerConfirm(restart, 'R'), { yes: true, remember: null })
+  for (const k of ['r', 'y', 'x']) assert.deepEqual(answerConfirm(restart, k), { yes: false, remember: null }, k)
 })
 
 test('a question you can skip: a says yes and remembers not to ask', () => {
   // Any setting's name comes back as it was given.
-  const c = { skip: 'stop-monitor' } as unknown as Pick<Question, 'skip'>
+  const c = { skip: 'stop-monitor', key: 'x' } as unknown as Pick<Asked, 'skip' | 'key'>
   assert.deepEqual(answerConfirm(c, 'a'), { yes: true, remember: 'stop-monitor' })
-  assert.deepEqual(answerConfirm(c, 'y'), { yes: true, remember: null })
+  assert.deepEqual(answerConfirm(c, 'x'), { yes: true, remember: null })
   assert.deepEqual(answerConfirm(c, 'n'), { yes: false, remember: null })
 })
 

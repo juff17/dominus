@@ -415,6 +415,8 @@ test("paneOf matches a session's tmux to this server's pane only when Claude run
   assert.equal(paneOf(s('hubtabs-1:@7.%3'), panes, parent), panes.get('%3'))
   // Started in the hub's terminal popup, whose window then moved to the workspace.
   assert.equal(paneOf(s('term-9:@7.%3'), panes, parent), panes.get('%3'))
+  // A background agent's terminal is named for its job id.
+  assert.equal(paneOf(s('term-a1b2-c3_d:@7.%3'), panes, parent), panes.get('%3'))
   // Same pane id, another server's session or window.
   assert.equal(paneOf(s('other:@7.%3'), panes, parent), null)
   assert.equal(paneOf(s('ghostty-1:@8.%3'), panes, parent), null)

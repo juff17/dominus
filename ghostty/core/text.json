@@ -4,6 +4,7 @@
     "off": "off",
     "yes": "yes",
     "no": "no",
+    "otherKeys": "other keys",
     "close": "close",
     "more": "+{n} more"
   },
@@ -1362,7 +1363,7 @@
           ],
           [
             "ctrl+shift+t",
-            "In a background agent’s session: a terminal in a popup in its folder; esc closes it, ctrl+shift+t moves it to a workspace tab",
+            "In a background agent’s session: that agent’s terminal in a popup, in its folder; esc hides it, ctrl+shift+t moves it to a workspace tab, which ctrl+shift+t on the agent shows again",
             true
           ],
           [
@@ -1979,7 +1980,8 @@
       "notInLayout": "Run this in a Ghostty layout window, or name the window number."
     },
     "term": {
-      "title": " Terminal · {dir} · esc closes · {key} moves it to a new tab ",
+      "title": " Terminal · {dir} · esc hides it · {key} moves it to a new tab ",
+      "tabTitle": " Terminal · {dir} · esc hides it · {key} goes to its tab ",
       "moveFailed": "Couldn't move the terminal to a tab in window {win}."
     },
     "viewer": {

@@ -1,8 +1,8 @@
 // What the hub's keys and clicks do, apart from doing it: the action each
-// key names, how a y/n question and the filter take keys, and which clicks
+// key names, how a question and the filter take keys, and which clicks
 // count. hub.ts runs the actions; keys.test.ts pins the bindings.
 
-import type { AskSetting, Question } from './actions.ts'
+import type { AskSetting, Asked } from './actions.ts'
 import type { Hit } from './view.ts'
 import { type Mouse, leftPress } from '../tui/input.ts'
 import { editField } from '../tui/line.ts'
@@ -60,12 +60,14 @@ export const KEYS: Readonly<Record<string, Action>> = {
 // Own keys only, so a key named like an Object method is no action.
 export const keyAction = (key: string): Action | null => (Object.hasOwn(KEYS, key) ? KEYS[key] : null)
 
-// A question waiting in the footer takes the next key, whatever it is.
-// `remember` names the question to stop asking.
+// A question waiting in the footer takes the next key, whatever it is: the
+// key that asked it says yes, as does another key for the same action (x
+// and Ctrl+X both close). `remember` names the question to stop asking.
 export type Answer = { yes: boolean; remember: AskSetting | null }
 
-export function answerConfirm(confirm: Pick<Question, 'skip'>, key: string): Answer {
-  if (key === 'y') return { yes: true, remember: null }
+export function answerConfirm(confirm: Pick<Asked, 'skip' | 'key'>, key: string): Answer {
+  const again = key === confirm.key || (keyAction(key) !== null && keyAction(key) === keyAction(confirm.key))
+  if (again) return { yes: true, remember: null }
   if (key === 'a' && confirm.skip) return { yes: true, remember: confirm.skip }
   return { yes: false, remember: null }
 }
