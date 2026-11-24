@@ -5,7 +5,8 @@
 import { t } from '../core/text.ts'
 import { type Hint, hintSpans } from './chrome.ts'
 import { caretParts, head as fitHead, length } from './line.ts'
-import { ACCENT, ACCENT_INK, BOLD, CAP_L, CAP_R, ITALIC, type Line, P, RESET, type Span, bg, clean, fg, render, spanWidth, split, width } from './term.ts'
+import type { Look } from './palette.ts'
+import { ACCENT, ACCENT_INK, BOLD, CAP_L, CAP_R, ITALIC, type Line, P, RESET, type Span, bar, bg, clean, fg, mix, render, spanWidth, split, width } from './term.ts'
 
 // Screens take it from here with the controls.
 export { spanWidth }
@@ -154,4 +155,47 @@ export const frameBottom = (w: number, { color = ACCENT, fill = '' }: FrameStyle
 export function frameRow(spans: Line, w: number, { color = ACCENT, fill = '', inner = fill }: FrameRowOptions = {}): string {
   const side = render([['│', fg(color) + fill]], 1, fill)
   return side + render([[' ', inner], ...spans], w - 2, inner) + side
+}
+
+// A line of a card: its spans, or { left, right } with right set flush
+// right, which frameRow, drawing its spans from the left, can't do.
+export type BoxLine = Line | { left: Line; right: Line }
+// `under` is what the card sits on (a lane's background), `fill` its inside.
+export type CardOptions = { border: string; fill: string; under?: string }
+
+// The hub's card, which Tickets draws too: a rounded box whose title and a
+// right-hand note sit in its top edge. The border sits on `under` and the
+// inside on `fill`, so the corners read as round. The top is drawn here
+// rather than with frameTop, whose title is one colour and whose right end
+// says what closes it.
+export function card(title: Line, right: Line, lines: readonly BoxLine[], w: number, { border, fill, under = bg(P.mantle) }: CardOptions): string[] {
+  const b = fg(border)
+  const rw = spanWidth(right)
+  const tw = Math.min(spanWidth(title), Math.max(4, w - 5 - rw))
+  const dashes = Math.max(1, w - 4 - tw - rw)
+  const topRow =
+    render([['╭─', b]], 2, under) +
+    render(title, tw, under) +
+    render([['─'.repeat(dashes), b]], dashes, under) +
+    render(right, Math.max(0, w - 4 - tw - dashes), under) +
+    render([['─╮', b]], 2, under)
+  const side = render([['│', b]], 1, under)
+  const edge = { color: border, fill: under }
+  return [
+    topRow,
+    ...lines.map(l => ('left' in l ? side + split([[' '], ...l.left], [...l.right, [' ', '']], w - 2, fill) + side : frameRow(l, w, { ...edge, inner: fill }))),
+    frameBottom(w, edge),
+  ]
+}
+
+// A lane's or column's header bar: its glyph and name in its colour on a
+// tint of it, and its count on the right.
+export function laneHeader(look: Look, count: number, w: number, extra: Line = []): string {
+  return bar(
+    [[` ${look.glyph ? `${look.glyph} ` : ''}${look.name}`, BOLD + fg(look.color)], ...extra],
+    [[` ${count} `, BOLD + fg(P.crust) + bg(look.color)], [' ', '']],
+    w,
+    mix(look.color, P.mantle, 0.2),
+    P.mantle,
+  )
 }

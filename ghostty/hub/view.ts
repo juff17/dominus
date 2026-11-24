@@ -31,9 +31,9 @@ import type { Counts } from '../agents/model.ts'
 import { pipelineResult } from '../agents/transcript.ts'
 import { lookup, t } from '../core/text.ts'
 import { type Hint, hintSpans } from '../tui/chrome.ts'
-import { button as buttonSpans, confirm as question, field, frameBottom, frameRow, spanWidth } from '../tui/controls.ts'
+import { type BoxLine, button as buttonSpans, card, confirm as question, field, laneHeader, spanWidth } from '../tui/controls.ts'
 import type { Look } from '../tui/palette.ts'
-import { ACCENT, BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bar, bg, clean, fg, mix, render, split, width, wrap } from '../tui/term.ts'
+import { ACCENT, BOLD, ITALIC, type Line, MONITOR, P, STATE, STOPPED, type Span, ago, bg, clean, fg, render, split, width, wrap } from '../tui/term.ts'
 
 // A clickable region of a frame, its cells counted from 1; `wheel` is the
 // lane (4: the monitors strip) the wheel scrolls over it.
@@ -80,7 +80,6 @@ const nothing = (name: Lane | 'monitors') => t(`hub.empty.${name}`)
 const MONITORS_LOOK: Look = { glyph: '◉', color: P.rose, name: t('hub.monitors') }
 
 const kilo = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))
-const tint = (color: string) => mix(color, P.mantle, 0.2)
 // Why a monitor ended: the hub's own reasons have words in agents.ended;
 // any other is the line Claude Code gave, shown as it is.
 const endedWhy = (reason: string) => {
@@ -99,46 +98,11 @@ function newButton(label: string) {
   return { spans, cells: spanWidth(spans) }
 }
 
-function header(look: Look, count: number, w: number, extra: Line = []) {
-  return bar(
-    [[` ${look.glyph} ${look.name}`, BOLD + fg(look.color)], ...extra],
-    [[` ${count} `, BOLD + fg(P.crust) + bg(look.color)], [' ', '']],
-    w,
-    tint(look.color),
-    P.mantle,
-  )
-}
+const header = laneHeader
 
 function empty(text: string, w: number) {
   const pad = Math.max(0, Math.floor((w - width(text)) / 2))
   return render([[`${' '.repeat(pad)}${text}`, ITALIC + fg(P.overlay1)]], w, LANE_BG)
-}
-
-// A line of a card: its spans, or { left, right } with right set flush
-// right, which frameRow, drawing its spans from the left, can't do.
-type BoxLine = Line | { left: Line; right: Line }
-
-// The border sits on the lane's background and the inside on the card's, so
-// the corners read as round. The top is drawn here rather than with frameTop,
-// whose title is one colour and whose right end says what closes it.
-function box(title: Line, right: Line, lines: BoxLine[], w: number, border: string, fill: string) {
-  const b = fg(border)
-  const rw = spanWidth(right)
-  const tw = Math.min(spanWidth(title), Math.max(4, w - 5 - rw))
-  const dashes = Math.max(1, w - 4 - tw - rw)
-  const topRow =
-    render([['╭─', b]], 2, LANE_BG) +
-    render(title, tw, LANE_BG) +
-    render([['─'.repeat(dashes), b]], dashes, LANE_BG) +
-    render(right, Math.max(0, w - 4 - tw - dashes), LANE_BG) +
-    render([['─╮', b]], 2, LANE_BG)
-  const side = render([['│', b]], 1, LANE_BG)
-  const edge = { color: border, fill: LANE_BG }
-  return [
-    topRow,
-    ...lines.map(l => ('left' in l ? side + split([[' '], ...l.left], [...l.right, [' ', '']], w - 2, fill) + side : frameRow(l, w, { ...edge, inner: fill }))),
-    frameBottom(w, edge),
-  ]
 }
 
 export type CardCtx = { win: number; now: number; broke: Set<string> }
@@ -178,7 +142,7 @@ function lineCard(name: Lane, a: Agent, label: string, age: string, w: number, o
   return split(left, [[done ? `  ${age} ` : `  ${where(a, win)} · ${age} `, fg(P.sub)]], w, on ? SEL_BG : LANE_BG)
 }
 
-export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, ctx: CardCtx): string[] {
+export function agentCard(name: Lane, a: Agent, hgt: number, w: number, on: boolean, ctx: CardCtx): string[] {
   const { now } = ctx
   // A card a monitor raised is named after what it watches.
   const raised = a.need === 'monitor' ? (a.monitors.find(m => m.state === 'action') ?? null) : null
@@ -199,7 +163,7 @@ export function card(name: Lane, a: Agent, hgt: number, w: number, on: boolean, 
   const lines: BoxLine[] =
     hgt >= 4 ? [[named], { left: doing, right: [['  ', ''], ...cardNote(name, a, raised)] }] : [[named, [' · ', fg(P.overlay1)], ...doing]]
   const border = on ? ACCENT : a.need === 'monitor' ? P.rose : P.surface1
-  return box(title, right, lines, w, border, on ? SEL_BG : CARD_BG)
+  return card(title, right, lines, w, { border, fill: on ? SEL_BG : CARD_BG })
 }
 
 // The footer's rows: one, or up to FOOTER_ROWS when its question, note or
@@ -288,7 +252,7 @@ function lane(b: Board, name: Lane, w: number, h: number, laneIndex: Focus, x: n
     const y = out.length + 3
     const { id } = items[i]
     b.hits.push({ x1: x, x2: x + w - 1, y1: y, y2: y + hgt - 1, act: () => b.acts.pick(laneIndex, id), wheel: laneIndex })
-    out.push(...card(name, items[i], hgt, w, b.focus === laneIndex && i === sel, b.ctx))
+    out.push(...agentCard(name, items[i], hgt, w, b.focus === laneIndex && i === sel, b.ctx))
   }
   const more = items.length - i
   while (out.length < h - (more > 0 ? 1 : 0)) out.push(render([], w, LANE_BG))

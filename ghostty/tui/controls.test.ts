@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { ansi, button, checks, chips, confirm, field, frameBottom, frameRow, frameTop, header, onOff, radio, select, spanWidth } from './controls.ts'
+import { ansi, button, card, checks, chips, confirm, field, frameBottom, frameRow, frameTop, header, laneHeader, onOff, radio, select, spanWidth } from './controls.ts'
 import { type Line, render } from './term.ts'
 
 const plain = (s: string): string => s.replace(/\x1b\[[0-9;]*m/g, '')
@@ -58,4 +58,19 @@ test('header, frame and ansi', () => {
   assert.equal(plain(frameRow([['x']], 6)), '│ x  │')
   assert.equal(plain(ansi([['a', '\x1b[1m'], ['b']])), 'ab')
   assert.equal(plain(render(select('v', true), 10)), '‹ v ›     ')
+})
+
+test('card puts its title and note in the top edge, and every row is its width', () => {
+  const rows = card([[' ENG-1 story']], [[' 3 pts · 2d ']], [[['Retry failed webhooks']], { left: [['✻ working']], right: [['1h']] }], 30, { border: '#373d3c', fill: '' })
+  assert.equal(rows.length, 4)
+  assert.match(plain(rows[0]), /^╭─ ENG-1 story─+ 3 pts · 2d ─╮$/)
+  assert.match(plain(rows[1]), /^│ Retry failed webhooks +│$/)
+  assert.match(plain(rows[2]), /^│ ✻ working +1h │$/)
+  assert.match(plain(rows[3]), /^╰─+╯$/)
+  for (const r of rows) assert.equal(plain(r).length, 30)
+})
+
+test('laneHeader shows the name and the count, and a look with no glyph has no gap for one', () => {
+  assert.match(plain(laneHeader({ glyph: '✻', color: '#86afe2', name: 'Working' }, 3, 24)), / ✻ Working\s+3\s/)
+  assert.match(plain(laneHeader({ glyph: '', color: '#a2bdb5', name: 'To Do' }, 4, 24)), /[^✻] To Do\s+4\s/)
 })
