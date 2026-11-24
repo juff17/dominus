@@ -85,14 +85,16 @@ test('Running: ↵ opens its session, a with nothing waiting says so, o opens it
   assert.match(s.note?.text ?? '', /No PR to open/)
 })
 
-test('x asks first; y stops it, a stops it and stops asking, anything else leaves it', () => {
+test('x asks first; x again stops it, a stops it and stops asking, anything else leaves it', () => {
   const s = state()
   assert.equal(onKey(s, 'x'), null)
   assert.deepEqual(s.ask, { key: 's-ci:t1', name: 'MR !128 pipeline, rebase state, comments', title: 'monitor !128' })
   assert.equal(onKey(s, 'n'), null)
   assert.equal(s.ask, null)
   keys(s, 'x')
-  assert.deepEqual(onKey(s, 'y'), { do: 'stop', key: 's-ci:t1', remember: false })
+  assert.equal(onKey(s, 'y'), null, 'y is no longer yes')
+  keys(s, 'x')
+  assert.deepEqual(onKey(s, 'x'), { do: 'stop', key: 's-ci:t1', remember: false })
   keys(s, 'x')
   assert.deepEqual(onKey(s, 'a'), { do: 'stop', key: 's-ci:t1', remember: true })
   const quiet = state()

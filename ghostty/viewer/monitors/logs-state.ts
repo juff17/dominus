@@ -153,7 +153,8 @@ function submit(l: LogsState, say: Note, sure = false): LogsAct {
 
 const withImages = (images: Image[]): { images?: Image[] } => (images.length ? { images } : {})
 
-const CTRL_S = '\x13'
+// Starts the watcher, and once more when the environment asks.
+export const CTRL_S = '\x13'
 const UP = '\x1b[A'
 const DOWN = '\x1b[B'
 const LEFT = '\x1b[D'
@@ -163,7 +164,7 @@ const RIGHT = '\x1b[C'
 export function logsKey(l: LogsState, key: string, say: Note): LogsAct {
   if (l.confirm) {
     l.confirm = false
-    return key === 'y' ? submit(l, say, true) : null
+    return key === CTRL_S ? submit(l, say, true) : null
   }
   if (key === CTRL_S) return submit(l, say)
   if (key === UP || key === DOWN) {
