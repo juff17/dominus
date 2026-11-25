@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { ChildProcess } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -28,7 +28,7 @@ const SETTINGS = {
 
 const ENV = { JIRA_SITE: 'https://acme.atlassian.net', JIRA_EMAIL: 'me@acme.test', JIRA_API_TOKEN: 'secret-token' }
 
-type Spawned = { cmd: string; args: readonly string[] }
+type Spawned = { cmd: string; args: readonly string[]; cwd?: string }
 
 function fakeWorld(dir: string) {
   const spawned: Spawned[] = []
@@ -39,6 +39,7 @@ function fakeWorld(dir: string) {
     me: async () => ({ ok: true, value: { id: 'me-1', name: 'Me' } }),
     board: async () => ({ ok: true, value: structuredClone(BOARD) }),
     boards: async () => ({ ok: true, value: [] }),
+    details: async () => ({ ok: true, value: { description: 'Retry payouts that failed; see services/payouts.', components: ['payouts'], labels: [] } }),
   }
   const w: World = {
     env: () => ENV,
@@ -48,8 +49,8 @@ function fakeWorld(dir: string) {
     setSetting: () => {},
     tracker: () => tracker,
     run: async () => ({ ok: true, out: '', err: '', exit: 0 }),
-    spawn: (cmd, args) => {
-      spawned.push({ cmd, args })
+    spawn: (cmd, args, opts) => {
+      spawned.push({ cmd, args, cwd: opts.cwd?.toString() })
       const child = new EventEmitter() as ChildProcess
       Object.assign(child, { stdout: new EventEmitter(), stderr: new EventEmitter(), unref: () => {} })
       setImmediate(() => child.emit('close', 0))
@@ -115,6 +116,34 @@ test('starting an agent runs the skill on the ticket with its facts, never the t
   assert.deepEqual(readLinks(w.linksFile), { 'ENG-1': { name: 'ENG-1-eng-1-title', at: 1_000_000 } })
   // Re-read after 30 s and 2 min, to catch the assign and the move.
   assert.deepEqual(timers, [30_000, 120_000])
+})
+
+test('with Find the repo first, the agent starts in the repo the finder is sure of, else in the folder', async t => {
+  const dir = mkdtempSync(join(tmpdir(), 'tickets-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const folder = join(dir, 'projects')
+  for (const r of ['payouts', 'api']) mkdirSync(join(folder, r, '.git'), { recursive: true })
+  const payouts = join(folder, 'payouts')
+  const scouted: string[][] = []
+  let sure = true
+  const { w, spawned } = fakeWorld(dir)
+  w.settings = () => ({ ...SETTINGS, 'tickets.folder': folder, 'tickets.findRepo': true, 'tickets.handoff.sandbox': true, 'locate.model': 'haiku', 'locate.effort': 'low', 'locate.timeoutSecs': 90, 'locate.depth': 3 }) as Settings
+  w.run = async args => {
+    scouted.push(args)
+    return { ok: true, out: JSON.stringify({ structured_output: { repo: payouts, sure, candidates: [payouts] } }), err: '', exit: 0 }
+  }
+  const s = start(setup, prefs)
+  const fx = ticketsEffects(s, { ...w, draw: () => {}, quit: () => {}, outside: () => ({}) as never }, { client: 'c', layout: 'layout-1' })
+  await fx.refresh()
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0] })
+  assert.match(scouted[0].at(-1) ?? '', /The work:\nENG-1: ENG-1 title\nComponents: payouts\n\nRetry payouts that failed/)
+  assert.equal(spawned.at(-1)?.cwd, payouts)
+  assert.ok(spawned.at(-1)?.args.includes('--settings'), 'Run in the sandbox is on')
+  assert.equal((spawned.at(-1)?.args.at(-1) ?? '').split('\n').at(-1), `Repo: ${payouts}`)
+  sure = false
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[1] })
+  assert.equal(spawned.at(-1)?.cwd, folder)
+  assert.equal((spawned.at(-1)?.args.at(-1) ?? '').split('\n').at(-1), `Folder: ${folder}`)
 })
 
 test('the token kind and board come from .env and Settings', () => {

@@ -14,7 +14,7 @@ points up.
 
 | Layer | Folder | What's in it | Imports |
 |---|---|---|---|
-| 1. core | `core/` | No UI and no app logic: logging, crash logging, paths, running programs (`run`, and `runSync` for a screen that must wait), checking parsed JSON, escape-key codes, pasted images (`images.ts`), and every word the screens show (`text.json`) | node only |
+| 1. core | `core/` | No UI and no app logic: logging, crash logging, paths, running programs (`run`, and `runSync` for a screen that must wait), checking parsed JSON, escape-key codes, pasted images (`images.ts`), the git repos under a folder (`repos.ts`), and every word the screens show (`text.json`) | node only |
 | 2. settings | `settings/` | The Settings schema and store, the model list, keybinds, prompts | core |
 | 3. tui | `tui/` | The terminal kit: palette, rendering, input, screen, line editor, path completion, lists, footers, the controls (radio, select, field, chips, button, confirm, header, frame, card, lane header), the overlay every popup runs in, the app shell | core, settings |
 | 4. agents | `agents/` | The model of Claude sessions: agentd and its scan, transcripts, classifying, lanes, launching, the client, and the babysit proposal files (`proposals.ts`, re-exported by `tray/approvals.ts`) | core, settings, tui (glyphs only) |
@@ -31,7 +31,8 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │   └── lib/                 sourced shell: core (node, settings, overlays), layout, tabs, log
 ├── core/                    log, crash, paths, proc, json (checks), keys,
 │                            text (text.json: every word on screen),
-│                            images (pasted images: the clipboard, their files, placeholders)
+│                            images (pasted images: the clipboard, their files, placeholders),
+│                            repos (the git repos under a folder)
 ├── settings/                settings (schema and store), models, keybinds, prompts,
 │                            prefs (New agent's recent folders)
 ├── tui/                     palette (colours), term (rendering spans), input (tokenizer, clicks),
@@ -46,6 +47,7 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │                            Dominus gear the rail and the empty board draw)
 ├── agents/                  agentd (the process), tick (one tick), daemon (scan helpers),
 │                            transcript, classify, board (lanes), launch, client, text, warn,
+│                            locate (the read-only claude -p that picks an agent's repo),
 │                            stop (stopping one monitor, for the hub and Monitors),
 │                            proposals (babysit proposal files: read and run them),
 │                            orphans (agentd dropping proposals whose session ended);

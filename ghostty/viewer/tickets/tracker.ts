@@ -64,11 +64,15 @@ export type HandoffFacts = {
   sprint: string
 }
 
+// What the repo finder reads about a ticket beyond its card.
+export type TicketDetails = { description: string; components: string[]; labels: string[] }
+
 export type Tracker = {
   id: string
   me(): Promise<Result<Person>>
   board(opts?: { fresh?: boolean; reconcile?: string[] }): Promise<Result<Board>>
   boards(name: string): Promise<Result<BoardChoice[]>>
+  details(key: string): Promise<Result<TicketDetails>>
 }
 
 // The column an agent may move a ticket to: the first one after the last
@@ -80,6 +84,19 @@ export function startedColumn(columns: readonly Column[]): Column | undefined {
   })
   const next = columns[last + 1]
   return next?.started ? next : undefined
+}
+
+// The ticket as the repo finder reads it (agents/locate.ts).
+export function scoutText(ticket: Ticket, more: TicketDetails | null): string {
+  return [
+    `${ticket.key}: ${ticket.title}`,
+    ticket.parent && `Epic: ${ticket.parent}`,
+    more?.components.length && `Components: ${more.components.join(', ')}`,
+    more?.labels.length && `Labels: ${more.labels.join(', ')}`,
+    more?.description && `\n${more.description}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 export function handoffFacts(provider: string, site: string, ticket: Ticket, me: Person, board: Board): HandoffFacts {

@@ -2,8 +2,9 @@
 // pr-babysit runs from the user's clone and makes its worktree there. It
 // reads git's config files and folder listings only; it never runs git.
 
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { reposUnder } from '../../core/repos.ts'
 
 // github.com/jl/dotfiles: no user, port, scheme or .git, from a URL or
 // scp-style remote.
@@ -57,33 +58,6 @@ export function repoRootOf(dir: string): string | null {
   return null
 }
 
-const SKIP = new Set(['node_modules', '.git', '.claude', '.cache', 'vendor', 'target', 'dist', 'build'])
-
-// Doesn't descend into a repo (its subfolders aren't other clones). At
-// most `limit` folders are read, so a huge tree can't stall the popup.
-export function reposUnder(root: string, depth = 3, limit = 4000): string[] {
-  const out: string[] = []
-  let read = 0
-  const walk = (dir: string, left: number): void => {
-    if (read++ > limit) return
-    let names: string[]
-    try {
-      names = readdirSync(dir)
-    } catch {
-      // Unreadable: skip it.
-      return
-    }
-    if (names.includes('.git')) {
-      out.push(dir)
-      return
-    }
-    if (left <= 0) return
-    for (const name of names) if (!name.startsWith('.') && !SKIP.has(name) && isDir(join(dir, name))) walk(join(dir, name), left - 1)
-  }
-  walk(root, depth)
-  return out
-}
-
 // The clones in `known` win, in their order, then those under ~/projects,
 // ~/src, ~/code and ~/work and beside the known ones. A repo cloned twice
 // keeps the first.
@@ -107,3 +81,5 @@ export function findCheckouts(known: readonly string[], home: string): Map<strin
 
 // Must match pr-babysit's SKILL.md.
 export const babysitBranch = (n: number): string => `babysit/${n}`
+
+export { reposUnder }

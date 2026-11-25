@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path'
 import { readState } from '../../agents/client.ts'
 import { type Agent, type TicketSpec, launch } from '../../agents/model.ts'
 import { slug } from '../../agents/launch.ts'
+import { locate } from '../../agents/locate.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import { isRecord } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
@@ -20,7 +21,7 @@ import { type Reachable, type Shown, go } from '../../tray/navigate.ts'
 import { type JiraKey, envFile, envSet, readEnv } from './env.ts'
 import { type FetchLike, type JiraConfig, jiraClient, trimSite } from './jira.ts'
 import { type Act, type Link, type Prefs, type Setup, type TicketsState, screenFor, setBoard } from './state.ts'
-import { type Board, type BoardChoice, type Person, type Ticket, type Tracker, factLines, handoffFacts } from './tracker.ts'
+import { type Board, type BoardChoice, type Person, type Ticket, type Tracker, factLines, handoffFacts, scoutText } from './tracker.ts'
 
 const log = logger('tickets')
 
@@ -344,6 +345,18 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
     })
   }
 
+  // The repo the ticket belongs in, so its agent's sandbox covers that repo
+  // alone. null when the finder isn't sure: the agent then starts in the
+  // folder and looks itself.
+  async function findRepo(tr: Tracker, ticket: Ticket, folder: string, v: Settings): Promise<string | null> {
+    s.note = { text: t('tickets.notes.findingRepo', { key: ticket.key }), tone: 'working' }
+    io.draw()
+    const more = await tr.details(ticket.key)
+    const opts = { model: v['locate.model'], effort: v['locate.effort'], timeoutSecs: v['locate.timeoutSecs'], depth: v['locate.depth'] }
+    const found = await locate({ id: ticket.key, work: scoutText(ticket, more.ok ? more.value : null), root: folder }, opts, io.claude(), io.run, io.now)
+    return found.ok && found.sure ? found.repo : null
+  }
+
   async function startAgent(ticket: Ticket): Promise<void> {
     if (!io.plugin()) {
       s.note = { text: pluginMissing(), tone: 'bad' }
@@ -361,8 +374,10 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
       s.me = me.value
     }
     const v = io.settings()
-    const cwd = v['tickets.folder'] ? v['tickets.folder'].replace(/^~(?=\/|$)/, process.env.HOME ?? '~') : defaultFolder(v)
+    const folder = v['tickets.folder'] ? v['tickets.folder'].replace(/^~(?=\/|$)/, process.env.HOME ?? '~') : defaultFolder(v)
     const facts = handoffFacts(tr.id, configOf(io.env(), v).site, ticket, s.me, b)
+    const repo = v['tickets.findRepo'] ? await findRepo(tr, ticket, folder, v) : null
+    const cwd = repo ?? folder
     const spec: TicketSpec = {
       kind: 'ticket',
       cwd,
@@ -371,7 +386,7 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
       effort: v['tickets.handoff.effort'],
       sandbox: v['tickets.handoff.sandbox'],
       url: ticket.url,
-      lines: [...factLines(facts), `Folder: ${tilde(cwd)}`],
+      lines: [...factLines(facts), repo ? `Repo: ${tilde(repo)}` : `Folder: ${tilde(folder)}`],
       name: `${ticket.key}-${slug(ticket.title)}`.slice(0, 60),
     }
     s.note = { text: t('tickets.notes.starting', { key: ticket.key }), tone: 'working' }

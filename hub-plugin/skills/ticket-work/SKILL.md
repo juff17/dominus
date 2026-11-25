@@ -8,7 +8,7 @@ description: >
   locally, then ask whether to review it or open an MR. Use when a prompt
   from the hub's Tickets popup (Alt+J) holds `/dominus:ticket-work <link>`
   and a block of ticket facts (Ticket, Link, Site, Assign to, Unassigned,
-  Started column, Board, Folder), or when the user asks to "work on
+  Started column, Board, and Repo or Folder), or when the user asks to "work on
   ENG-412", "pick up this ticket", "start on <ticket link>" or "do ticket
   X". Jira through the Atlassian MCP server. Not for writing or filing
   tickets, changing a ticket's status or fields on its own, or working
@@ -26,8 +26,9 @@ once (step 4). The tracker's tool names and shapes are in
 
 ## The hand-off
 
-The Tickets popup (Alt+J) starts this session in the default folder, not in
-a repo, with a prompt like this (the last line is the user's own
+The Tickets popup (Alt+J) starts this session in the ticket's repo when its
+repo finder is sure which one it is, and in the folder that holds the user's
+repos when it isn't. Its prompt looks like this (the last line is the user's own
 instructions for ticket agents, from the hub's `prompts/ticket.md`, and may
 be missing):
 
@@ -40,7 +41,7 @@ Assign to: account 5b10ac8d82e05b22cc7d4ef5 (Jane Doe)
 Unassigned: yes
 Started column: In Progress (status ids 3, 10001)
 Board: Payments, Sprint 42
-Folder: ~/projects
+Repo: ~/projects/payments
 From the hub: <the user's instructions for ticket agents>
 ```
 
@@ -50,7 +51,8 @@ From the hub: <the user's instructions for ticket agents>
 - **Unassigned** is `yes` or `no`, as the hub saw it.
 - **Started column** is the board column work moves to when it starts, with
   the status ids that count as that column. It may read `none found`.
-- **Folder** holds the user's repos.
+- **Repo** is the repo the hub picked, and the current directory. In its
+  place, **Folder** holds the user's repos, and you pick the repo (step 5).
 
 The hub read these when the popup was open, so read the ticket again before
 you act on them (step 2).
@@ -120,6 +122,10 @@ second one, and any edit that sets more than the assignee. A denial is the
 rule working: don't retry it or go around it.
 
 ## 5. Find the repo and make the worktree
+
+With **Repo** in the facts, the repo is the current directory: skip steps 1
+to 3 and run the git commands below in it with plain `git`, leaving out
+`-C <repo>`.
 
 1. **List the repos.** The git repos under Folder, up to three levels down,
    skipping `node_modules` and `.claude/worktrees`:

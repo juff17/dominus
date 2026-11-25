@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { type FetchLike, type JiraConfig, columnPhase, jiraClient, parseMeta, pickSprint, sprintJql } from './jira.ts'
-import { factLines, handoffFacts, startedColumn } from './tracker.ts'
+import { type FetchLike, type JiraConfig, DESCRIPTION_MAX, adfText, columnPhase, jiraClient, parseMeta, pickSprint, sprintJql } from './jira.ts'
+import { factLines, handoffFacts, scoutText, startedColumn } from './tracker.ts'
 
 const quiet = { debug: () => {}, info: () => {}, warn: () => {} }
 
@@ -240,4 +240,45 @@ test('the hand-off facts read the same for any tracker', () => {
     'Started column: In Progress (status ids 3)',
     'Board: Payments, Sprint 42',
   ])
+})
+
+const ADF = {
+  type: 'doc',
+  content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'Payouts fail in ' }, { type: 'mention', attrs: { text: '@Sam' } }, { type: 'text', text: "'s region." }] },
+    { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'see services/payouts/retry.ts' }] }] }] },
+    { type: 'paragraph', content: [{ type: 'inlineCard', attrs: { url: 'https://github.com/acme/payouts/pull/9' } }] },
+  ],
+}
+
+test('a description in Atlassian Document Format reads as plain lines', () => {
+  assert.equal(adfText(ADF), "Payouts fail in @Sam's region.\nsee services/payouts/retry.ts\n\nhttps://github.com/acme/payouts/pull/9")
+  assert.equal(adfText('  plain text  '), 'plain text')
+  assert.equal(adfText(null), '')
+})
+
+test("a ticket's details: description, components and labels, the description cut short", async () => {
+  const long = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'x'.repeat(DESCRIPTION_MAX + 50) }] }] }
+  const { fetch, calls } = fakeFetch({
+    ...ANSWERS,
+    '/rest/api/3/issue/ENG-7': { key: 'ENG-7', fields: { description: ADF, components: [{ name: 'payouts' }, {}], labels: ['backend'] } },
+    '/rest/api/3/issue/ENG-8': { key: 'ENG-8', fields: { description: long } },
+  })
+  const jira = jiraClient({ config: CONFIG, fetch, log: quiet })
+  const r = await jira.details('ENG-7')
+  assert.ok(r.ok)
+  assert.deepEqual(r.value.components, ['payouts'])
+  assert.deepEqual(r.value.labels, ['backend'])
+  assert.match(r.value.description, /^Payouts fail/)
+  assert.ok(calls.some(c => c.url.includes('/rest/api/3/issue/ENG-7?fields=description%2Ccomponents%2Clabels') || c.url.includes('/rest/api/3/issue/ENG-7?fields=description,components,labels')))
+  const cut = await jira.details('ENG-8')
+  assert.ok(cut.ok)
+  assert.equal(cut.value.description.length, DESCRIPTION_MAX)
+  assert.equal((await jira.details('ENG-404')).ok, false)
+})
+
+test('the scout reads the key, title, epic, components, labels and description', () => {
+  const ticket = { key: 'ENG-7', title: 'Retry failed payouts', url: 'u', column: 'c', type: 'story', updated: '', parent: 'Payouts v2' }
+  assert.equal(scoutText(ticket, { description: 'see retry.ts', components: ['payouts'], labels: [] }), 'ENG-7: Retry failed payouts\nEpic: Payouts v2\nComponents: payouts\n\nsee retry.ts')
+  assert.equal(scoutText({ ...ticket, parent: undefined }, null), 'ENG-7: Retry failed payouts')
 })

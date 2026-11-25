@@ -281,11 +281,21 @@ const DEFINED = [
     alias('keys.jira'),
     head('agents'),
     file('tickets.folder', { dir: true }),
+    bool('tickets.findRepo', true),
     choice('tickets.handoff.model', MODEL_IDS, 'opus'),
     choice('tickets.handoff.mode', MODE, 'auto'),
     choice('tickets.handoff.effort', EFFORT, 'medium'),
     bool('tickets.handoff.sandbox', false),
     prompt('ticket'),
+  ]),
+  // The read-only claude -p that picks the repo an agent starts in
+  // (agents/locate.ts), shared by whatever starts agents in a folder of repos.
+  define('repoFinder', [
+    head('scout'),
+    choice('locate.model', MODEL_IDS, 'haiku'),
+    choice('locate.effort', EFFORT, 'low'),
+    number('locate.timeoutSecs', 90, { min: 15, max: 300, step: 15 }),
+    number('locate.depth', 3, { min: 1, max: 5 }),
   ]),
   define('hub', [
     head('lanes'),

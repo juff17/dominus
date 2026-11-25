@@ -138,6 +138,29 @@ export function parseTicket(issue: unknown, site: string, columns: readonly Colu
   }
 }
 
+// A description in Atlassian Document Format as plain text: each block on a
+// line of its own, a mention or link as the text it shows.
+const BLOCKS = new Set(['paragraph', 'heading', 'listItem', 'codeBlock', 'blockquote', 'tableRow', 'rule'])
+export function adfText(node: unknown): string {
+  if (typeof node === 'string') return node.trim()
+  const out: string[] = []
+  const walk = (n: unknown): void => {
+    const r = rec(n)
+    const type = str(r.type)
+    if (type === 'text') out.push(str(r.text))
+    else if (type === 'hardBreak') out.push('\n')
+    else if (type === 'mention' || type === 'emoji') out.push(str(rec(r.attrs).text))
+    else if (type === 'inlineCard' || type === 'blockCard') out.push(str(rec(r.attrs).url))
+    for (const c of list(r.content)) walk(c)
+    if (BLOCKS.has(type)) out.push('\n')
+  }
+  walk(node)
+  return out.join('').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+// The scout reads the description, so a long one is cut rather than sent whole.
+export const DESCRIPTION_MAX = 6000
+
 export const ISSUE_FIELDS = ['summary', 'status', 'assignee', 'priority', 'issuetype', 'updated', 'parent']
 
 export function sprintJql(teamId: string): string {
@@ -272,6 +295,26 @@ export function jiraClient({ config, fetch, log, timeoutMs = 10000, now = Date.n
       } catch (e) {
         log.warn('me not fetched', { err: errorMessage(e) })
         return fail(e)
+      }
+    },
+    async details(key) {
+      const gone = missing()
+      if (gone) return gone
+      try {
+        const v = rec(await call(`${await base()}/rest/api/3/issue/${encodeURIComponent(key)}?fields=description,components,labels`))
+        const f = rec(v.fields)
+        return {
+          ok: true,
+          value: {
+            description: adfText(f.description).slice(0, DESCRIPTION_MAX),
+            components: list(f.components).map(c => str(rec(c).name)).filter(Boolean),
+            labels: list(f.labels).map(str).filter(Boolean),
+          },
+        }
+      } catch (e) {
+        const f = fail(e)
+        log.warn('ticket details not fetched', { id: key, why: f.why, err: f.err })
+        return f
       }
     },
     async boards(name) {

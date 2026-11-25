@@ -131,6 +131,13 @@
           }
         }
       },
+      "repoFinder": {
+        "name": "Repo finder",
+        "where": "picks the repo an agent starts in, with a quick read-only look at the repos in its folder",
+        "heads": {
+          "scout": "Scout"
+        }
+      },
       "hub": {
         "name": "Hub & monitors",
         "where": "the agent hub’s board and its Monitors tray",
@@ -863,8 +870,28 @@
       },
       "tickets.folder": {
         "label": "Agent folder",
-        "sub": "where a ticket's agent starts and looks for the repo",
+        "sub": "the folder that holds your repos; a ticket's agent starts in its repo, or here when none is found",
         "empty": "the Default folder"
+      },
+      "tickets.findRepo": {
+        "label": "Find the repo first",
+        "sub": "on: the Repo finder picks the ticket's repo and the agent starts there; off, or when it isn't sure: the agent starts in the Agent folder and looks itself"
+      },
+      "locate.model": {
+        "label": "Model",
+        "sub": "the read-only claude -p that picks the repo: it can read, never write"
+      },
+      "locate.effort": {
+        "label": "Effort"
+      },
+      "locate.timeoutSecs": {
+        "label": "Give up after",
+        "sub": "then the agent starts in the folder and looks for the repo itself",
+        "unit": "s"
+      },
+      "locate.depth": {
+        "label": "Folder depth",
+        "sub": "how many folders down to look for repos"
       },
       "tickets.handoff.model": {
         "label": "Model",
@@ -2829,6 +2856,7 @@
       "noOpener": "No xdg-open to open the browser with",
       "opened": "✓ Opened {key} in your browser",
       "noMe": "Couldn't ask Jira who you are: {err}",
+      "findingRepo": "Finding the repo for {key}…",
       "starting": "Starting an agent on {key}…",
       "startFailed": "{key}: the agent didn't start: {err}",
       "started": "✻ Started {key} · it's in the hub as a background agent",
