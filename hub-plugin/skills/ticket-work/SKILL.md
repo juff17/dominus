@@ -71,7 +71,7 @@ look with ToolSearch if they aren't in your list). If they aren't, or a call
 fails because the user is signed out, ask with AskUserQuestion:
 
 - **Question**: "The Atlassian MCP server isn't connected. Run
-  `claude mcp add --transport http atlassian https://mcp.atlassian.com/v2/mcp`
+  `claude mcp add --scope user --transport http atlassian https://mcp.atlassian.com/v2/mcp`
   in a terminal, then `/mcp` here to sign in."
 - **Options**: "Done, check again", "Stop".
 

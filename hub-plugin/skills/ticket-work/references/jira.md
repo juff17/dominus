@@ -6,7 +6,7 @@ The Atlassian Rovo MCP server, at `https://mcp.atlassian.com/v2/mcp` over
 HTTP, signed in with OAuth through `/mcp`:
 
 ```bash
-claude mcp add --transport http atlassian https://mcp.atlassian.com/v2/mcp
+claude mcp add --scope user --transport http atlassian https://mcp.atlassian.com/v2/mcp
 ```
 
 The old `https://mcp.atlassian.com/v1/sse` endpoint is being retired. If the

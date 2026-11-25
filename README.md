@@ -115,10 +115,11 @@ A token made without scopes works too: set `JIRA_TOKEN_KIND=classic`. Only the b
 `.env`; Settings → Tickets and Alt+J's setup screen show whether each value is set, never the
 value, and nothing logs it. Tokens expire within a year, and Alt+J says when Jira refuses one.
 Agents never use this token: their two writes to a ticket (assigning it to you, one move to the
-started column) go through the Atlassian MCP server, which holds its own login:
+started column) go through the Atlassian MCP server, which holds its own login. Add it at user
+scope: ticket agents start in the ticket's repo, and a server added for one folder only loads there.
 
 ```bash
-claude mcp add --transport http atlassian https://mcp.atlassian.com/v2/mcp   # then /mcp to sign in
+claude mcp add --scope user --transport http atlassian https://mcp.atlassian.com/v2/mcp   # then /mcp to sign in
 ```
 
 **Kibana (optional).** log-watcher's Discover links need no token. For short `/r/s/…` links,

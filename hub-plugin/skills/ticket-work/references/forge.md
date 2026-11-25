@@ -18,7 +18,7 @@ GitHub or GitLab app for Jira. Put the key in the MR or PR title too.
    # GitHub
    gh pr create --base <default> --head <branch> --title "ENG-412: <summary>" --body-file <file>
    # GitLab
-   glab mr create --source-branch <branch> --target-branch <default> --title "ENG-412: <summary>" --description "$(cat <file>)" --yes
+   glab mr create --source-branch <branch> --target-branch <default> --title "ENG-412: <summary>" --description '<description>' --yes
    ```
 
    The body says what changed, how it was tested, and links the ticket.
