@@ -13,7 +13,7 @@ import type { Level } from '../core/log.ts'
 import type { RunResult } from '../core/proc.ts'
 import { P } from '../tui/term.ts'
 
-// No instruction files, so your own prompts/task.md never joins a launch.
+// No instruction files, so your own task.md never joins a launch.
 process.env.AGENT_HUB_PROMPTS = '/nonexistent/agent-hub/prompts'
 
 const PROMPT = ['  Bash command', '    npm test', '  Do you want to proceed?', '❯ 1. Yes', '  2. No', ''].join('\n')

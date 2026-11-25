@@ -189,14 +189,24 @@ run_panel() {
   exec "$NODE" "$@"
 }
 
-# copy_prompt_examples [dir]: each <name>.md.example in prompts/ copied to
-# <name>.md, the file the agents read (settings/prompts.ts), where it isn't there
-# yet. Git ignores the copies, so edits to them stay on this machine.
+# copy_prompt_examples [examples] [dest]: each <name>.md.example in prompts/
+# copied to <name>.md in ~/.config/dominus/prompts, the file the agents read
+# (settings/prompts.ts), where it isn't there yet. A <name>.md an older install
+# kept beside the example, where it may be a link into the repo, is moved there
+# instead, so its edits carry over. Outside the repo, nothing tracks them.
 copy_prompt_examples() {
-  local dir=${1:-$GHOSTTY_CONF/prompts} example
-  for example in "$dir"/*.md.example; do
+  local src=${1:-$GHOSTTY_CONF/prompts} dest=${2:-${XDG_CONFIG_HOME:-$HOME/.config}/dominus/prompts} example name old
+  mkdir -p "$dest"
+  for example in "$src"/*.md.example; do
     [[ -e $example ]] || continue
-    [[ -e ${example%.example} ]] || cp "$example" "${example%.example}"
+    name=$(basename "${example%.example}")
+    [[ -e $dest/$name ]] && continue
+    old=$(readlink -f "$src/$name" 2>/dev/null)
+    if [[ -n $old && -f $old ]]; then
+      mv "$old" "$dest/$name"
+    else
+      cp "$example" "$dest/$name"
+    fi
   done
 }
 

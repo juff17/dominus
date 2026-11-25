@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
@@ -60,17 +60,44 @@ test('the repo keeps an example for each agent’s instructions, with nothing to
   }
 })
 
-test('install copies the examples once, leaving your own files alone', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'prompts-'))
-  writeFileSync(join(dir, 'task.md.example'), 'example task')
-  writeFileSync(join(dir, 'todo-handoff.md.example'), 'example hand-off')
-  writeFileSync(join(dir, 'todo-handoff.md'), 'mine')
+test('install copies the examples once to the config folder, leaving your own files alone', () => {
+  const src = mkdtempSync(join(tmpdir(), 'prompts-'))
+  const dest = join(mkdtempSync(join(tmpdir(), 'config-')), 'dominus', 'prompts')
+  writeFileSync(join(src, 'task.md.example'), 'example task')
+  writeFileSync(join(src, 'todo-handoff.md.example'), 'example hand-off')
   const lib = fileURLToPath(new URL('../bin/ghostty-lib.sh', import.meta.url))
-  const copy = () => execFileSync('bash', ['-c', 'source "$1"; copy_prompt_examples "$2"', 'bash', lib, dir])
+  const copy = () => execFileSync('bash', ['-c', 'source "$1"; copy_prompt_examples "$2" "$3"', 'bash', lib, src, dest])
+  mkdirSync(dest, { recursive: true })
+  writeFileSync(join(dest, 'todo-handoff.md'), 'mine')
   copy()
-  assert.equal(readFileSync(join(dir, 'task.md'), 'utf8'), 'example task')
-  assert.equal(readFileSync(join(dir, 'todo-handoff.md'), 'utf8'), 'mine')
-  writeFileSync(join(dir, 'task.md'), 'edited')
+  assert.equal(readFileSync(join(dest, 'task.md'), 'utf8'), 'example task')
+  assert.equal(readFileSync(join(dest, 'todo-handoff.md'), 'utf8'), 'mine')
+  writeFileSync(join(dest, 'task.md'), 'edited')
   copy()
-  assert.equal(readFileSync(join(dir, 'task.md'), 'utf8'), 'edited', 'a second install keeps your edits')
+  assert.equal(readFileSync(join(dest, 'task.md'), 'utf8'), 'edited', 'a second install keeps your edits')
+})
+
+test('install moves the instructions an older install kept beside the examples, through a link too', () => {
+  const repo = mkdtempSync(join(tmpdir(), 'prompts-'))
+  const links = mkdtempSync(join(tmpdir(), 'links-'))
+  const dest = join(mkdtempSync(join(tmpdir(), 'config-')), 'dominus', 'prompts')
+  writeFileSync(join(repo, 'task.md'), 'my task rules')
+  writeFileSync(join(links, 'task.md.example'), 'example task')
+  symlinkSync(join(repo, 'task.md'), join(links, 'task.md'))
+  const lib = fileURLToPath(new URL('../bin/ghostty-lib.sh', import.meta.url))
+  execFileSync('bash', ['-c', 'source "$1"; copy_prompt_examples "$2" "$3"', 'bash', lib, links, dest])
+  assert.equal(readFileSync(join(dest, 'task.md'), 'utf8'), 'my task rules')
+  assert.ok(!existsSync(join(repo, 'task.md')), 'moved, not copied, so only one copy is read')
+})
+
+test('your instructions live in the config folder, outside the repo', () => {
+  delete process.env.AGENT_HUB_PROMPTS
+  const saved = process.env.XDG_CONFIG_HOME
+  process.env.XDG_CONFIG_HOME = '/cfg'
+  try {
+    assert.equal(fileOf('ticket'), '/cfg/dominus/prompts/ticket.md')
+  } finally {
+    if (saved === undefined) delete process.env.XDG_CONFIG_HOME
+    else process.env.XDG_CONFIG_HOME = saved
+  }
 })

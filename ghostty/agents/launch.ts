@@ -43,7 +43,7 @@ export type MonitorSpec = SpecBase & {
 // A ticket from Tickets (Alt+J): the prompt starts with the ticket-work
 // skill and the ticket's link, so the skill runs, then `lines` (the ticket's
 // facts, viewer/tickets/tracker.ts factLines), one each, then your
-// instructions for ticket agents (prompts/ticket.md).
+// instructions for ticket agents (~/.config/dominus/prompts/ticket.md).
 export type TicketSpec = SpecBase & { kind: 'ticket'; url: string; lines: string[] }
 export type LaunchSpec = TaskSpec | MonitorSpec | TicketSpec
 

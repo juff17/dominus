@@ -2,7 +2,7 @@
 .install-backup/
 *.bak.*
 
-# your instructions for agents, copied from prompts/*.md.example at install
+# where installs before ~/.config/dominus/prompts kept your instructions for agents
 ghostty/prompts/*.md
 
 # your tracker credentials, copied from .env.example at install

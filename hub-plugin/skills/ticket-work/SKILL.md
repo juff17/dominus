@@ -29,7 +29,7 @@ once (step 4). The tracker's tool names and shapes are in
 The Tickets popup (Alt+J) starts this session in the ticket's repo when its
 repo finder is sure which one it is, and in the folder that holds the user's
 repos when it isn't. Its prompt looks like this (the last line is the user's own
-instructions for ticket agents, from the hub's `prompts/ticket.md`, and may
+instructions for ticket agents, from `~/.config/dominus/prompts/ticket.md`, and may
 be missing):
 
 ```

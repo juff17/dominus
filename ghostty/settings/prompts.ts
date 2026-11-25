@@ -2,17 +2,19 @@
 // puts before what was typed. Filing a todo has none: the todo skill does it.
 // The hub's own sentences in that paragraph are in core/prompts/.
 //
-// They're a Markdown file per agent in prompts/ beside hub/. Git ignores them:
-// install copies each from the <name>.md.example the repo keeps. Node follows
-// install.sh's links to this module's real path, so the path Settings shows is
-// the repo's. HTML comments in a file are left out.
+// They're a Markdown file per agent in ~/.config/dominus/prompts/
+// ($XDG_CONFIG_HOME), outside the repo, so nothing tracks them and a fresh
+// clone or a worktree still finds them. Install copies each from the
+// <name>.md.example the repo keeps in prompts/, once. HTML comments in a file
+// are left out.
 
 import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 
 // AGENT_HUB_PROMPTS is for tests. It's read on every call.
-export const promptsDir = (): string => process.env.AGENT_HUB_PROMPTS || join(dirname(fileURLToPath(import.meta.url)), '..', 'prompts')
+export const promptsDir = (): string =>
+  process.env.AGENT_HUB_PROMPTS || join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'dominus', 'prompts')
 
 export const AGENTS = ['task', 'todo-handoff', 'ticket'] as const
 export type PromptId = (typeof AGENTS)[number]
