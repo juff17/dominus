@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 
+import { agentText } from '../../core/agent-text.ts'
 import { skillCommand } from '../../core/hub-skills.ts'
 import { type Image, imageList, imagesDir, imagesLine, withoutImages } from '../../core/images.ts'
 import { isRecord } from '../../core/json.ts'
@@ -490,16 +491,10 @@ const handoffTask = (item: Item): string => [item.title.trim(), item.note?.trim(
 function handoffHub(item: Item, worktree: boolean): string[] {
   const about = [`a ${item.cat} in ${item.repo}`, item.branch && `added on ${item.branch}`].filter(Boolean).join(', ')
   return [
-    `Work on todo ${item.id} from my todo list, ${about}.`,
-    // The id keeps two agents on similar titles from sharing a worktree.
-    worktree && `End the worktree's name with the todo's id, ${item.id}.`,
-    // Merging is the user's call, and the worktree may still hold work the
-    // user wants, so the agent asks before doing either.
-    worktree &&
-      (settings()['todo.handoff.merge'] === 'never'
-        ? 'When the work is ready, commit it in the worktree and tell me; never merge it, I merge it myself. Never remove the worktree.'
-        : "When the work is ready, commit it in the worktree and ask me whether to merge it; never merge unasked. After it's merged, ask me whether to remove the worktree; never remove it unasked."),
-    `Once it's finished, mark it done: ~/.config/ghostty/bin/ghostty-todo done ${item.id}`,
+    agentText('todo-work', { id: item.id, about }),
+    worktree && agentText('todo-worktree-name', { id: item.id }),
+    worktree && (settings()['todo.handoff.merge'] === 'never' ? agentText('todo-merge-never') : agentText('todo-merge-ask')),
+    agentText('todo-done', { id: item.id }),
   ].filter((s): s is string => Boolean(s))
 }
 

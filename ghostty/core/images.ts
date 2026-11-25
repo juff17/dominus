@@ -13,6 +13,7 @@ import { homedir } from 'node:os'
 import { extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { agentText } from './agent-text.ts'
 import { isRecord } from './json.ts'
 import { errorMessage, logger } from './log.ts'
 import { t } from './text.ts'
@@ -60,12 +61,10 @@ export function renumber(text: string, images: readonly Image[]): { text: string
 export const imageList = (v: unknown): Image[] =>
   Array.isArray(v) ? v.filter((i): i is Image => isRecord(i) && typeof i.n === 'number' && typeof i.path === 'string' && i.path !== '') : []
 
-// What the agent is told, on one line: a tab agent's command is typed into a
-// shell, where a newline would run it early.
+// What the agent is told (prompts/hub/images.md), on one line.
 export function imagesLine(images: readonly Image[]): string {
   if (!images.length) return ''
-  const list = images.map(i => `${placeholder(i.n)} is ${i.path}`).join(', ')
-  return `The prompt has images attached: ${list}. Read each one with the Read tool before you start.`
+  return agentText('images', { list: images.map(i => `${placeholder(i.n)} is ${i.path}`).join(', ') })
 }
 
 // ------------------------------------------------------------ the clipboard

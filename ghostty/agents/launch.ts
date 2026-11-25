@@ -2,6 +2,7 @@
 
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { agentText } from '../core/agent-text.ts'
 import { skillCommand } from '../core/hub-skills.ts'
 import { type Image, imageList, imagesLine, withoutImages } from '../core/images.ts'
 import { HUB, type PromptId, compose, instructions, withTyped } from '../settings/prompts.ts'
@@ -59,17 +60,6 @@ export const slug = (s: string): string =>
     .slice(0, 5)
     .join('-')
     .slice(0, 40) || 'agent'
-
-// A skill like ticket-implement makes its own worktree, and EnterWorktree
-// can't nest one in another, so the agent leaves that to the skill.
-const OWN_WORKTREE =
-  'Before anything else, make your own worktree with the EnterWorktree tool and do all the work in it. Name it for the task in a few kebab-case words, starting with the ticket key (like ENG-123) when the task gives a ticket. If a skill you run makes its own worktree, let it do so instead.'
-
-// What an agent in the sandbox needs told: excluded commands match only when
-// nothing is chained to them, and the sandbox's placeholders at the worktree
-// root make git add -A fail. Throwaway scripts stay out of what gets staged.
-export const SANDBOX_RULES =
-  "Your shell commands run in a sandbox. Run gh, glab, docker and git fetch, pull and push as single commands, with nothing chained, piped or redirected, or they run without the user's login and network. Stage with git add -u or by folder: git add -A and git add . fail here. Write any script you make only to try something out in your scratchpad directory, never in the repo, so it isn't committed."
 
 export type MonitorId = 'pr' | 'pipe' | 'logs'
 export type MonitorSkill = {
@@ -139,7 +129,7 @@ function job(spec: LaunchSpec): { prompt: string; name: string } {
     return { prompt: spec.typed ? withTyped(head, spec.typed.label, spec.typed.text) : head, name }
   }
   if (spec.kind === 'ticket') {
-    const own = [spec.sandbox && SANDBOX_RULES, instructions('ticket').replace(/\s*\n\s*/g, ' ').trim()].filter(Boolean).join(' ')
+    const own = [spec.sandbox && agentText('sandbox'), instructions('ticket').replace(/\s*\n\s*/g, ' ').trim()].filter(Boolean).join(' ')
     const prompt = [`${skillCommand('ticket-work')} ${spec.url.trim()}`, ...spec.lines, own && `${HUB} ${own}`].filter(Boolean).join('\n')
     return { prompt, name: spec.name || slug(spec.url) }
   }
@@ -149,7 +139,7 @@ function job(spec: LaunchSpec): { prompt: string; name: string } {
   // The spec may come from a file, so its images are checked. Their paths
   // are the hub's words, so they go in its paragraph.
   const images = imagesLine(imageList(spec.images))
-  const prompt = spec.kind === 'task' ? compose(spec.agent ?? 'task', typed, [spec.worktree && OWN_WORKTREE, spec.sandbox && SANDBOX_RULES, ...(spec.hub ?? []), images]) : typed.trim()
+  const prompt = spec.kind === 'task' ? compose(spec.agent ?? 'task', typed, [spec.worktree && agentText('own-worktree'), spec.sandbox && agentText('sandbox'), ...(spec.hub ?? []), images]) : typed.trim()
   return { prompt, name }
 }
 

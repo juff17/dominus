@@ -32,7 +32,8 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 ├── core/                    log, crash, paths, proc, json (checks), keys,
 │                            text (text.json: every word on screen),
 │                            images (pasted images: the clipboard, their files, placeholders),
-│                            repos (the git repos under a folder)
+│                            repos (the git repos under a folder),
+│                            agent-text (the hub's sentences to agents, from prompts/hub/)
 ├── settings/                settings (schema and store), models, keybinds, prompts,
 │                            prefs (New agent's recent folders)
 ├── tui/                     palette (colours), term (rendering spans), input (tokenizer, clicks),

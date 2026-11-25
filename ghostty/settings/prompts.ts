@@ -1,5 +1,7 @@
 // Your own instructions for some kinds of agent, sent in the paragraph the hub
 // puts before what was typed. Filing a todo has none: the todo skill does it.
+// The hub's own sentences in that paragraph are in prompts/hub/
+// (core/agent-text.ts).
 //
 // They're a Markdown file per agent in prompts/ beside hub/. Git ignores them:
 // install copies each from the <name>.md.example the repo keeps. Node follows
