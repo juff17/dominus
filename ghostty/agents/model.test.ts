@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { type AgentState, type Session, type Transcript, addEntry, brokeTags, cardHeights, classify, counts, describeTool, emptyTranscript, eventTag, lanes, launch, monitorProcess, monitorsOf, pairParked, parseNotification, permissionTool, repoOf, scrollTo, showsPermission } from './model.ts'
 import { clean, render, width } from '../tui/term.ts'
 import { promptLine } from './text.ts'
-import { SANDBOX_SETTINGS } from './launch.ts'
+import { SANDBOX_RULES, SANDBOX_SETTINGS } from './launch.ts'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -537,7 +537,12 @@ test('an agent runs in the sandbox only when its spec asks, and a monitor never 
   assert.equal(settings(launch({ kind: 'task', cwd: '/p', prompt: 'go', sandbox: true }).argv), SANDBOX_SETTINGS)
   assert.equal(settings(launch({ kind: 'ticket', cwd: '/p', url: 'https://x/browse/A-1', lines: [], sandbox: true }).argv), SANDBOX_SETTINGS)
   assert.ok(!launch({ kind: 'monitor', skill: 'pr', cwd: '/p', target: 'https://x/pull/1', sandbox: true }).argv.includes('--settings'))
-  assert.equal(launch({ kind: 'task', cwd: '/p', prompt: 'go', sandbox: true }).argv.at(-1), 'go', 'the prompt stays last')
+  const told = launch({ kind: 'task', cwd: '/p', prompt: 'go', sandbox: true }).argv.at(-1) ?? ''
+  assert.match(told, /^From the hub: Your shell commands run in a sandbox\..*\n\nMy prompt:\ngo$/s, 'the rules go first, the prompt last')
+  assert.ok(!(launch({ kind: 'task', cwd: '/p', prompt: 'go' }).argv.at(-1) ?? '').includes(SANDBOX_RULES), 'no rules without the sandbox')
+  const ticket = launch({ kind: 'ticket', cwd: '/p', url: 'https://x/browse/A-1', lines: ['Repo: /p'], sandbox: true }).argv.at(-1) ?? ''
+  assert.equal(ticket.split('\n').at(-1), `From the hub: ${SANDBOX_RULES}`)
+  assert.ok(!(launch({ kind: 'monitor', skill: 'pr', cwd: '/p', target: 'https://x/pull/1', sandbox: true }).argv.at(-1) ?? '').includes(SANDBOX_RULES))
 })
 
 test('the sandbox settings are strict, and tell rm-guard', () => {

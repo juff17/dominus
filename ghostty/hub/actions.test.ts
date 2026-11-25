@@ -463,7 +463,7 @@ test('with Run in the sandbox on, New agent starts its task with the sandbox set
   w.act.start({ kind: 'task', cwd: '/p', prompt: 'do it' })
   const argv = w.calls.find(c => c[0] === 'spawn') as string[]
   assert.equal(argv[argv.indexOf('--settings') + 1], SANDBOX_SETTINGS)
-  assert.equal(argv.at(-1), 'do it')
+  assert.match(argv.at(-1) ?? '', /^From the hub: Your shell commands run in a sandbox\..*\n\nMy prompt:\ndo it$/s)
 })
 
 test('a background agent starts with claude --bg, and the footer says how that went', () => {

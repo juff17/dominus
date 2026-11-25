@@ -139,11 +139,12 @@ test('with Find the repo first, the agent starts in the repo the finder is sure 
   assert.match(scouted[0].at(-1) ?? '', /The work:\nENG-1: ENG-1 title\nComponents: payouts\n\nRetry payouts that failed/)
   assert.equal(spawned.at(-1)?.cwd, payouts)
   assert.ok(spawned.at(-1)?.args.includes('--settings'), 'Run in the sandbox is on')
-  assert.equal((spawned.at(-1)?.args.at(-1) ?? '').split('\n').at(-1), `Repo: ${payouts}`)
+  assert.ok((spawned.at(-1)?.args.at(-1) ?? '').split('\n').includes(`Repo: ${payouts}`))
+  assert.match(spawned.at(-1)?.args.at(-1) ?? '', /\nFrom the hub: Your shell commands run in a sandbox\./)
   sure = false
   await fx.run({ do: 'start', ticket: BOARD.unassigned[1] })
   assert.equal(spawned.at(-1)?.cwd, folder)
-  assert.equal((spawned.at(-1)?.args.at(-1) ?? '').split('\n').at(-1), `Folder: ${folder}`)
+  assert.ok((spawned.at(-1)?.args.at(-1) ?? '').split('\n').includes(`Folder: ${folder}`))
 })
 
 test('an agent refused for an untrusted folder says how to trust it', async t => {
