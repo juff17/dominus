@@ -192,8 +192,10 @@ run_panel() {
 # copy_prompt_examples [examples] [dest]: each <name>.md.example in prompts/
 # copied to <name>.md in ~/.config/dominus/prompts, the file the agents read
 # (settings/prompts.ts), where it isn't there yet. A <name>.md an older install
-# kept beside the example, where it may be a link into the repo, is moved there
-# instead, so its edits carry over. Outside the repo, nothing tracks them.
+# kept beside the example, which may be a link into the repo, is copied there
+# instead, so its edits carry over. It's copied, never moved: an install run
+# with another HOME, as the install tests do, must not take your file away.
+# Outside the repo, nothing tracks them.
 copy_prompt_examples() {
   local src=${1:-$GHOSTTY_CONF/prompts} dest=${2:-${XDG_CONFIG_HOME:-$HOME/.config}/dominus/prompts} example name old
   mkdir -p "$dest"
@@ -203,7 +205,7 @@ copy_prompt_examples() {
     [[ -e $dest/$name ]] && continue
     old=$(readlink -f "$src/$name" 2>/dev/null)
     if [[ -n $old && -f $old ]]; then
-      mv "$old" "$dest/$name"
+      cp "$old" "$dest/$name"
     else
       cp "$example" "$dest/$name"
     fi

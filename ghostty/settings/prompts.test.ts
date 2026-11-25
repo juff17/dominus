@@ -77,7 +77,7 @@ test('install copies the examples once to the config folder, leaving your own fi
   assert.equal(readFileSync(join(dest, 'task.md'), 'utf8'), 'edited', 'a second install keeps your edits')
 })
 
-test('install moves the instructions an older install kept beside the examples, through a link too', () => {
+test('install copies the instructions an older install kept beside the examples, through a link too, and leaves them', () => {
   const repo = mkdtempSync(join(tmpdir(), 'prompts-'))
   const links = mkdtempSync(join(tmpdir(), 'links-'))
   const dest = join(mkdtempSync(join(tmpdir(), 'config-')), 'dominus', 'prompts')
@@ -87,7 +87,7 @@ test('install moves the instructions an older install kept beside the examples, 
   const lib = fileURLToPath(new URL('../bin/ghostty-lib.sh', import.meta.url))
   execFileSync('bash', ['-c', 'source "$1"; copy_prompt_examples "$2" "$3"', 'bash', lib, links, dest])
   assert.equal(readFileSync(join(dest, 'task.md'), 'utf8'), 'my task rules')
-  assert.ok(!existsSync(join(repo, 'task.md')), 'moved, not copied, so only one copy is read')
+  assert.equal(readFileSync(join(repo, 'task.md'), 'utf8'), 'my task rules', 'copied, never moved: an install with another HOME must not take it')
 })
 
 test('your instructions live in the config folder, outside the repo', () => {
