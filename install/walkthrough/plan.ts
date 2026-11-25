@@ -9,6 +9,8 @@ export type Choices = {
   sidePanel: boolean
   // The KDE panel widget; it can only be on under Plasma 6.
   widget: boolean
+  // Agents the hub starts run in Claude Code's sandbox, which needs SANDBOX.
+  sandbox: boolean
 }
 
 // apt-cache show's fields for a package's candidate version.
@@ -48,10 +50,12 @@ export type Plan = {
 
 // Agent Hub's own: Ghostty and tmux for its windows, jq for its hooks.
 export const ALWAYS = ['ghostty', 'tmux', 'jq']
+// Claude Code's sandbox, which the agents the hub starts to write code run in.
+export const SANDBOX = ['bubblewrap', 'socat']
 // The Header runs btop.
 export const HEADER = ['btop']
 
-export const packagesFor = (c: Choices): string[] => [...ALWAYS, ...(c.header ? HEADER : [])]
+export const packagesFor = (c: Choices): string[] => [...ALWAYS, ...(c.sandbox ? SANDBOX : []), ...(c.header ? HEADER : [])]
 
 export function planOf(c: Choices, probe: Probe): Plan {
   const missing = packagesFor(c).filter(p => !probe.installed.has(p))
@@ -99,7 +103,7 @@ export function reviewLines(p: Plan, probe: Pick<Probe, 'aptInfo'>): Line[] {
     const vwidth = Math.max(...p.apt.map(n => probe.aptInfo[n]?.version.length ?? 0))
     for (const name of p.apt) {
       const info = probe.aptInfo[name]
-      const why = HEADER.includes(name) ? 'for the Header' : ''
+      const why = HEADER.includes(name) ? 'for the Header' : SANDBOX.includes(name) ? 'for the agent sandbox' : ''
       lines.push({
         text: `  ${name.padEnd(width)}`,
         dim: info ? info.version.padEnd(vwidth) : 'version unknown',

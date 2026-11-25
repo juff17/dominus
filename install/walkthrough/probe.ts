@@ -70,9 +70,12 @@ export function plasma6(): boolean {
   return !!m && Number(m[1]) >= 6
 }
 
+// Packages whose program has another name, for a machine without apt.
+const BINARY: Record<string, string> = { bubblewrap: 'bwrap' }
+
 export function probe(pkgs: string[]): Probe {
   const apt = onPath('apt-get')
-  const have = apt ? installed(pkgs) : new Set(pkgs.filter(onPath))
+  const have = apt ? installed(pkgs) : new Set(pkgs.filter(p => onPath(BINARY[p] ?? p)))
   const claude = claudeCommand()
   const plugins = userPlugins(claude)
   return {

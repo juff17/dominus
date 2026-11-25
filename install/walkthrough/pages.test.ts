@@ -18,10 +18,11 @@ const now: Current = {
   ],
   restartStopped: false,
   folder: '',
+  sandbox: false,
 }
 
 // Answers each page in turn and records what it was shown.
-function fake(answers: { parts: string[]; editor: string; restart: boolean; folder: string }) {
+function fake(answers: { parts: string[]; editor: string; restart: boolean; folder: string; sandbox?: boolean }) {
   const shown: { pages: string[]; checkbox?: unknown[]; select?: unknown } = { pages: [] }
   const ask: Prompts = {
     checkbox: async c => {
@@ -32,7 +33,7 @@ function fake(answers: { parts: string[]; editor: string; restart: boolean; fold
       shown.select = c.default
       return answers.editor as never
     },
-    confirm: async () => answers.restart,
+    confirm: async c => (/sandbox/.test(c.message) ? (answers.sandbox ?? false) : answers.restart),
     input: async c => (answers.folder === 'enter' ? c.default : answers.folder),
     separator: text => ({ separator: text, type: 'separator' }),
   }
@@ -40,17 +41,17 @@ function fake(answers: { parts: string[]; editor: string; restart: boolean; fold
   return { ask, screen, shown }
 }
 
-test('four pages, each saying where you are', async () => {
+test('five pages, each saying where you are', async () => {
   const f = fake({ parts: ['header', 'sidePanel', 'widget'], editor: 'code', restart: false, folder: 'enter' })
   await runPages(f.ask, f.screen, now, true)
-  assert.deepEqual(f.shown.pages, ['1/4', '2/4', '3/4', '4/4'])
+  assert.deepEqual(f.shown.pages, ['1/5', '2/5', '3/5', '4/5', '5/5'])
   assert.equal(f.shown.select, 'code')
 })
 
 test('the answers come back as picked; Enter on the folder keeps the hub’s default unset', async () => {
-  const f = fake({ parts: ['sidePanel'], editor: 'zed', restart: true, folder: 'enter' })
+  const f = fake({ parts: ['sidePanel'], editor: 'zed', restart: true, folder: 'enter', sandbox: true })
   const picked = await runPages(f.ask, f.screen, now, true)
-  assert.deepEqual(picked, { header: false, sidePanel: true, widget: false, editor: 'zed', restartStopped: true, folder: '' })
+  assert.deepEqual(picked, { header: false, sidePanel: true, widget: false, editor: 'zed', restartStopped: true, folder: '', sandbox: true })
 })
 
 test('a folder typed is kept, trimmed', async () => {

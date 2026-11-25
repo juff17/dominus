@@ -3,7 +3,7 @@ import { test } from 'node:test'
 
 import { type Probe, bytes, nothingToInstall, packagesFor, parseAptShow, planFile, planOf, reviewLines } from './plan.ts'
 
-const all = { header: true, sidePanel: true, widget: true }
+const all = { header: true, sidePanel: true, widget: true, sandbox: true }
 const fresh: Probe = {
   apt: true,
   installed: new Set(),
@@ -11,6 +11,8 @@ const fresh: Probe = {
     ghostty: { version: '1.3.0~us1-0ubuntu1.1', size: 17039192, installedKiB: 30886 },
     tmux: { version: '3.6a-2ubuntu0.2', size: 517156, installedKiB: 1273 },
     jq: { version: '1.8.1-4ubuntu2', size: 72432, installedKiB: 122 },
+    bubblewrap: { version: '0.11.0-2', size: 46000, installedKiB: 140 },
+    socat: { version: '1.8.0.3-1', size: 400000, installedKiB: 1600 },
     btop: { version: '1.4.6-2', size: 603870, installedKiB: 1762 },
   },
   yazi: false,
@@ -19,17 +21,18 @@ const fresh: Probe = {
   diagrams: false,
   chrome: false,
 }
-const done: Probe = { ...fresh, installed: new Set(['ghostty', 'tmux', 'jq', 'btop']), aptInfo: {}, yazi: true, claude: true, plugin: true, diagrams: true, chrome: true }
+const done: Probe = { ...fresh, installed: new Set(['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop']), aptInfo: {}, yazi: true, claude: true, plugin: true, diagrams: true, chrome: true }
 
-test('the hub always needs ghostty, tmux and jq; the Header adds btop', () => {
-  assert.deepEqual(packagesFor(all), ['ghostty', 'tmux', 'jq', 'btop'])
-  assert.deepEqual(packagesFor({ ...all, header: false }), ['ghostty', 'tmux', 'jq'])
+test('the hub always needs ghostty, tmux and jq; the sandbox adds bubblewrap and socat, the Header btop', () => {
+  assert.deepEqual(packagesFor(all), ['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop'])
+  assert.deepEqual(packagesFor({ ...all, header: false }), ['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat'])
+  assert.deepEqual(packagesFor({ ...all, sandbox: false }), ['ghostty', 'tmux', 'jq', 'btop'], 'no sandbox, no bubblewrap or socat')
 })
 
 test('a fresh machine needs everything; yazi, diagram-pane and Chrome only with the Side panel', () => {
   const p = planOf(all, fresh)
   assert.deepEqual(p, {
-    apt: ['ghostty', 'tmux', 'jq', 'btop'],
+    apt: ['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop'],
     byHand: [],
     yazi: true,
     claude: true,
@@ -51,7 +54,7 @@ test('Chrome already there needs no note; diagram-pane alone still needs approva
 
 test('only what is missing is listed, and a machine with everything needs no approval', () => {
   const some = planOf(all, { ...fresh, installed: new Set(['ghostty', 'jq']), claude: true })
-  assert.deepEqual(some.apt, ['tmux', 'btop'])
+  assert.deepEqual(some.apt, ['tmux', 'bubblewrap', 'socat', 'btop'])
   assert.equal(some.claude, false)
   assert.ok(nothingToInstall(planOf(all, done)))
   assert.ok(!nothingToInstall(some))
@@ -60,7 +63,7 @@ test('only what is missing is listed, and a machine with everything needs no app
 test('without apt-get, missing packages are left to you', () => {
   const p = planOf(all, { ...fresh, apt: false })
   assert.deepEqual(p.apt, [])
-  assert.deepEqual(p.byHand, ['ghostty', 'tmux', 'jq', 'btop'])
+  assert.deepEqual(p.byHand, ['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop'])
 })
 
 test('apt-cache show is read for version and sizes', () => {
@@ -81,10 +84,12 @@ test('the review lists each step and totals what apt fetches', () => {
     'The following will be installed:',
     '',
     'System packages apt, needs sudo',
-    '  ghostty 1.3.0~us1-0ubuntu1.1 17.0 MB',
-    '  tmux    3.6a-2ubuntu0.2      517 kB',
-    '  jq      1.8.1-4ubuntu2       72 kB',
-    '  btop    1.4.6-2              604 kB   for the Header',
+    '  ghostty    1.3.0~us1-0ubuntu1.1 17.0 MB',
+    '  tmux       3.6a-2ubuntu0.2      517 kB',
+    '  jq         1.8.1-4ubuntu2       72 kB',
+    '  bubblewrap 0.11.0-2             46 kB   for the agent sandbox',
+    '  socat      1.8.0.3-1            400 kB   for the agent sandbox',
+    '  btop       1.4.6-2              604 kB   for the Header',
     'Snap',
     '  yazi file manager, for the Side panel',
     'Claude Code its own installer, from claude.ai/install.sh',
@@ -93,7 +98,7 @@ test('the review lists each step and totals what apt fetches', () => {
     "  dominus the hub's skills and hooks",
     '  diagram-pane for the Side panel’s Diagrams, with mermaid-cli from npm',
     '',
-    'Need to get 18.2 MB of archives. After this operation, 34.9 MB of additional disk space will be used.',
+    'Need to get 18.7 MB of archives. After this operation, 36.6 MB of additional disk space will be used.',
     '',
     'Diagrams render with Google Chrome: install it yourself (/usr/bin/google-chrome).',
     'Also links dominus into ~/.config/ghostty. Your own Claude settings aren’t touched.',
@@ -101,6 +106,6 @@ test('the review lists each step and totals what apt fetches', () => {
 })
 
 test('install.sh reads one step a line', () => {
-  assert.equal(planFile(planOf(all, fresh)), 'apt ghostty tmux jq btop\nyazi\nclaude\nplugin\ndiagrams\nwidget on\n')
+  assert.equal(planFile(planOf(all, fresh)), 'apt ghostty tmux jq bubblewrap socat btop\nyazi\nclaude\nplugin\ndiagrams\nwidget on\n')
   assert.equal(planFile(planOf({ ...all, widget: false }, done)), 'widget off\n')
 })

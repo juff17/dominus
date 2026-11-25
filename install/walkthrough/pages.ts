@@ -30,11 +30,13 @@ export type Current = {
   restartStopped: boolean
   // The default folder as saved; '' is the hub's own default.
   folder: string
+  // New agent, todo hand-offs and tickets run in Claude Code's sandbox.
+  sandbox: boolean
 }
 
 export type Picked = Omit<Current, 'editors'>
 
-export const PAGES = 4
+export const PAGES = 5
 export const DEFAULT_FOLDER = '~/projects'
 
 const ALWAYS = [
@@ -76,12 +78,21 @@ export async function runPages(ask: Prompts, screen: Screen, now: Current, plasm
   screen.page(4, PAGES, ['Where an agent starts when nothing names a folder: New agent, Logs, a todo with no repo.'])
   const typed = (await ask.input({ message: 'Default folder for new agents', default: now.folder || DEFAULT_FOLDER })).trim()
 
+  screen.page(5, PAGES, [
+    'Agents from New agent, todo hand-offs and tickets work without asking you, so they can run in',
+    "Claude Code's sandbox: their shell commands write only in their own folder, can't read your keys",
+    'or .env files, and reach the network through a proxy. Installs bubblewrap and socat. Monitors never',
+    'run in it. Settings › New agent, Todo and Tickets can each turn it off later.',
+  ])
+  const sandbox = await ask.confirm({ message: 'Run the agents the hub starts in the sandbox?', default: now.sandbox })
+
   return {
     header: parts.includes('header'),
     sidePanel: parts.includes('sidePanel'),
     widget: plasma6 && parts.includes('widget'),
     editor,
     restartStopped,
+    sandbox,
     // The hub's own default stays unset, so a later change to it applies.
     folder: !typed || (typed === DEFAULT_FOLDER && !now.folder) ? now.folder : typed,
   }

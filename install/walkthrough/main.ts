@@ -72,8 +72,12 @@ function current(saved: Answers, desktop: boolean): Current {
     editors: row('editor.app').choices.map(ch => ({ value: ch.value, name: ch.label, description: `runs ${ch.value}; it has to be on PATH` })),
     restartStopped: s['hub.restartStopped'],
     folder: s['general.folder'],
+    sandbox: SANDBOXED.some(k => s[k]),
   }
 }
+
+// The settings the sandbox question sets.
+const SANDBOXED = ['newAgent.task.sandbox', 'todo.handoff.sandbox', 'tickets.handoff.sandbox'] as const
 
 // Only what changed, so a setting left alone keeps following its default.
 function savePicked(now: Current, picked: Picked): void {
@@ -83,6 +87,8 @@ function savePicked(now: Current, picked: Picked): void {
     ['editor.app', now.editor, picked.editor],
     ['hub.restartStopped', now.restartStopped, picked.restartStopped],
     ['general.folder', now.folder, picked.folder],
+    // One answer for all three: each can differ later, in Settings.
+    ...SANDBOXED.map((k): [string, unknown, unknown] => [k, now.sandbox, picked.sandbox]),
   ]
   for (const [key, before, after] of changes) if (before !== after) set(key as never, after as never)
 }
@@ -110,10 +116,10 @@ async function main(argv: string[]): Promise<number> {
     picked = await runPages(prompts, screen, now, desktop)
     savePicked(now, picked)
     saveAnswers({ asked: true, widget: picked.widget })
-    log.info('answers saved', { header: picked.header, sidePanel: picked.sidePanel, widget: picked.widget, editor: picked.editor })
+    log.info('answers saved', { header: picked.header, sidePanel: picked.sidePanel, widget: picked.widget, editor: picked.editor, sandbox: picked.sandbox })
   }
 
-  const choices = { header: picked.header, sidePanel: picked.sidePanel, widget: picked.widget }
+  const choices = { header: picked.header, sidePanel: picked.sidePanel, widget: picked.widget, sandbox: picked.sandbox }
   if (flag('--links')) {
     writeFileSync(planPath, planFile({ apt: [], byHand: [], yazi: false, claude: false, plugin: false, diagrams: false, chromeByHand: false, widget: choices.widget }))
     return 0
