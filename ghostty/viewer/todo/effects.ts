@@ -448,7 +448,7 @@ async function handOff(c: Ctx, ids: readonly string[], at: Here, how: HandoffHow
         if (!item) continue
         const values = io.settings()
         const spec = handoffSpec(handoffPlace(item, at), { ...how, mode: values['todo.handoff.mode'], effort: values['todo.handoff.effort'] })
-        const outcome = spec ? await startAgent(c, item, spec) : { error: t('todo.handOff.repoGone', { repo: item.repo }) }
+        const outcome = spec ? await startAgent(c, item, { ...spec, sandbox: values['todo.handoff.sandbox'] }) : { error: t('todo.handOff.repoGone', { repo: item.repo }) }
         if (outcome.error === undefined) {
           started.push(item)
           // Its agent is running, so its mark goes now, not after the rest.

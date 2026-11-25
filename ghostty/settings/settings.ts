@@ -165,6 +165,7 @@ const DEFINED = [
     head('task'),
     ...agent('newAgent.task', 'opus'),
     choice('newAgent.task.branch', ['worktree', 'current'], 'worktree'),
+    bool('newAgent.task.sandbox', false),
     bool('worktree.fetch', true),
     prompt('task'),
     head('folders'),
@@ -251,6 +252,7 @@ const DEFINED = [
     choice('todo.handoff.effort', EFFORT, 'medium'),
     choice('todo.handoff.branch', ['worktree', 'branch'], 'worktree'),
     choice('todo.handoff.merge', ['ask', 'never'], 'ask'),
+    bool('todo.handoff.sandbox', false),
     prompt('todo-handoff'),
     head('filing'),
     choice('todo.filing.model', FILER_MODELS, 'haiku'),
@@ -282,6 +284,7 @@ const DEFINED = [
     choice('tickets.handoff.model', MODEL_IDS, 'opus'),
     choice('tickets.handoff.mode', MODE, 'auto'),
     choice('tickets.handoff.effort', EFFORT, 'medium'),
+    bool('tickets.handoff.sandbox', false),
     prompt('ticket'),
   ]),
   define('hub', [

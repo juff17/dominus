@@ -4,7 +4,8 @@ import { test } from 'node:test'
 import { type AgentState, type Session, type Transcript, addEntry, brokeTags, cardHeights, classify, counts, describeTool, emptyTranscript, eventTag, lanes, launch, monitorProcess, monitorsOf, pairParked, parseNotification, permissionTool, repoOf, scrollTo, showsPermission } from './model.ts'
 import { clean, render, width } from '../tui/term.ts'
 import { promptLine } from './text.ts'
-import { mkdtempSync } from 'node:fs'
+import { SANDBOX_SETTINGS } from './launch.ts'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { set as setSetting } from '../settings/settings.ts'
@@ -528,4 +529,22 @@ test('render clips to the width in cells, wide characters included', () => {
 
 test('clean strips escape sequences from other people\'s text', () => {
   assert.equal(clean('ok\x1b]52;c;evil\x07 done\n'), 'ok ]52;c;evil  done ')
+})
+
+test('an agent runs in the sandbox only when its spec asks, and a monitor never does', () => {
+  const settings = (argv: string[]) => argv[argv.indexOf('--settings') + 1]
+  assert.ok(!launch({ kind: 'task', cwd: '/p', prompt: 'go' }).argv.includes('--settings'))
+  assert.equal(settings(launch({ kind: 'task', cwd: '/p', prompt: 'go', sandbox: true }).argv), SANDBOX_SETTINGS)
+  assert.equal(settings(launch({ kind: 'ticket', cwd: '/p', url: 'https://x/browse/A-1', lines: [], sandbox: true }).argv), SANDBOX_SETTINGS)
+  assert.ok(!launch({ kind: 'monitor', skill: 'pr', cwd: '/p', target: 'https://x/pull/1', sandbox: true }).argv.includes('--settings'))
+  assert.equal(launch({ kind: 'task', cwd: '/p', prompt: 'go', sandbox: true }).argv.at(-1), 'go', 'the prompt stays last')
+})
+
+test('the sandbox settings are strict, and tell rm-guard', () => {
+  const s = JSON.parse(readFileSync(SANDBOX_SETTINGS, 'utf8'))
+  assert.equal(s.sandbox.enabled, true)
+  assert.equal(s.sandbox.autoAllowBashIfSandboxed, true)
+  assert.equal(s.sandbox.allowUnsandboxedCommands, false, 'no retries outside the sandbox')
+  assert.equal(s.sandbox.failIfUnavailable, true, 'no unsandboxed agent when bubblewrap is missing')
+  assert.equal(s.env.DOMINUS_SANDBOX, '1', "jstack's rm-guard reads it")
 })

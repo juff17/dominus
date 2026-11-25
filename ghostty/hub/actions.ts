@@ -64,6 +64,8 @@ export type ActionsDeps = {
   markStopped?: (id: string, task: string, command: string) => void
   setSetting?: (key: AskSetting, value: boolean) => unknown
   askStopMonitor?: () => boolean
+  // Settings › New agent › Run in the sandbox.
+  sandbox?: () => boolean
   claudeDir?: string
   resultFile?: string
   env?: Record<string, string | undefined>
@@ -468,7 +470,7 @@ async function adoptResult(c: Ctx): Promise<void> {
 // claude --bg prints the job's id and returns; the footer says it's starting
 // until then.
 async function start(c: Ctx, spec: LaunchSpec): Promise<void> {
-  const plan = launch(spec)
+  const plan = launch(spec.kind === 'task' ? { ...spec, sandbox: c.sandbox() } : spec)
   c.remember(spec.cwd)
   const started = (fields: Fields) => c.log.info('agent started', { kind: spec.kind, name: plan.name, ...fields })
   c.say(t('hub.notes.startingBg', { name: plan.name }), P.sub, 30000)
@@ -507,6 +509,7 @@ export function actionsOf(deps: ActionsDeps): Actions {
     markStopped: markStoppedIn,
     setSetting: setSettingIn,
     askStopMonitor: () => settings()['hub.askStopMonitor'],
+    sandbox: () => settings()['newAgent.task.sandbox'],
     claudeDir: CLAUDE_DIR,
     resultFile: resultPath(deps.env ?? process.env),
     env: process.env,

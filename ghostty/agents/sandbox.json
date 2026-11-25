@@ -1,0 +1,135 @@
+{
+  "env": {
+    "DOMINUS_SANDBOX": "1"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "failIfUnavailable": true,
+    "excludedCommands": [
+      "docker *",
+      "gh *",
+      "glab *",
+      "git fetch *",
+      "git pull *",
+      "git push *"
+    ],
+    "filesystem": {
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.gnupg",
+        "~/.config/gh",
+        "~/.config/glab-cli",
+        "~/.docker/config.json",
+        "~/projects/**/.env*"
+      ],
+      "allowWrite": [
+        "~/.npm",
+        "~/.cache",
+        "~/.local/share/pnpm",
+        "~/.local/state/agent-hub"
+      ]
+    },
+    "credentials": {
+      "envVars": [
+        {
+          "name": "GH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GITHUB_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GH_ENTERPRISE_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GITLAB_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "NPM_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "JIRA_API_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_SESSION_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "mode": "deny"
+        }
+      ]
+    },
+    "network": {
+      "allowAllUnixSockets": true
+    }
+  },
+  "permissions": {
+    "allow": [
+      "mcp__atlassian__*",
+      "mcp__gitlab__*",
+      "mcp__github__*",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr status *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr create *)",
+      "Bash(gh issue view *)",
+      "Bash(gh run view *)",
+      "Bash(gh run list *)",
+      "Bash(gh repo view *)",
+      "Bash(glab mr view *)",
+      "Bash(glab mr list *)",
+      "Bash(glab mr diff *)",
+      "Bash(glab mr create *)",
+      "Bash(glab issue view *)",
+      "Bash(glab ci status *)",
+      "Bash(glab ci view *)",
+      "Bash(glab repo view *)",
+      "Bash(git push -u origin *)",
+      "Bash(git push --set-upstream origin *)",
+      "Bash(git push origin *)"
+    ],
+    "ask": [
+      "mcp__*__merge_*",
+      "mcp__*__delete_*",
+      "mcp__*__push_files",
+      "mcp__*__create_or_update_file"
+    ],
+    "deny": [
+      "Bash(gh auth token *)",
+      "Bash(gh auth status *)",
+      "Bash(glab auth status *)",
+      "Bash(git push *--force*)",
+      "Bash(git push *-f *)",
+      "Bash(git push *-f)",
+      "Bash(git push *+*)",
+      "Bash(git push *--delete*)",
+      "Bash(git push *--mirror*)",
+      "Bash(git push * :*)",
+      "Bash(git push * main)",
+      "Bash(git push * master)",
+      "Bash(git push *:main)",
+      "Bash(git push *:master)",
+      "Bash(git push *refs/heads/main*)",
+      "Bash(git push *refs/heads/master*)"
+    ]
+  }
+}

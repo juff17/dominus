@@ -1,6 +1,7 @@
 // Decides the command only; the hub and the todo list run it.
 
 import { basename } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { skillCommand } from '../core/hub-skills.ts'
 import { type Image, imageList, imagesLine, withoutImages } from '../core/images.ts'
 import { HUB, type PromptId, compose, instructions, withTyped } from '../settings/prompts.ts'
@@ -8,13 +9,16 @@ import { short } from './text.ts'
 
 // `model`, `mode` and `effort` are claude's --model, --permission-mode and
 // --effort, left out at 'default'. `images` are those pasted into the
-// prompt, which names each [Image #n] (core/images.ts).
+// prompt, which names each [Image #n] (core/images.ts). `sandbox` runs its
+// shell commands in Claude Code's sandbox (sandbox.json), as Settings ask for
+// New agent, todo hand-offs and tickets.
 type SpecBase = {
   cwd: string
   model?: string
   mode?: string
   effort?: string
   chrome?: boolean
+  sandbox?: boolean
   prompt?: string
   name?: string
   images?: Image[]
@@ -96,6 +100,12 @@ export const MONITORS: MonitorSkill[] = [
 ]
 export const monitor = (id: string): MonitorSkill | undefined => MONITORS.find(m => m.id === id)
 
+// Claude Code's strict sandbox, for agents that write code unattended: writes
+// stay in the folder they start in, and secrets stay unreadable. Monitors
+// never get it: their scripts call gh, glab and docker, which need your login
+// and can't work in the sandbox. Sessions you start yourself don't load it.
+export const SANDBOX_SETTINGS = fileURLToPath(new URL('./sandbox.json', import.meta.url))
+
 function options(spec: LaunchSpec): string[] {
   const opts: string[] = []
   const flags = [
@@ -105,6 +115,7 @@ function options(spec: LaunchSpec): string[] {
   ] as const
   for (const [flag, value] of flags) if (value && value !== 'default') opts.push(flag, value)
   if (spec.chrome) opts.push('--chrome')
+  if (spec.sandbox && spec.kind !== 'monitor') opts.push('--settings', SANDBOX_SETTINGS)
   return opts
 }
 

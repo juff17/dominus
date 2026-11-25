@@ -369,6 +369,7 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
       model: v['tickets.handoff.model'],
       mode: v['tickets.handoff.mode'],
       effort: v['tickets.handoff.effort'],
+      sandbox: v['tickets.handoff.sandbox'],
       url: ticket.url,
       lines: [...factLines(facts), `Folder: ${tilde(cwd)}`],
       name: `${ticket.key}-${slug(ticket.title)}`.slice(0, 60),

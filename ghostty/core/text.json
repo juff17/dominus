@@ -228,6 +228,10 @@
           "current": "current branch"
         }
       },
+      "newAgent.task.sandbox": {
+        "label": "Run in the sandbox",
+        "sub": "shell commands can write only in the folder the agent starts in, can't read secrets, and reach the network through a proxy; needs bubblewrap and socat"
+      },
       "worktree.fetch": {
         "label": "Fetch before a worktree",
         "sub": "git fetch before any Claude session makes a worktree, so it starts from the remote’s latest"
@@ -400,6 +404,10 @@
         "choices": {
           "never": "never merge"
         }
+      },
+      "todo.handoff.sandbox": {
+        "label": "Run in the sandbox",
+        "sub": "shell commands can write only in the folder the agent starts in, can't read secrets, and reach the network through a proxy; needs bubblewrap and socat"
       },
       "todo.filing.model": {
         "label": "Model",
@@ -867,6 +875,10 @@
       },
       "tickets.handoff.effort": {
         "label": "Effort"
+      },
+      "tickets.handoff.sandbox": {
+        "label": "Run in the sandbox",
+        "sub": "shell commands can write only in the folder the agent starts in, can't read secrets, and reach the network through a proxy; needs bubblewrap and socat"
       },
       "keys.jira": {
         "label": "Tickets popup",

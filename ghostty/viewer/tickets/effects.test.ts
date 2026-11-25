@@ -95,6 +95,7 @@ test('starting an agent runs the skill on the ticket with its facts, never the t
   await fx.run({ do: 'start', ticket: BOARD.unassigned[0] })
   const bg = spawned.find(x => x.cmd === 'claude')
   assert.ok(bg)
+  assert.ok(!bg.args.includes('--settings'), 'the sandbox is off by default')
   const argv = bg.args.join(' ')
   assert.ok(!argv.includes('secret-token'))
   assert.deepEqual(bg.args.slice(0, 3), ['--bg', '--name', 'ENG-1-eng-1-title'])

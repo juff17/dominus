@@ -8,6 +8,7 @@ import { test } from 'node:test'
 import { type ActionsDeps, type Child, type Spawn, type SpawnOptions, actionsOf, pruneResults, resultPath } from './actions.ts'
 import type { Monitored } from './board.ts'
 import type { Agent, LaunchSpec, Monitor, Pane, Proc } from '../agents/model.ts'
+import { SANDBOX_SETTINGS } from '../agents/launch.ts'
 import type { Level } from '../core/log.ts'
 import type { RunResult } from '../core/proc.ts'
 import { P } from '../tui/term.ts'
@@ -75,6 +76,7 @@ function world({ rules = [], ...extra }: { rules?: Rule[] } & Partial<ActionsDep
     },
     setSetting: (key, value) => calls.push(['setSetting', key, value]),
     askStopMonitor: () => true,
+    sandbox: () => false,
     claudeDir: dir,
     resultFile: join(dir, 'new-agent.json'),
     env: { TMUX: '/tmp/tmux,1,0', TMUX_PANE: '%1' },
@@ -454,6 +456,14 @@ test('a popup tmux won’t show says why', async () => {
   const noPopup = world({ rules: [{ has: ['display-popup'], r: { ok: false, err: 'no client' } }] })
   await noPopup.act.newAgent()
   assert.deepEqual(noPopup.notes.map(n => n.text), ["Couldn't show New agent: no client"])
+})
+
+test('with Run in the sandbox on, New agent starts its task with the sandbox settings', () => {
+  const w = world({ sandbox: () => true })
+  w.act.start({ kind: 'task', cwd: '/p', prompt: 'do it' })
+  const argv = w.calls.find(c => c[0] === 'spawn') as string[]
+  assert.equal(argv[argv.indexOf('--settings') + 1], SANDBOX_SETTINGS)
+  assert.equal(argv.at(-1), 'do it')
 })
 
 test('a background agent starts with claude --bg, and the footer says how that went', () => {
