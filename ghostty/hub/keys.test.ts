@@ -1,7 +1,7 @@
 // node --test ghostty/hub/keys.test.ts
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { DIAGRAMS_KEY, KEYS, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction } from './keys.ts'
+import { DIAGRAMS_KEY, KEYS, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction, splashAction } from './keys.ts'
 import type { Asked } from './actions.ts'
 import type { Hit } from './view.ts'
 import { tokens } from '../tui/term.ts'
@@ -118,4 +118,12 @@ test('a click finds the region under it, edges included; the wheel only lanes', 
   assert.equal(hitAt(hits, 30, 5, true), lane3)
   assert.equal(hitAt(hits, 95, 1, true), undefined)
   assert.equal(hitAt([], 1, 1), undefined)
+})
+
+test('the gear screen of an empty board leaves new and workspace to Alt+N and Ctrl+Shift+W', () => {
+  assert.equal(splashAction('n'), null)
+  assert.equal(splashAction('q'), null)
+  assert.equal(splashAction('/'), 'filter')
+  assert.equal(splashAction('\x1b'), 'back')
+  assert.equal(splashAction('toString'), null)
 })

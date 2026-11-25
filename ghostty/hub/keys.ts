@@ -60,6 +60,15 @@ export const KEYS: Readonly<Record<string, Action>> = {
 // Own keys only, so a key named like an Object method is no action.
 export const keyAction = (key: string): Action | null => (Object.hasOwn(KEYS, key) ? KEYS[key] : null)
 
+// The gear screen of an empty board has no n or q: Alt+N and Ctrl+Shift+W
+// start an agent and go to the workspace from anywhere in the window.
+const SPLASH_OFF: readonly Action[] = ['new', 'workspace']
+
+export function splashAction(key: string): Action | null {
+  const action = keyAction(key)
+  return action && SPLASH_OFF.includes(action) ? null : action
+}
+
 // A question waiting in the footer takes the next key, whatever it is: the
 // key that asked it says yes, as does another key for the same action (x
 // and Ctrl+X both close). `remember` names the question to stop asking.

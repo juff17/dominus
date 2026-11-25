@@ -30,7 +30,7 @@ import {
   where as whereOf,
 } from './board.ts'
 import { logCrashes } from '../core/crash.ts'
-import { type Action, AGENT_VIEW_KEY, DIAGRAMS_KEY, EDITOR_KEY, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction } from './keys.ts'
+import { type Action, AGENT_VIEW_KEY, DIAGRAMS_KEY, EDITOR_KEY, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction, splashAction } from './keys.ts'
 import { peekOf } from './peek.ts'
 import { tmuxOf } from './tmux.ts'
 import { type ClickActs, type Hit, type HubPrefs, type HubUi, type Note, type Scroll, boardFrame, listFrame, quiet } from './view.ts'
@@ -109,6 +109,8 @@ function focused(): Agent | null {
 }
 
 const listMode = () => isListMode(peek.current, cols())
+// The board's gear screen, with nothing to show in its lanes (view.ts quiet).
+const splashShown = () => !listMode() && quiet({ agents: visible(), filter }, shownLanes())
 
 const listItems = () => itemsOf(board(), strip())
 
@@ -254,7 +256,7 @@ function onKey(key: string) {
     filterAt = f.at
     return
   }
-  const action = keyAction(key)
+  const action = splashShown() ? splashAction(key) : keyAction(key)
   if (action) void actions[action](key)
 }
 
@@ -370,7 +372,7 @@ function draw() {
   const s = settings()
   const prefs: HubPrefs = { shown: shownLanes(), doneCards: s['hub.doneCards'], monitorRows: s['hub.monitorRows'], broke: brokeTags(), attention: attentionTags() }
   const ui: HubUi = { agents: visible(), filter, filtering, filterAt, focus, selected, scroll, listSel, peek: peek.current, confirm, note, win: WIN, now: Date.now() }
-  if (!list && quiet(ui)) ui.splash = gear()
+  if (!list && quiet(ui, prefs.shown)) ui.splash = gear()
   const f = (list ? listFrame : boardFrame)(ui, prefs, { w: cols(), h: rows() }, clicks)
   focus = f.focus
   listSel = f.listSel

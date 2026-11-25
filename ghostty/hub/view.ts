@@ -352,22 +352,28 @@ const boardKeys = (focus: Focus, agents: readonly Agent[]): Hint[] => [
 
 // ------------------------------------------------------------ nothing running
 
-// No agent at all, and no filter hiding any: the board shows the gear.
-export const quiet = (ui: Pick<HubUi, 'agents' | 'filter'>): boolean => ui.agents.length === 0 && !ui.filter
+// No card in any lane the board shows and no monitor, with no filter hiding
+// any: the board shows the gear. An agent can be running with nowhere to go
+// (Idle turned off, or a watcher whose monitor hasn't started), and the
+// board's empty lanes would say less than the gear.
+export function quiet(ui: Pick<HubUi, 'agents' | 'filter'>, shown: readonly Lane[]): boolean {
+  if (ui.filter) return false
+  const l = lanes(ui.agents)
+  return shown.every(name => l[name].length === 0) && monitorsOf(ui.agents).length === 0
+}
 
-// In place of the lanes and the monitors: the gear (left out until hub.ts
-// can draw it, or when it won't fit), the name, and a way to start an agent.
+// The whole screen in place of the summary, the lanes and the monitors: the
+// gear (left out until hub.ts can draw it, or when it won't fit), the name,
+// and a way to start an agent or go back. No key bar: the footer shows only
+// a question or a note.
 function splashFrame(ui: HubUi, { w: W, h: H }: Size, acts: ClickActs): HubFrame {
   const hits: Hit[] = []
-  // No key bar: the button and the q under the words say it already. The
-  // footer still shows a question or a note.
   const foot = footer(ui, [], W)
-  // Under the summary and its blank row, over a blank row and the footer.
-  const panel = Math.max(0, H - 3 - foot.length)
+  const panel = Math.max(0, H - foot.length)
   const blank = render([], W, LANE_BG)
   const centred = (spans: Span[]) => render([[' '.repeat(Math.max(0, Math.floor((W - spanWidth(spans)) / 2)))], ...spans], W, LANE_BG)
   const button = newButton(t('hub.newAgent'))
-  const choice: Span[] = [...button.spans, [`  ${t('hub.splash.or')}   `, fg(P.sub)], ['q', BOLD + fg(P.text)], [` ${t('hub.splash.back')}`, fg(P.sub)]]
+  const choice: Span[] = [...button.spans, [`  ${t('hub.splash.or')}   `, fg(P.sub)], ['ctrl+shift+w', BOLD + fg(P.text)], [` ${t('hub.splash.back')}`, fg(P.sub)]]
   const words = [
     centred([[[...t('hub.splash.name')].join(' '), BOLD + fg(P.text)]]),
     blank,
@@ -379,17 +385,16 @@ function splashFrame(ui: HubUi, { w: W, h: H }: Size, acts: ClickActs): HubFrame
   const block = gear ? [...gear.rows.map(cells => centredRow(cells, gear.cols, W, LANE_BG)), blank, ...words] : words
   const top = Math.max(0, Math.floor((panel - block.length) / 2))
   const body = Array.from({ length: panel }, (_, r) => block[r - top] ?? blank)
-  const lines = [summary({ ui, hits, acts }, counts(ui.agents), W), render([], W), ...body, render([], W)]
-  // The choice is the block's last row; rows count from 1, under two above.
+  // The choice is the block's last row; rows count from 1.
   const x1 = Math.max(0, Math.floor((W - spanWidth(choice)) / 2)) + 1
-  if (top + block.length <= panel) hits.push({ x1, x2: x1 + button.cells - 1, y1: top + block.length + 2, y2: top + block.length + 2, act: acts.newAgent })
-  return { lines: [...lines.slice(0, H - foot.length), ...foot], hits, focus: ui.focus, selected: { ...ui.selected }, scroll: { ...ui.scroll }, listSel: ui.listSel }
+  if (top + block.length <= panel) hits.push({ x1, x2: x1 + button.cells - 1, y1: top + block.length, y2: top + block.length, act: acts.newAgent })
+  return { lines: [...body, ...foot].slice(0, H), hits, focus: ui.focus, selected: { ...ui.selected }, scroll: { ...ui.scroll }, listSel: ui.listSel }
 }
 
 // ------------------------------------------------------------ the board
 
 export function boardFrame(ui: HubUi, prefs: HubPrefs, size: Size, acts: ClickActs): HubFrame {
-  if (quiet(ui)) return splashFrame(ui, size, acts)
+  if (quiet(ui, prefs.shown)) return splashFrame(ui, size, acts)
   const { w: W, h: H } = size
   const l = lanes(ui.agents)
   const strip = monitorsOf(ui.agents)

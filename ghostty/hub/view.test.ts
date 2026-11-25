@@ -6,7 +6,7 @@ import { hitAt } from './keys.ts'
 import { type ClickActs, type HubFrame, type HubPrefs, type HubUi, boardFrame, footer, listFrame } from './view.ts'
 import type { Agent, Monitor } from '../agents/model.ts'
 import type { Hint } from '../tui/chrome.ts'
-import { P, fg, width } from '../tui/term.ts'
+import { P, bg, fg, width } from '../tui/term.ts'
 
 const NOW = 1_800_000_000_000
 const MIN = 60_000
@@ -103,12 +103,14 @@ test('with nothing running the board shows the gear, the name and a New agent bu
   )
   const words = f.lines.slice(at + 4, at + 9).map(l => plain(l).trim())
   assert.deepEqual(words, ['', 'D O M I N U S', '', 'All quiet. No agent is running.', ''])
-  assert.match(plain(f.lines[at + 9]), /\+ New agent alt\+n .* or {3}q back to the workspace/)
+  assert.match(plain(f.lines[at + 9]), /\+ New agent alt\+n .* or {3}ctrl\+shift\+w back to the workspace/)
   const s = screen(f)
   assert.ok(!s.includes('Needs you'), 'no lanes')
-  assert.match(plain(f.lines[0]), /^ 0 tasks · 0 monitors/)
-  assert.ok(!plain(f.lines.at(-1) ?? '').includes('n new'), 'no key bar')
-  // The New agent under the words, as well as the summary's.
+  assert.ok(!s.includes('tasks'), 'no summary')
+  assert.ok(!s.includes('n new'), 'no key bar')
+  // One background top to bottom: no summary row or footer row in another.
+  for (const l of f.lines) assert.ok(l.includes(bg(P.mantle)), JSON.stringify(plain(l)))
+  assert.equal(f.hits.length, 1, 'only the New agent under the words')
   const button = f.hits.find(h => h.y1 === at + 10)
   assert.ok(button)
   assert.ok(plain(f.lines[at + 9]).slice(button.x1 - 1, button.x2).includes('+ New agent alt+n'))
@@ -117,12 +119,29 @@ test('with nothing running the board shows the gear, the name and a New agent bu
 })
 
 test('without the gear, or too short for it, the board still says nothing is running', () => {
-  for (const [splash, h] of [[null, 30], [GEAR, 12]] as const) {
+  for (const [splash, h] of [[null, 30], [GEAR, 9]] as const) {
     const f = boardFrame(ui({ splash }), PREFS, { w: 100, h }, recorder().acts)
     assert.equal(f.lines.length, h)
     assert.ok(!f.lines.some(l => l.includes('<g1>')))
     assert.ok(screen(f).includes('All quiet. No agent is running.'))
   }
+})
+
+test('the gear shows while every agent is somewhere the board leaves out', () => {
+  const napping = agent('nap', { state: 'idle' })
+  // A watcher sits in no lane outside Needs you; its monitors go in the strip.
+  const watcher = agent('loop', { state: 'working', monitor: true })
+  for (const [agents, shown] of [
+    [[napping], LANES.slice(0, 3)],
+    [[watcher], LANES],
+  ] as const) {
+    const s = screen(boardFrame(ui({ splash: GEAR, agents: [...agents] }), { ...PREFS, shown }, { w: 140, h: 40 }, recorder().acts))
+    assert.ok(s.includes('All quiet'))
+    assert.ok(!s.includes('Needs you'))
+  }
+  const watched = agent('loop', { state: 'working', monitor: true, monitors: [monitor('m1')] })
+  const s = screen(boardFrame(ui({ splash: GEAR, agents: [watched] }), PREFS, { w: 140, h: 40 }, recorder().acts))
+  assert.ok(!s.includes('All quiet'), 'a monitor running keeps the board')
 })
 
 test('a filter that hides every agent, or any agent at all, keeps the lanes', () => {
