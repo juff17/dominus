@@ -5,7 +5,7 @@ import { type AgentState, type Session, type Transcript, addEntry, brokeTags, ca
 import { clean, render, width } from '../tui/term.ts'
 import { promptLine } from './text.ts'
 import { SANDBOX_SETTINGS } from './launch.ts'
-import { agentText } from '../core/agent-text.ts'
+import { SANDBOX } from '../core/prompts/shared.ts'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -540,10 +540,10 @@ test('an agent runs in the sandbox only when its spec asks, and a monitor never 
   assert.ok(!launch({ kind: 'monitor', skill: 'pr', cwd: '/p', target: 'https://x/pull/1', sandbox: true }).argv.includes('--settings'))
   const told = launch({ kind: 'task', cwd: '/p', prompt: 'go', sandbox: true }).argv.at(-1) ?? ''
   assert.match(told, /^From the hub: Your shell commands run in a sandbox\..*\n\nMy prompt:\ngo$/s, 'the rules go first, the prompt last')
-  assert.ok(!(launch({ kind: 'task', cwd: '/p', prompt: 'go' }).argv.at(-1) ?? '').includes(agentText('sandbox')), 'no rules without the sandbox')
+  assert.ok(!(launch({ kind: 'task', cwd: '/p', prompt: 'go' }).argv.at(-1) ?? '').includes(SANDBOX), 'no rules without the sandbox')
   const ticket = launch({ kind: 'ticket', cwd: '/p', url: 'https://x/browse/A-1', lines: ['Repo: /p'], sandbox: true }).argv.at(-1) ?? ''
-  assert.equal(ticket.split('\n').at(-1), `From the hub: ${agentText('sandbox')}`)
-  assert.ok(!(launch({ kind: 'monitor', skill: 'pr', cwd: '/p', target: 'https://x/pull/1', sandbox: true }).argv.at(-1) ?? '').includes(agentText('sandbox')))
+  assert.equal(ticket.split('\n').at(-1), `From the hub: ${SANDBOX}`)
+  assert.ok(!(launch({ kind: 'monitor', skill: 'pr', cwd: '/p', target: 'https://x/pull/1', sandbox: true }).argv.at(-1) ?? '').includes(SANDBOX))
 })
 
 test('the sandbox settings are strict, and tell rm-guard', () => {

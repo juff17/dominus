@@ -2,8 +2,8 @@
 
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { agentText } from '../core/agent-text.ts'
 import { skillCommand } from '../core/hub-skills.ts'
+import { OWN_WORKTREE, SANDBOX } from '../core/prompts/shared.ts'
 import { type Image, imageList, imagesLine, withoutImages } from '../core/images.ts'
 import { HUB, type PromptId, compose, instructions, withTyped } from '../settings/prompts.ts'
 import { short } from './text.ts'
@@ -129,7 +129,7 @@ function job(spec: LaunchSpec): { prompt: string; name: string } {
     return { prompt: spec.typed ? withTyped(head, spec.typed.label, spec.typed.text) : head, name }
   }
   if (spec.kind === 'ticket') {
-    const own = [spec.sandbox && agentText('sandbox'), instructions('ticket').replace(/\s*\n\s*/g, ' ').trim()].filter(Boolean).join(' ')
+    const own = [spec.sandbox && SANDBOX, instructions('ticket').replace(/\s*\n\s*/g, ' ').trim()].filter(Boolean).join(' ')
     const prompt = [`${skillCommand('ticket-work')} ${spec.url.trim()}`, ...spec.lines, own && `${HUB} ${own}`].filter(Boolean).join('\n')
     return { prompt, name: spec.name || slug(spec.url) }
   }
@@ -139,7 +139,7 @@ function job(spec: LaunchSpec): { prompt: string; name: string } {
   // The spec may come from a file, so its images are checked. Their paths
   // are the hub's words, so they go in its paragraph.
   const images = imagesLine(imageList(spec.images))
-  const prompt = spec.kind === 'task' ? compose(spec.agent ?? 'task', typed, [spec.worktree && agentText('own-worktree'), spec.sandbox && agentText('sandbox'), ...(spec.hub ?? []), images]) : typed.trim()
+  const prompt = spec.kind === 'task' ? compose(spec.agent ?? 'task', typed, [spec.worktree && OWN_WORKTREE, spec.sandbox && SANDBOX, ...(spec.hub ?? []), images]) : typed.trim()
   return { prompt, name }
 }
 

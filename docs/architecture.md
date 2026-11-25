@@ -33,7 +33,8 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │                            text (text.json: every word on screen),
 │                            images (pasted images: the clipboard, their files, placeholders),
 │                            repos (the git repos under a folder),
-│                            agent-text (the hub's sentences to agents, from prompts/hub/)
+│                            prompts/ (the hub's sentences to agents: shared.ts holds the
+│                            blocks several agents get, then one file per kind of agent)
 ├── settings/                settings (schema and store), models, keybinds, prompts,
 │                            prefs (New agent's recent folders)
 ├── tui/                     palette (colours), term (rendering spans), input (tokenizer, clicks),

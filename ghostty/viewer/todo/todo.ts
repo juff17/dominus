@@ -7,8 +7,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 
-import { agentText } from '../../core/agent-text.ts'
 import { skillCommand } from '../../core/hub-skills.ts'
+import { todoFiler } from '../../core/prompts/todo-filer.ts'
+import { todoHandoff } from '../../core/prompts/todo-handoff.ts'
 import { type Image, imageList, imagesDir, imagesLine, withoutImages } from '../../core/images.ts'
 import { isRecord } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
@@ -490,12 +491,7 @@ const handoffTask = (item: Item): string => [item.title.trim(), item.note?.trim(
 // What the hub adds about the todo, before it.
 function handoffHub(item: Item, worktree: boolean): string[] {
   const about = [`a ${item.cat} in ${item.repo}`, item.branch && `added on ${item.branch}`].filter(Boolean).join(', ')
-  return [
-    agentText('todo-work', { id: item.id, about }),
-    worktree && agentText('todo-worktree-name', { id: item.id }),
-    worktree && (settings()['todo.handoff.merge'] === 'never' ? agentText('todo-merge-never') : agentText('todo-merge-ask')),
-    agentText('todo-done', { id: item.id }),
-  ].filter((s): s is string => Boolean(s))
+  return todoHandoff({ id: item.id, about, worktree, merge: settings()['todo.handoff.merge'] })
 }
 
 export function handoffSpec(
@@ -532,8 +528,12 @@ export const INSTALLED_CLI = join(homedir(), '.config/ghostty/bin/ghostty-todo')
 // their placeholders, which say where each belongs.
 export function filerMessage(item: Pick<Item, 'id' | 'title' | 'repo' | 'root' | 'images'>, cli = INSTALLED_CLI): string {
   const where = item.repo === 'none' ? `${item.root}, outside any repo` : `the ${item.repo} repo (${item.root})`
-  const run = cli === INSTALLED_CLI ? '' : ` Run ghostty-todo as ${cli}.`
-  const images = imagesOf(item)
-  const pictures = images.length ? ` ${imagesLine(images)} Keep each [Image #n] in the title or note, where the message has it.` : ''
-  return `${skillCommand('todo')} File this todo from the Todo pane as filing ${item.id}. It was typed in ${where}.${run}${pictures} The message: ${item.title}`
+  return todoFiler({
+    command: skillCommand('todo'),
+    id: item.id,
+    where,
+    cli: cli === INSTALLED_CLI ? undefined : cli,
+    pictures: imagesLine(imagesOf(item)),
+    message: item.title,
+  })
 }
