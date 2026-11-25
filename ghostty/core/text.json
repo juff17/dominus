@@ -2859,6 +2859,7 @@
       "findingRepo": "Finding the repo for {key}…",
       "starting": "Starting an agent on {key}…",
       "startFailed": "{key}: the agent didn't start: {err}",
+      "untrusted": "{key}: Claude Code doesn't trust {dir} yet. Run claude there once and accept, then press a again",
       "started": "✻ Started {key} · it's in the hub as a background agent",
       "notOpened": "Couldn't open the agent",
       "noEditor": "Couldn't run {editor}"

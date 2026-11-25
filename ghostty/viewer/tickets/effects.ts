@@ -393,7 +393,10 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
     io.draw()
     const { err, name } = await spawnBg(spec, ticket.key)
     if (err) {
-      s.note = { text: t('tickets.notes.startFailed', { key: ticket.key, err }), tone: 'bad' }
+      // Trusting a folder doesn't cover the git repos inside it, so the
+      // first agent in a repo the finder picked can meet this.
+      const untrusted = /Workspace not trusted/i.test(err)
+      s.note = { text: untrusted ? t('tickets.notes.untrusted', { key: ticket.key, dir: tilde(cwd) }) : t('tickets.notes.startFailed', { key: ticket.key, err }), tone: 'bad' }
       return io.draw()
     }
     s.links[ticket.key] = { name, at: io.now() }

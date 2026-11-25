@@ -146,6 +146,28 @@ test('with Find the repo first, the agent starts in the repo the finder is sure 
   assert.equal((spawned.at(-1)?.args.at(-1) ?? '').split('\n').at(-1), `Folder: ${folder}`)
 })
 
+test('an agent refused for an untrusted folder says how to trust it', async t => {
+  const dir = mkdtempSync(join(tmpdir(), 'tickets-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const { w } = fakeWorld(dir)
+  w.spawn = () => {
+    const child = new EventEmitter() as ChildProcess
+    const stderr = new EventEmitter()
+    Object.assign(child, { stdout: new EventEmitter(), stderr, unref: () => {} })
+    setImmediate(() => {
+      stderr.emit('data', Buffer.from('Workspace not trusted. Run `claude` in /work once and accept the trust prompt, then retry.\n'))
+      child.emit('close', 1)
+    })
+    return child
+  }
+  const s = start(setup, prefs)
+  const fx = ticketsEffects(s, { ...w, draw: () => {}, quit: () => {}, outside: () => ({}) as never }, { client: 'c', layout: 'layout-1' })
+  await fx.refresh()
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0] })
+  assert.equal(s.note?.tone, 'bad')
+  assert.equal(s.note?.text, "ENG-1: Claude Code doesn't trust /work yet. Run claude there once and accept, then press a again")
+})
+
 test('the token kind and board come from .env and Settings', () => {
   const c = configOf({ ...ENV, JIRA_TOKEN_KIND: 'classic', JIRA_SITE: 'https://acme.atlassian.net/' }, SETTINGS)
   assert.deepEqual(c, { site: 'https://acme.atlassian.net', email: 'me@acme.test', token: 'secret-token', kind: 'classic', cloudId: '', boardId: '42', teamId: '' })
