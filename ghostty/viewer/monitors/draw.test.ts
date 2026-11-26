@@ -5,7 +5,8 @@ import { test } from 'node:test'
 
 process.env.AGENT_HUB_SETTINGS = '/nonexistent/agent-hub/settings.json'
 
-const { frame, prColumns, pipelineText, reviewsText, branchText } = await import('./draw.ts')
+const { frame } = await import('./draw.ts')
+const { prColumns, pipelineText, reviewsText, branchText } = await import('./draw-prs.ts')
 const { onKey, setAgents, setProposals, start } = await import('./state.ts')
 const { parseGithub } = await import('./forge.ts')
 const { P, bg, fg } = await import('../../tui/palette.ts')
