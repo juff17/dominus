@@ -7,11 +7,10 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { errCode, logger } from '../core/log.ts'
+import { errCode, logger, warnOnce } from '../core/log.ts'
 import { RUN } from '../core/paths.ts'
 import type { RunResult, Runner } from '../core/proc.ts'
 import { t } from '../core/text.ts'
-import { warnOnce } from './warn.ts'
 
 // Logged as the tray's, whichever program runs it, as it always was.
 const log = logger('tray')

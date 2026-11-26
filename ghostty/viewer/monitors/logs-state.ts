@@ -5,6 +5,7 @@ import { t } from '../../core/text.ts'
 import { type Image, keptImages } from '../../core/images.ts'
 import { editField, pasteField } from '../../tui/line.ts'
 import { type Blocked, LOCAL, REMOTES, type Source, matchesAny } from './sources.ts'
+import { CTRL_S } from '../../tui/input.ts'
 
 export type LogsField = 'env' | 'source' | 'task' | 'level' | 'for' | 'model' | 'effort'
 export const LOGS_FIELDS: readonly LogsField[] = ['env', 'source', 'task', 'level', 'for', 'model', 'effort']
@@ -154,7 +155,6 @@ function submit(l: LogsState, say: Note, sure = false): LogsAct {
 const withImages = (images: Image[]): { images?: Image[] } => (images.length ? { images } : {})
 
 // Starts the watcher, and once more when the environment asks.
-export const CTRL_S = '\x13'
 const UP = '\x1b[A'
 const DOWN = '\x1b[B'
 const LEFT = '\x1b[D'

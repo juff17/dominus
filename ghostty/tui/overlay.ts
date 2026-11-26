@@ -12,7 +12,7 @@ import { type KeyName, altSeq } from '../settings/keybinds.ts'
 import { load } from '../settings/settings.ts'
 import { type Box, type BoxSpec, type Grid, captureWindow, frameBox, slice } from './backdrop.ts'
 import { type HeaderTitle, closeHintWidth, frameBottom, frameTop, titleText } from './controls.ts'
-import { type Mouse, leftPress } from './input.ts'
+import { CTRL_C, type Mouse, leftPress } from './input.ts'
 import { ACCENT, P, RESET, bg, fg } from './palette.ts'
 import { type PaintOptions, type ScreenModes, enter, leave, paint } from './screen.ts'
 
@@ -25,7 +25,6 @@ type KeyValues = Partial<Record<KeyName, string>>
 // The window behind, dimmed as tmux dims an inactive pane's text.
 const DIM = fg(P.surface1) + bg(P.crust)
 const INNER = bg(P.base)
-const CTRL_C = '\x03'
 
 export const overlayBox = (size: Size, spec: BoxSpec): Box => frameBox(size.cols, size.rows, spec)
 export const innerSize = (b: Box): Size => ({ cols: Math.max(1, b.w - 2), rows: Math.max(1, b.h - 2) })

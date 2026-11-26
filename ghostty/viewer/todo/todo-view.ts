@@ -29,6 +29,7 @@ import { type Item, STORE, filingState, knownRepos, moveOldStoreOnce } from './t
 import * as ui from './todo-ui.ts'
 import { type EditPrompt, type HandoffPrompt, KEYS, type KeyAction, type Prompt } from './todo-ui.ts'
 import { onTabChanged, watchName } from '../tab.ts'
+import { CTRL_C, CTRL_V } from '../../tui/input.ts'
 
 const log = logger('todo')
 logCrashes(log)
@@ -40,8 +41,6 @@ const SCREEN = { drag: true, paste: true }
 
 const s = createState(config())
 const { popup: POPUP, pane: PANE, modes: MODES } = s.config
-const CTRL_C = '\x03'
-const CTRL_V = '\x16'
 
 const ov = POPUP
   ? openOverlay({

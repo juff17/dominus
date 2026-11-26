@@ -23,15 +23,13 @@ import { frame } from './draw.ts'
 import { diagramEffects } from './effects.ts'
 import { type Size, config, createState, diagram, middle, mouseAction, panPixels, region, select as selectIn, zoomStep } from './state.ts'
 import { onTabChanged } from '../tab.ts'
+import { FOCUS_IN, FOCUS_OFF, FOCUS_ON } from '../../tui/input.ts'
 
 const log = logger('diagrams')
 logCrashes(log)
 
 const SCREEN = { drag: true, pixels: true, paste: false }
 // tmux passes focus reports on with focus-events on.
-const FOCUS_ON = '\x1b[?1004h'
-const FOCUS_OFF = '\x1b[?1004l'
-const FOCUS_IN = '\x1b[I'
 
 const s = createState(config())
 const { pane: PANE, panes: PANES, follows: FOLLOWS } = s.config

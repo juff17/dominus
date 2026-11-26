@@ -11,7 +11,7 @@ import { type CloseHow, type Monitored, closeQuestion, shq } from './board.ts'
 import type { HubLog, OpenTarget, Say } from './peek.ts'
 import type { Tmux } from '../core/tmux.ts'
 import { type Agent, type LaunchSpec, type Proc, launch, monitorsOf, permissionTool, watches } from '../agents/model.ts'
-import { processes, stopMonitor as stopMonitorProcess } from '../agents/stop.ts'
+import { describeStop, processes, stopMonitor as stopMonitorProcess } from '../agents/stop.ts'
 import { markStopped as markStoppedIn } from '../agents/client.ts'
 import { type Fields, errCode, errorMessage } from '../core/log.ts'
 import { CLAUDE_DIR, RUN, conf } from '../core/paths.ts'
@@ -321,19 +321,11 @@ function stopMonitor(c: Ctx, m: Monitored): Question | null {
 }
 
 function killMonitor(c: Ctx, m: Monitored, words: { name: string; title: string }) {
-  const stopped = (fields: Fields) => c.log.info('monitor stopped', { id: m.agent.id, task: m.task, ...fields })
   const r = stopMonitorProcess(m, c)
   if (r.unreadable !== undefined) c.log.warn('processes unreadable', { err: r.unreadable })
-  if (r.ok) {
-    stopped({ ok: true, pid: r.pid, group: r.group })
-    return c.say(t('hub.notes.monitorStopped', words), P.green, c.noteMs())
-  }
-  if (r.reason === 'no process') {
-    stopped({ ok: false, reason: 'no process' })
-    return c.say(t('hub.notes.monitorNoProcess', words), P.peach, c.noteMs())
-  }
-  stopped({ ok: false, pid: r.pid, err: errorMessage(r.err) })
-  c.say(t('hub.notes.monitorStopFailed', { ...words, err: codeOf(r.err) }), P.red, c.noteMs())
+  const told = describeStop(r, m, words)
+  c.log[told.level](told.message, told.fields)
+  c.say(told.text, { ok: P.green, gone: P.peach, failed: P.red }[told.tone], c.noteMs())
 }
 
 // "Don't ask again" turns the question's setting off, which Settings can

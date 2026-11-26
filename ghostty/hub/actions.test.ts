@@ -68,7 +68,7 @@ function world({ rules = [], ...extra }: { rules?: Rule[] } & Partial<ActionsDep
       const child = Object.assign(new EventEmitter(), { stdout: new EventEmitter(), stderr: new EventEmitter(), unref: () => {} })
       return child as unknown as Child
     },
-    log: { enabled: () => true, debug: at('debug'), info: at('info'), warn: at('warn') },
+    log: { enabled: () => true, debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error') },
     processes: () => [],
     kill: (pid, sig) => calls.push(['kill', pid, sig]),
     markStopped: (id, task, command) => {
@@ -417,7 +417,7 @@ test('a hub starting removes New agent results long left, and keeps one a restar
   const at = (level: Level) => (message: string, fields?: object) => {
     logs.push({ level, message, ...fields })
   }
-  const log = { info: at('info'), warn: at('warn') }
+  const log = { info: at('info'), warn: at('warn'), error: at('error') }
   pruneResults(dir, Date.now(), log)
   assert.deepEqual(readdirSync(dir).sort(), ['new-agent-100.json', 'new-agent-x.json', 'state.json'])
   assert.deepEqual(logs.map(l => [l.level, l.message, l.path]), [['info', 'stale new agent result removed', join(dir, 'new-agent-200.json')]])

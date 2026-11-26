@@ -61,7 +61,7 @@ function world({ rules = [], agents = [tabAgent, bgAgent], focused = null, ...ex
     markReviewed: id => {
       calls.push(['reviewed', id])
     },
-    log: { enabled: () => true, debug: at('debug'), info: at('info'), warn: at('warn') },
+    log: { enabled: () => true, debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error') },
     env: { TMUX: '/tmp/tmux,1,0', TMUX_PANE: '%1' },
     ...extra,
   })

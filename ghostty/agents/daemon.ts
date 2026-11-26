@@ -4,11 +4,10 @@
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isRecord } from '../core/json.ts'
-import { errCode, logger } from '../core/log.ts'
+import { errCode, logger, warnOnce } from '../core/log.ts'
 import { MONITOR, STATE } from '../tui/term.ts'
 import type { AgentState } from './classify.ts'
 import { type Transcript, addEntry, emptyTranscript } from './transcript.ts'
-import { warnOnce } from './warn.ts'
 
 const log = logger('agentd')
 
@@ -20,11 +19,13 @@ const num = (v: unknown): number | undefined => (typeof v === 'number' ? v : und
 // The fields after a /proc/<pid>/stat's command name, which can hold spaces
 // and parens, so it's cut at the last ')'. Index 1 is the parent pid, 19 the
 // start time (fields 4 and 22 of the whole line).
-const statFields = (stat: string): string[] => stat.slice(stat.lastIndexOf(')') + 2).split(' ')
+export const statFields = (stat: string): string[] => stat.slice(stat.lastIndexOf(')') + 2).split(' ')
 export const procStart = (stat: string): string => statFields(stat)[19]
 export const parentPid = (stat: string): number => Number(statFields(stat)[1])
 
 const readStat = (pid: number): string => readFileSync(`/proc/${pid}/stat`, 'utf8')
+// A process's argv, its NULs as spaces.
+export const readCmdline = (pid: number | string, dir = '/proc'): string => readFileSync(join(dir, String(pid), 'cmdline'), 'utf8').replaceAll('\0', ' ')
 
 // ------------------------------------------------------------ singleton
 
@@ -476,7 +477,7 @@ export function scanProcs(dir = '/proc'): string[] | null {
     for (const pid of readdirSync(dir)) {
       if (!/^\d+$/.test(pid)) continue
       try {
-        list.push(readFileSync(join(dir, pid, 'cmdline'), 'utf8').replaceAll('\0', ' ').trim())
+        list.push(readCmdline(pid, dir).trim())
       } catch (err) {
         warnOnce(log, 'process command line unreadable', err, { pid: Number(pid) })
       }

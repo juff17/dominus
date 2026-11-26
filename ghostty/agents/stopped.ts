@@ -5,13 +5,12 @@
 
 import { closeSync, openSync, readSync, statSync } from 'node:fs'
 import { isRecord } from '../core/json.ts'
-import { logger } from '../core/log.ts'
+import { logger, warnOnce } from '../core/log.ts'
 import { t } from '../core/text.ts'
 import { type Agent, repoOf } from './classify.ts'
 import { findTranscript } from './daemon.ts'
 import { promptLine } from './text.ts'
 import { addEntry, emptyTranscript } from './transcript.ts'
-import { warnOnce } from './warn.ts'
 
 const log = logger('agentd')
 // Enough of a transcript's start to hold the prompt it began with.

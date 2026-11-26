@@ -3,9 +3,11 @@
 // board at once.
 
 import { readFileSync, readdirSync } from 'node:fs'
-import { errCode } from '../core/log.ts'
+import { type Fields, errCode, errorMessage } from '../core/log.ts'
+import { t } from '../core/text.ts'
 import { type Agent, type Monitor, type Proc, monitorProcess } from './classify.ts'
 import { markStopped } from './client.ts'
+import { readCmdline, statFields } from './daemon.ts'
 
 export type StopWorld = {
   processes: () => Proc[]
@@ -21,17 +23,13 @@ export type StopResult =
   | { ok: false; reason: 'no process'; unreadable?: unknown }
   | { ok: false; reason: 'kill failed'; pid: number; err: unknown; unreadable?: unknown }
 
-// Fields are read after the last ')' in /proc/<pid>/stat, since the command
-// name can itself hold spaces and parentheses.
 export function processes(): Proc[] {
   const list: Proc[] = []
   for (const pid of readdirSync('/proc')) {
     if (!/^\d+$/.test(pid)) continue
     try {
-      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
-      const f = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
-      const cmdline = readFileSync(`/proc/${pid}/cmdline`, 'utf8').replaceAll('\0', ' ')
-      list.push({ pid: Number(pid), ppid: Number(f[1]), pgid: Number(f[2]), start: Number(f[19]), cmdline })
+      const f = statFields(readFileSync(`/proc/${pid}/stat`, 'utf8'))
+      list.push({ pid: Number(pid), ppid: Number(f[1]), pgid: Number(f[2]), start: Number(f[19]), cmdline: readCmdline(pid) })
     } catch (err) {
       // It ended between the listing and the read: not one to stop.
       if (errCode(err) !== 'ENOENT' && errCode(err) !== 'ESRCH') throw err
@@ -60,4 +58,16 @@ export function stopMonitor(m: StopTarget, w: StopWorld): StopResult {
   } catch (err) {
     return { ok: false, reason: 'kill failed', pid: p.pid, err, ...why }
   }
+}
+
+// What a stop tells the user and the log, the same from the hub and from
+// Monitors: the footer's words and whether it went (ok), there was nothing
+// to stop (gone) or it failed. `words` name the monitor and its session.
+export type StopTold = { tone: 'ok' | 'gone' | 'failed'; text: string; level: 'info' | 'error'; message: string; fields: Fields }
+export function describeStop(r: StopResult, m: Pick<StopTarget, 'task' | 'agent'>, words: { name: string; title: string }): StopTold {
+  const ids = { id: m.agent.id, task: m.task }
+  if (r.ok) return { tone: 'ok', text: t('hub.notes.monitorStopped', words), level: 'info', message: 'monitor stopped', fields: { ...ids, ok: true, pid: r.pid, group: r.group } }
+  if (r.reason === 'no process') return { tone: 'gone', text: t('hub.notes.monitorNoProcess', words), level: 'info', message: 'monitor stopped', fields: { ...ids, ok: false, reason: 'no process' } }
+  const err = String(errCode(r.err) ?? errorMessage(r.err))
+  return { tone: 'failed', text: t('hub.notes.monitorStopFailed', { ...words, err }), level: 'error', message: 'monitor not stopped', fields: { ...ids, pid: r.pid, err: errorMessage(r.err) } }
 }

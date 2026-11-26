@@ -24,6 +24,7 @@ import { monitorsEffects, world } from './effects.ts'
 import { attachImage, onKey, openOldest, openOn, paste, start, takesImages } from './state.ts'
 import { noteExpiry } from '../../tui/note.ts'
 import { outside } from '../../tui/screen.ts'
+import { CTRL_V } from '../../tui/input.ts'
 
 const log = logger('monitors')
 logCrashes(log)
@@ -109,7 +110,6 @@ log.info('monitors opened', { hosts: s.hosts.length, agents: s.agents.length, pr
 // while a reply is being edited in the panel, which they'd throw away.
 const closing = (key: string): boolean => (ov.closes(key) || closes(key, 'keys.approvals')) && (!s.panel || mayClose(s.panel.ap))
 
-const CTRL_V = '\x16'
 
 // An image pasted into the brief or Watch for, or why it couldn't be.
 function attach(r: Pasted): void {

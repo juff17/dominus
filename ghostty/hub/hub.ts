@@ -45,6 +45,7 @@ import { BOARD_ID, type Cell, type GearCells, fit, gearFile, gearRow, sendGear }
 import type { Mouse } from '../tui/input.ts'
 import { ACCENT, P, leave, out, paint, tokens } from '../tui/term.ts'
 import { needTerminal, startPane } from '../tui/screen.ts'
+import { FOCUS_IN, FOCUS_OFF, FOCUS_ON, FOCUS_OUT } from '../tui/input.ts'
 
 const log = logger('hub')
 logCrashes(log)
@@ -325,10 +326,6 @@ function clearFilter() {
 // With nothing running the board shows the gear (view.ts splashFrame,
 // tui/gear.ts), its PNGs shared with every window.
 const GEARS = join(RUN, 'gear')
-const FOCUS_ON = '\x1b[?1004h'
-const FOCUS_OFF = '\x1b[?1004l'
-const FOCUS_IN = '\x1b[I'
-const FOCUS_OUT = '\x1b[O'
 // Known once tmux has a client to ask; there's no gear until then.
 let cell: Cell | null = null
 // What was last sent to the terminal, so it's sent again only when the size

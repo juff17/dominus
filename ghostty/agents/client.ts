@@ -4,10 +4,9 @@
 import { spawn } from 'node:child_process'
 import { type FSWatcher, mkdirSync, readFileSync, unlinkSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { errCode, logger } from '../core/log.ts'
+import { errCode, logger, warnOnce } from '../core/log.ts'
 import { RUN, conf } from '../core/paths.ts'
 import type { AgentdState } from './tick.ts'
-import { warnOnce } from './warn.ts'
 
 export { RUN }
 

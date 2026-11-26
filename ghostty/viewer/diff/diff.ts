@@ -8,7 +8,7 @@ import { load as settings } from '../../settings/settings.ts'
 import { type ModeTab, tabAt } from '../../tui/chrome.ts'
 import { type Tokenizer, tokenizer } from '../../tui/input.ts'
 import { head, tail } from '../../tui/line.ts'
-import { clampScroll } from '../../tui/list.ts'
+import { clampScroll, keepInView } from '../../tui/list.ts'
 import { width as cells } from '../../tui/term.ts'
 import { tidy } from '../../tui/text.ts'
 
@@ -196,9 +196,7 @@ export function bodyRows(files: readonly Pick<DiffFile, 'path'>[], openPath: str
 
 export function followCursor(rows: readonly BodyRow[], cursor: number, scroll: number, height: number): number {
   const at = rows.findIndex(r => r.kind === 'file' && r.i === cursor)
-  if (at >= 0 && at < scroll) scroll = at
-  if (at >= scroll + height) scroll = at - height + 1
-  return scroll
+  return at < 0 ? scroll : keepInView(scroll, at, at, height)
 }
 
 export function changeWords(files: readonly Pick<DiffFile, 'status'>[]): string {

@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 import { readState } from '../../agents/client.ts'
 import { type Agent, type MonitorSpec, launch } from '../../agents/model.ts'
-import { type StopResult, type StopTarget, stopMonitor, stopWorld } from '../../agents/stop.ts'
+import { type StopResult, type StopTarget, describeStop, stopMonitor, stopWorld } from '../../agents/stop.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import type { Image } from '../../core/images.ts'
 import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
@@ -313,16 +313,9 @@ export function monitorsEffects(s: MonitorsState, io: World & ViewIo, { layout =
     const words = { name: r.m.description, title: r.m.agent.title }
     const result = io.stop(r.m)
     if (result.unreadable !== undefined) log.warn('processes unreadable', { err: errorMessage(result.unreadable) })
-    if (result.ok) {
-      log.info('monitor stopped', { id: r.m.agent.id, task: r.m.task, ok: true, pid: result.pid, group: result.group })
-      s.note = { text: t('hub.notes.monitorStopped', words), tone: 'green' }
-    } else if (result.reason === 'no process') {
-      log.info('monitor stopped', { id: r.m.agent.id, task: r.m.task, ok: false, reason: 'no process' })
-      s.note = { text: t('hub.notes.monitorNoProcess', words), tone: 'peach' }
-    } else {
-      log.error('monitor not stopped', { id: r.m.agent.id, task: r.m.task, pid: result.pid, err: errorMessage(result.err) })
-      s.note = { text: t('hub.notes.monitorStopFailed', { ...words, err: errorMessage(result.err) }), tone: 'red' }
-    }
+    const told = describeStop(result, r.m, words)
+    log[told.level](told.message, told.fields)
+    s.note = { text: told.text, tone: ({ ok: 'green', gone: 'peach', failed: 'red' } as const)[told.tone] }
   }
 
   function browse(url: string): void {

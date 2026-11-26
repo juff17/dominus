@@ -157,3 +157,27 @@ export function logger(component: string, base: Fields = {}): Logger {
     },
   }
 }
+
+// For a failure hit again and again (agentd and the hub retry every second
+// until it's fixed): a warning once per process and debug after that. ENOENT
+// is how most such reads learn that something has gone, not a failure, so
+// it's debug from the start.
+const warned = new Set<string>()
+const messageOf = (err: unknown): string =>
+  String((typeof err === 'object' && err !== null && 'message' in err ? err.message : undefined) ?? err)
+
+export function warnOnce(log: Logger, message: string, err: unknown, fields: Fields = {}): void {
+  const failure = { ...fields, err: messageOf(err) }
+  if (errCode(err) === 'ENOENT') {
+    log.debug(message, failure)
+    return
+  }
+  const key = `${message}\0${fields.path ?? ''}\0${fields.cmd ?? ''}\0${failure.err}`
+  if (warned.has(key)) {
+    log.debug(message, failure)
+    return
+  }
+  if (warned.size > 1000) warned.clear()
+  warned.add(key)
+  log.warn(message, failure)
+}

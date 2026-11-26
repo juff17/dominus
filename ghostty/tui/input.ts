@@ -47,6 +47,17 @@ export type Token = Only<'key'> | Only<'paste'> | Only<'mouse'> | Only<'cell'> |
 // A string is for tests, and callers that still decode each read themselves.
 export type Tokenizer = (chunk: string | Uint8Array) => Token[]
 
+// Control keys as the terminal sends them.
+export const CTRL_C = '\x03'
+export const CTRL_E = '\x05'
+export const CTRL_S = '\x13'
+export const CTRL_V = '\x16'
+// Focus reports (1004): turning them on and off, and the two reports.
+export const FOCUS_ON = '\x1b[?1004h'
+export const FOCUS_OFF = '\x1b[?1004l'
+export const FOCUS_IN = '\x1b[I'
+export const FOCUS_OUT = '\x1b[O'
+
 const PASTE_END = '\x1b[201~'
 
 const ALT: Record<Alt, string[]> = { any: ['\\x1b[^\\x1b]?'], letters: ['\\x1b[a-zA-Z]'], lowercase: ['\\x1b[a-z]'], none: [] }

@@ -21,6 +21,7 @@ import { type LogsAct, type LogsOptions, type LogsState, logsKey, pasteLogs, sta
 import { watchedPipes } from './pipe-rows.ts'
 import { type PipeAct, type PipesState, itemsOf, movePipes, pastePipes, pipesKey, startPipes } from './pipe-state.ts'
 import { type PrRow, type Role, type RunRow, matchUrl, prRows, runRows, sameUrl, watchedPrs } from './rows.ts'
+import { CTRL_S } from '../../tui/input.ts'
 
 export type View = 'running' | 'prs' | 'pipes' | 'logs'
 export const VIEWS: readonly View[] = ['running', 'prs', 'pipes', 'logs']
@@ -326,7 +327,6 @@ export function startedOne(s: MonitorsState, want: string): void {
   setView(s, 'running')
 }
 
-const CTRL_S = '\x13'
 
 function drawerKey(s: MonitorsState, d: Drawer, key: string): Act {
   if (key === CTRL_S) return startAct(s, d)

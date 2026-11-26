@@ -5,7 +5,7 @@
 import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { logger } from '../core/log.ts'
+import { logger, warnOnce } from '../core/log.ts'
 import { AGENTD_BEAT, CLAUDE_DIR, LAYOUT_SOCKET, RUN, TABS_SOCKET, claudeBin } from '../core/paths.ts'
 import { load as settings } from '../settings/settings.ts'
 import { type Agent, type Alive, type Paired, classify, pairParked } from './classify.ts'
@@ -30,7 +30,6 @@ import {
 import { type Dismiss, orphanSweeper } from './orphans.ts'
 import { watches } from './board.ts'
 import { parseJobs, stoppedAgent, stoppedJobs } from './stopped.ts'
-import { warnOnce } from './warn.ts'
 
 export const TICK_MS = 1000
 const PROC_SCAN_MS = 5000

@@ -19,13 +19,13 @@ import { WATCH_KEYS } from './attach.ts'
 import { babysitBranch, repoKey } from './checkout.ts'
 import type { Branch, HostResult, Pipeline, Pr, Reviews } from './forge.ts'
 import { logsBody } from './draw-logs.ts'
-import { CTRL_S } from './logs-state.ts'
 import { heading, rule } from './heading.ts'
 import { pipesBody } from './draw-pipes.ts'
 import { lit } from './lit.ts'
 import { hiddenCount, pipeGroups, waitingCount } from './pipe-rows.ts'
 import { pipeView } from './pipe-state.ts'
 import { type PrRow, RUN_GROUPS, type RunGroup, type RunRow, groupCounts, refLabel, sameUrl } from './rows.ts'
+import { CTRL_S } from '../../tui/input.ts'
 import {
   type Drawer,
   type Filter,

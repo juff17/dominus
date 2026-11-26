@@ -16,7 +16,7 @@ import { P, clean } from '../tui/term.ts'
 
 // A note in the hub's footer: `ms` how long it stays.
 export type Say = (text: string, color?: string, ms?: number) => void
-export type HubLog = Pick<Logger, 'enabled' | 'debug' | 'info' | 'warn'>
+export type HubLog = Pick<Logger, 'enabled' | 'debug' | 'info' | 'warn' | 'error'>
 // `window` is the tab's window id; null for `claude attach`.
 export type Peek = { pane: string; id: string | null; window: string | null }
 // An agent to open: one from agentd, or a tab New agent has just made.

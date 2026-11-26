@@ -14,7 +14,7 @@ import { logCrashes } from '../../core/crash.ts'
 import { type Image, type Pasted, attachFiles, imageFiles, imagesDir, keptImages, nextNumber, pasteImage, placeholder, sweepImages } from '../../core/images.ts'
 import { expandHome as expand, tilde } from '../../core/paths.ts'
 import { type Menu, complete, matchesOf, suggestion as pathSuggestion } from '../../tui/complete.ts'
-import { leftPress } from '../../tui/input.ts'
+import { CTRL_C, CTRL_E, CTRL_S, CTRL_V, leftPress } from '../../tui/input.ts'
 import { type LineState, editLine, insertAt, length, rowOf, rowStep, wrapRows } from '../../tui/line.ts'
 import { button, chips, field, fieldLabel, radio, select } from '../../tui/controls.ts'
 import { t } from '../../core/text.ts'
@@ -23,6 +23,7 @@ import { defaultFolder, load as settings } from '../../settings/settings.ts'
 import { type Overlay, openOverlay, overlayBox } from '../../tui/overlay.ts'
 import { BOLD, P, type Span, bg, clean, fg, render, tokens, width } from '../../tui/term.ts'
 import { logger } from '../../core/log.ts'
+import { clampScroll, keepInView } from '../../tui/list.ts'
 
 const HOME = homedir()
 const log = logger('newagent')
@@ -77,10 +78,6 @@ export const POPUP = {
 }
 
 const ESC = '\x1b'
-const CTRL_C = '\x03'
-const CTRL_S = '\x13'
-const CTRL_E = '\x05'
-const CTRL_V = '\x16'
 const ENTER = '\r'
 const TAB = '\t'
 const SHIFT_TAB = '\x1b[Z'
@@ -422,11 +419,7 @@ function drawRow(r: Row, w: number): string {
 // them: it moves only as far as it must, as a list scrolls, and never past
 // the last row.
 export function scrollTo(was: number, focus: number, room: number, n: number): number {
-  if (n <= room) return 0
-  let first = was
-  if (focus >= 0 && focus < first) first = focus
-  else if (focus >= first + room) first = focus - room + 1
-  return Math.max(0, Math.min(first, n - room))
+  return clampScroll(focus >= 0 ? keepInView(was, focus, focus, room) : was, n, room)
 }
 
 function draw() {
