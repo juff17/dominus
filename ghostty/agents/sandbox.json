@@ -123,7 +123,6 @@
       "Bash(git push *+*)",
       "Bash(git push *--delete*)",
       "Bash(git push *--mirror*)",
-      "Bash(git push * :*)",
       "Bash(git push * main)",
       "Bash(git push * master)",
       "Bash(git push *:main)",
