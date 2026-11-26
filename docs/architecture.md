@@ -14,10 +14,10 @@ points up.
 
 | Layer | Folder | What's in it | Imports |
 |---|---|---|---|
-| 1. core | `core/` | No UI and no app logic: logging, crash logging, paths, running programs (`run`, and `runSync` for a screen that must wait), checking parsed JSON, escape-key codes, pasted images (`images.ts`), the git repos under a folder (`repos.ts`), and every word the screens show (`text.json`) | node only |
-| 2. settings | `settings/` | The Settings schema and store, the model list, keybinds, prompts | core |
+| 1. core | `core/` | No UI and no app logic: logging, crash logging, paths (and which `claude` to run), running programs (`run`, and `runSync` for a screen that must wait), JSON files (checking, coercing, atomic writes), the tmux servers (`tmux.ts`), gh and glab (`forge.ts`), escape-key codes, pasted images (`images.ts`), the git repos under a folder (`repos.ts`), and every word the screens show (`text.json`) | node only |
+| 2. settings | `settings/` | The Settings rows (`rows.ts`), every setting (`catalog.ts`) and the store (`settings.ts`), the model list, keybinds, prompts, the install's `.env` (`env.ts`) | core |
 | 3. tui | `tui/` | The terminal kit: palette, rendering, input, screen, line editor, path completion, lists, footers, the controls (radio, select, field, chips, button, confirm, header, frame, card, lane header), the overlay every popup runs in, the app shell | core, settings |
-| 4. agents | `agents/` | The model of Claude sessions: agentd and its scan, transcripts, classifying, lanes, launching, the client, and the babysit proposal files (`proposals.ts`, re-exported by `tray/approvals.ts`) | core, settings, tui (glyphs only) |
+| 4. agents | `agents/` | The model of Claude sessions: agentd and its scan, transcripts, classifying, lanes, launching, the client, answering a permission prompt, starting `claude --bg` (`launch.ts`), and the babysit proposal files (`proposals.ts`) | core, settings, tui (glyphs only) |
 | 5. apps | `hub/`, `tray/`, `viewer/` | Programs you see: the hub and rail, the tray command, the viewer modes and popups | everything below; never each other, except through `tray/approvals.ts` and `tray/navigate.ts`, which are libraries |
 
 `bin/` holds the entry scripts tmux, Ghostty and KDE run. Their shared shell
@@ -29,16 +29,22 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 .config/ghostty/
 ├── bin/                     entry scripts (names are part of layout.conf, the hooks and the widget)
 │   └── lib/                 sourced shell: core (node, settings, overlays), layout, tabs, log
-├── core/                    log, crash, paths, proc, json (checks), keys,
+├── core/                    log (and warnOnce), crash, paths (and claudeBin), proc (run, pool,
+│                            openUrl), json (checks, coercers, writeAtomic, readJsonFile), keys,
+│                            tmux (the servers, cell size, a tab's folder), forge (gh and glab:
+│                            installed, logged in, one API call),
 │                            text (text.json: every word on screen),
 │                            images (pasted images: the clipboard, their files, placeholders),
 │                            repos (the git repos under a folder),
 │                            prompts/ (the hub's sentences to agents: shared.ts holds the
 │                            blocks several agents get, then one file per kind of agent)
-├── settings/                settings (schema and store), models, keybinds, prompts,
-│                            prefs (New agent's recent folders)
+├── settings/                settings (the store), rows (the kinds of row and their builders),
+│                            catalog (every setting: SECTIONS), models, keybinds, prompts,
+│                            prefs (New agent's recent folders), env (.env, where tokens live)
 ├── tui/                     palette (colours), term (rendering spans), input (tokenizer, clicks),
-│                            screen (enter, leave, paint), text (fit, wrap), list (scrolling),
+│                            screen (enter, leave, paint, startPane for a view in its own pane,
+│                            outside for $EDITOR), note (a footer note that expires),
+│                            text (fit, wrap), list (scrolling),
 │                            chrome (mode header, key hints), line (the line editor),
 │                            complete (path completion for path fields),
 │                            controls (the shared radio, select, field, chips, button,
@@ -47,21 +53,26 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
 │                            keys and clicks), backdrop (the window behind it, dimmed),
 │                            kitty (the graphics protocol), png, gear and gear-art (the
 │                            Dominus gear the rail and the empty board draw)
-├── agents/                  agentd (the process), tick (one tick), daemon (scan helpers),
-│                            transcript, classify, board (lanes), launch, client, text, warn,
+├── agents/                  agentd (the process), tick (one tick), daemon (pid file, sessions,
+│                            monitors, reviews, clients), procfs (/proc), tail (following
+│                            transcripts), panes (the tmux panes agentd reads),
+│                            transcript, classify, board (lanes), launch (and startBg), client, text,
+│                            permission (answering a permission prompt, for the hub and the tray),
 │                            locate (the read-only claude -p that picks an agent's repo),
 │                            stop (stopping one monitor, for the hub and Monitors),
 │                            proposals (babysit proposal files: read and run them),
 │                            orphans (agentd dropping proposals whose session ended);
 │                            model re-exports transcript, classify, board and launch
 ├── hub/                     hub (entry), view (pure frames), peek (the open session),
-│   │                        actions, tmux, board (selection), keys
+│   │                        actions, board (selection), keys
 │   ├── newagent/            the New agent form
 │   └── rail/                the rail and its drawing
 ├── tray/                    tray (the command), items, rows (row types), approvals, links,
 │                            navigate, permission
-└── viewer/                  modes, view, logging, and one folder per mode or popup:
-    ├── todo/                todo-view (entry), state, draw, effects, todo-ui (keys), todo (store)
+└── viewer/                  modes, view, logging, tab (the tab-changed watch), and one folder
+    │                        per mode or popup:
+    ├── todo/                todo-view (entry), state, draw, effects, todo-ui (keys), todo (store),
+    │                        tabs (where an item's agent or tab is)
     ├── diff/                diff-view (entry), effects, diff (parsing), diff-rows (drawing)
     ├── diagrams/            diagram-view (entry), state, draw, effects, diagram (pane file,
     │                        keys)
@@ -71,8 +82,10 @@ lives in `bin/lib/` (`log.sh`, `core.sh`, `layout.sh`, `tabs.sh`).
     ├── settings/            settings-view (entry), state, draw
     ├── tickets/             tickets-view (entry), state, draw, effects: the Alt+J popup;
     │                        tracker (the words any tracker fills), jira (the one adapter:
-    │                        reads Jira, never writes), env (.env, where its token lives)
+    │                        reads Jira, never writes); its token is in settings/env's .env
     └── monitors/            monitors-view (entry), state, draw, effects: the Alt+M popup;
+                             draw-running and draw-prs (the Running and PRs views), look (their
+                             colours), cache (what it keeps between openings),
                              rows (Running's and PRs' rows, and the proposals on each), forge (gh and glab: PRs),
                              checkout (clones), attach (the drawer's options and their records),
                              pipelines (gh and glab: pipelines, and running a gate),
@@ -192,7 +205,7 @@ pre-commit run it too). The settings are in `tsconfig.json`, with `strict` on.
 - **A viewer mode:** a folder under `viewer/` with the four files above, and
   an entry in `viewer/modes.ts`'s list. Settings › Workspace and the mode
   header pick it up from there.
-- **A setting:** a row in `settings/settings.ts`'s SECTIONS, in the
+- **A setting:** a row in `settings/catalog.ts`'s SECTIONS, in the
   section it belongs to. The store validates it, the Settings panel draws it, and the
   settings-parity contract test checks any Python reader of the same key.
 - **A model:** a row in `settings/models.ts`. New agent, Settings, the todo

@@ -148,7 +148,7 @@ const DEFINED = [
     number('todo.keepDone', 7, { min: 1, max: 60 }),
     number('todo.noteSecs', 4, { min: 2, max: 30 }),
   ]),
-  // Alt+J. Its credentials are in .env (viewer/tickets/env.ts), shown here
+  // Alt+J. Its credentials are in .env (settings/env.ts), shown here
   // only as set or missing.
   define('tickets', [
     head('tracker'),

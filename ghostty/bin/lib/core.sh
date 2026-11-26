@@ -215,7 +215,7 @@ copy_prompt_examples() {
 # copy_env_example [root]: .env.example at the repo root copied to .env, kept
 # to you alone (0600), where there's no .env yet. A .env there already keeps
 # every line you wrote, and gets each key the example has that it lacks,
-# empty, at its end. Git ignores .env; Tickets reads it (viewer/tickets/env.ts),
+# empty, at its end. Git ignores .env; Tickets reads it (settings/env.ts),
 # from DOMINUS_ENV_FILE instead when that's set.
 copy_env_example() {
   local root=${1:-$(cd "$GHOSTTY_CONF/.." && pwd)} key
