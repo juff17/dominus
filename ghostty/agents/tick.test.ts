@@ -22,7 +22,7 @@ after(() => box.cleanup())
 process.env.AGENT_HUB_SETTINGS = box.env.AGENT_HUB_SETTINGS
 process.env.AGENT_HUB_LOG_DIR ??= join(box.root, 'logs')
 const { createAgentd } = await import('./tick.ts')
-const { PANE_FORMAT } = await import('./daemon.ts')
+const { PANE_FORMAT } = await import('./panes.ts')
 const { lanes } = await import('./board.ts')
 
 const BASE = Date.UTC(2026, 10, 10, 12, 0, 0)

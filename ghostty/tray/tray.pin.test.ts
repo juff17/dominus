@@ -34,7 +34,7 @@ const ASLEEP = join(TMP, 'hub-asleep')
 const REQUESTS = join(TMP, 'agent-hub', 'hub-open-')
 writeFileSync(
   join(TMP, 'bin', 'tmux'),
-  `#!/bin/sh\necho "$@" >> ${join(TMP, 'tmux.calls')}\ncase "$*" in *list-sessions*) echo "1 layout-9";; *send-keys*) [ -e ${ASLEEP} ] || for f in ${REQUESTS}*; do [ -f "$f" ] && mv "$f" ${join(TMP, 'taken')}.$$ 2>/dev/null && { cat ${join(TMP, 'taken')}.$$ >> ${OPENED}; echo >> ${OPENED}; rm -f ${join(TMP, 'taken')}.$$; }; done; true;; *show*) echo "%4";; esac\n`,
+  `#!/bin/sh\necho "$@" >> ${join(TMP, 'tmux.calls')}\ncase "$*" in *list-sessions*) echo "1 layout-9";; *send-keys*) [ -e ${ASLEEP} ] || for f in ${REQUESTS}*; do [ -f "$f" ] && mv "$f" ${join(TMP, 'taken')}.$$ 2>/dev/null && { printf '%s\\n' "$(cat ${join(TMP, 'taken')}.$$)" >> ${OPENED}; rm -f ${join(TMP, 'taken')}.$$; }; done; true;; *show*) echo "%4";; esac\n`,
   { mode: 0o755 },
 )
 process.env.PATH = `${join(TMP, 'bin')}:${process.env.PATH}`

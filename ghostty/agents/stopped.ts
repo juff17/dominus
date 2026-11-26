@@ -8,7 +8,7 @@ import { isRecord } from '../core/json.ts'
 import { logger, warnOnce } from '../core/log.ts'
 import { t } from '../core/text.ts'
 import { type Agent, repoOf } from './classify.ts'
-import { findTranscript } from './daemon.ts'
+import { findTranscript } from './tail.ts'
 import { promptLine } from './text.ts'
 import { addEntry, emptyTranscript } from './transcript.ts'
 

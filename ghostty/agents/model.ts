@@ -3,7 +3,9 @@
 
 export { addEntry, emptyTranscript, eventTag, parseNotification } from './transcript.ts'
 export type { MonitorEvent, ToolCall, Transcript } from './transcript.ts'
-export type { Pane, Session, Subagent } from './daemon.ts'
+export type { Session } from './daemon.ts'
+export type { Pane } from './panes.ts'
+export type { Subagent } from './tail.ts'
 export {
   askingAbout,
   attentionTags,

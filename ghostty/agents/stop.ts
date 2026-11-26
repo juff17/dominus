@@ -7,7 +7,7 @@ import { type Fields, errCode, errorMessage } from '../core/log.ts'
 import { t } from '../core/text.ts'
 import { type Agent, type Monitor, type Proc, monitorProcess } from './classify.ts'
 import { markStopped } from './client.ts'
-import { readCmdline, statFields } from './daemon.ts'
+import { readCmdline, statFields } from './procfs.ts'
 
 export type StopWorld = {
   processes: () => Proc[]

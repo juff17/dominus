@@ -6,7 +6,9 @@
 import { basename, relative } from 'node:path'
 import * as text from '../core/text.ts'
 import { type SettingKey, load as settings } from '../settings/settings.ts'
-import type { Pane, Session, Subagent } from './daemon.ts'
+import type { Session } from './daemon.ts'
+import type { Pane } from './panes.ts'
+import type { Subagent } from './tail.ts'
 import { firstLine, plain, promptLine, short } from './text.ts'
 import type { Ended, MonitorEvent, ToolCall, ToolInput, Transcript, TranscriptMonitor } from './transcript.ts'
 

@@ -3,35 +3,10 @@ import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readd
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import {
-  aliveIn,
-  claim,
-  clientsAlive,
-  coreOf,
-  findTranscript,
-  holds,
-  hubUnlinkArgs,
-  paneOf,
-  parentPid,
-  parseHubShown,
-  parsePanes,
-  procStart,
-  pruneReviews,
-  readLines,
-  release,
-  review,
-  reviews,
-  scanProcs,
-  sessionRank,
-  sessions,
-  stoppedTasks,
-  tabMarkArgs,
-  transcriptReader,
-  TRAY_FRESH_MS,
-  type HubShown,
-  type MarkedAgent,
-  type Pane,
-} from './daemon.ts'
+import { aliveIn, claim, clientsAlive, coreOf, holds, pruneReviews, release, review, reviews, scanProcs, sessions, stoppedTasks, TRAY_FRESH_MS } from './daemon.ts'
+import { hubUnlinkArgs, paneOf, parseHubShown, parsePanes, sessionRank, tabMarkArgs, type HubShown, type MarkedAgent, type Pane } from './panes.ts'
+import { findTranscript, readLines, transcriptReader } from './tail.ts'
+import { parentPid, procStart } from './procfs.ts'
 import { emptyTranscript } from './model.ts'
 import type { Look } from '../tui/palette.ts'
 import { MONITOR, STATE } from '../tui/term.ts'

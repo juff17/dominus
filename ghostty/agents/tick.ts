@@ -9,24 +9,9 @@ import { logger, warnOnce } from '../core/log.ts'
 import { AGENTD_BEAT, CLAUDE_DIR, LAYOUT_SOCKET, RUN, TABS_SOCKET, claudeBin } from '../core/paths.ts'
 import { load as settings } from '../settings/settings.ts'
 import { type Agent, type Alive, type Paired, classify, pairParked } from './classify.ts'
-import {
-  HUB_SHOWN_FORMAT,
-  PANE_FORMAT,
-  type Pane,
-  aliveIn,
-  hubUnlinkArgs,
-  paneOf,
-  parseHubShown,
-  parsePanes,
-  pruneReviews,
-  review,
-  reviews,
-  scanProcs as scanAllProcs,
-  sessions,
-  stoppedTasks,
-  tabMarkArgs,
-  transcriptReader,
-} from './daemon.ts'
+import { aliveIn, pruneReviews, review, reviews, scanProcs as scanAllProcs, sessions, stoppedTasks } from './daemon.ts'
+import { HUB_SHOWN_FORMAT, PANE_FORMAT, type Pane, hubUnlinkArgs, paneOf, parseHubShown, parsePanes, tabMarkArgs } from './panes.ts'
+import { transcriptReader } from './tail.ts'
 import { type Dismiss, orphanSweeper } from './orphans.ts'
 import { watches } from './board.ts'
 import { parseJobs, stoppedAgent, stoppedJobs } from './stopped.ts'
