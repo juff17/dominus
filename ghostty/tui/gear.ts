@@ -5,12 +5,13 @@
 // pixels stay square and sharp instead of being smoothed by a resize.
 
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, } from 'node:fs'
 import { join } from 'node:path'
 import type { Art } from './gear-art.ts'
 import { type ImageId, gridRow, placeGrid, transmitFile } from './kitty.ts'
 import { ACCENT } from './palette.ts'
 import { png } from './png.ts'
+import { writeAtomic } from '../core/json.ts'
 
 // A terminal cell's size in pixels.
 export type Cell = { cw: number; ch: number }
@@ -65,11 +66,8 @@ export function gearFile(dir: string, name: string, art: Art, f: Fit, cell: Cell
   const drawn = createHash('sha1').update(art.join('\n')).digest('hex').slice(0, 8)
   const path = join(dir, `${name}-${drawn}-${f.scale}x-${f.cols}x${f.rows}-${cell.cw}x${cell.ch}-${color.slice(1)}.png`)
   if (existsSync(path)) return path
-  mkdirSync(dir, { recursive: true })
   const { w, h, rgba } = pixels(art, f, cell, color)
-  const part = `${path}.${process.pid}`
-  writeFileSync(part, png(w, h, rgba))
-  renameSync(part, path)
+  writeAtomic(path, png(w, h, rgba))
   return path
 }
 

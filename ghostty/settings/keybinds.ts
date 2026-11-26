@@ -6,7 +6,7 @@
 // Ghostty reloads its config on SIGUSR2.
 
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { readFileSync, } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { errCode, errorMessage, logger } from '../core/log.ts'
 import { t, text } from '../core/text.ts'
 import { type KeyRow, ROWS, type SettingRow, load, settingsFile } from './settings.ts'
+import { writeAtomic } from '../core/json.ts'
 
 const log = logger('settings')
 
@@ -139,12 +140,7 @@ export const ghosttyFile = (): string => join(process.env.XDG_CONFIG_HOME || joi
 
 // Through a rename, so tmux or Ghostty never reads half a file: the layout's
 // start-up and a panel save can both be writing one.
-const write = (file: string, body: string): void => {
-  mkdirSync(dirname(file), { recursive: true })
-  const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, body)
-  renameSync(tmp, file)
-}
+const write = writeAtomic
 
 const readOrNull = (file: string): string | null => {
   try {

@@ -3,7 +3,7 @@
 // viewer never reads half a write.
 
 import { execFile } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync, } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 
@@ -11,8 +11,8 @@ import { skillCommand } from '../../core/hub-skills.ts'
 import { todoFiler } from '../../core/prompts/todo-filer.ts'
 import { todoHandoff } from '../../core/prompts/todo-handoff.ts'
 import { type Image, imageList, imagesDir, imagesLine, withoutImages } from '../../core/images.ts'
-import { isRecord } from '../../core/json.ts'
-import { errorMessage, logger } from '../../core/log.ts'
+import { isRecord, writeAtomic } from '../../core/json.ts'
+import { errCode, errorMessage, logger } from '../../core/log.ts'
 import { t, text } from '../../core/text.ts'
 import { type TaskSpec, slug } from '../../agents/model.ts'
 import { MODEL_IDS } from '../../settings/models.ts'
@@ -131,7 +131,7 @@ export function filerAlive(pid: number | undefined, read = (path: string): strin
     argv = read(`/proc/${pid}/cmdline`).split('\0')
   } catch (error) {
     // No such process is the usual answer, and means it isn't one.
-    if (codeOf(error) !== 'ENOENT' && codeOf(error) !== 'ESRCH') log.debug('filer unreadable', { pid, err: errorMessage(error) })
+    if (errCode(error) !== 'ENOENT' && errCode(error) !== 'ESRCH') log.debug('filer unreadable', { pid, err: errorMessage(error) })
     return false
   }
   return argv.some(arg => basename(arg) === 'ghostty-todo') && argv.includes('file')
@@ -235,7 +235,6 @@ export function arrange(items: readonly Item[], { here = '', only = false, now =
   return { groups, filing, doneToday, open: groups.reduce((n, g) => n + g.items.length, 0) }
 }
 
-const codeOf = (error: unknown): unknown => (error instanceof Error && 'code' in error ? error.code : undefined)
 
 
 // Only an entry's outline is checked: the fields every writer sets and the
@@ -250,7 +249,7 @@ function read(file: string): { items: Item[]; other: unknown[] } {
   try {
     data = JSON.parse(readFileSync(file, 'utf8'))
   } catch (error) {
-    if (codeOf(error) === 'ENOENT') return { items: [], other: [] }
+    if (errCode(error) === 'ENOENT') return { items: [], other: [] }
     throw new Error(t('todo.store.unreadable', { file, err: errorMessage(error) }))
   }
   const entries: unknown[] = isRecord(data) && Array.isArray(data.items) ? data.items : []
@@ -268,7 +267,7 @@ export function stamp(file = STORE): string {
     return `${mtimeMs}:${size}`
   } catch (error) {
     // No file yet is an empty list; anything else load() reports.
-    if (codeOf(error) !== 'ENOENT') log.warn('store not statted', { path: file, err: errorMessage(error) })
+    if (errCode(error) !== 'ENOENT') log.warn('store not statted', { path: file, err: errorMessage(error) })
     return ''
   }
 }
@@ -284,13 +283,13 @@ function takeLock(lock: string): void {
       mkdirSync(lock)
       return
     } catch (error) {
-      if (codeOf(error) !== 'EEXIST') throw error
+      if (errCode(error) !== 'EEXIST') throw error
     }
     try {
       if (Date.now() - statSync(lock).mtimeMs > STALE_LOCK_MS) rmdirSync(lock)
     } catch (stale) {
       // The writer let go meanwhile; the next try takes it.
-      if (codeOf(stale) !== 'ENOENT') log.warn('stale lock not removed', { path: lock, err: errorMessage(stale) })
+      if (errCode(stale) !== 'ENOENT') log.warn('stale lock not removed', { path: lock, err: errorMessage(stale) })
     }
     if (tries > 250) throw new Error(t('todo.store.locked', { lock }))
     pause(20)
@@ -337,9 +336,7 @@ export function update<T>(change: (items: Item[]) => Change<T>, file = STORE): T
   try {
     const { items: before, other } = read(file)
     const { items, value } = change(before)
-    const tmp = `${file}.${process.pid}.tmp`
-    writeFileSync(tmp, `${JSON.stringify({ v: 1, items: [...prune(items), ...other] }, null, 1)}\n`)
-    renameSync(tmp, file)
+    writeAtomic(file, `${JSON.stringify({ v: 1, items: [...prune(items), ...other] }, null, 1)}\n`)
     return value
   } finally {
     rmdirSync(lock)

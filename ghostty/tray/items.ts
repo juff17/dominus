@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, readdirSync, renameSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, rmdirSync, statSync, unlinkSync, } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { lanes, monitorsOf } from '../agents/board.ts'
@@ -14,6 +14,7 @@ import { ago } from '../tui/term.ts'
 import { type Proposal, approvalRow } from './approvals.ts'
 import { monitorLink } from './links.ts'
 import { type ApprovalRow, type MonitorRow, type Row, type Section, agentOf, asker, place, row, where } from './rows.ts'
+import { writeAtomic } from '../core/json.ts'
 
 // The tray's memory of its rows, one list of ids each: seen (no longer new),
 // dismissed (hidden while their session lives) and notified (a widget has
@@ -219,9 +220,7 @@ export function updateSet(list: TrayList, change: (ids: Set<string>) => Iterable
   try {
     const lists = readLists(path)
     const next = { ...lists, [list]: [...change(idsIn(lists, list))] }
-    const tmp = `${path}.${process.pid}.tmp`
-    writeFileSync(tmp, JSON.stringify(next))
-    renameSync(tmp, path)
+    writeAtomic(path, JSON.stringify(next))
   } finally {
     rmdirSync(lock)
   }

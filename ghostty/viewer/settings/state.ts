@@ -1,9 +1,8 @@
 // Keys only: the panel takes no clicks.
 
-import { accessSync, constants, statSync } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { statSync } from 'node:fs'
 
-import { errorMessage, logger } from '../../core/log.ts'
+import { errCode, errorMessage, logger } from '../../core/log.ts'
 import { run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { type Menu, complete, suggestion } from '../../tui/complete.ts'
@@ -32,21 +31,9 @@ import {
   toggleFlag,
 } from '../../settings/settings.ts'
 import { type KeybindRow, apply, captured, clash } from '../../settings/keybinds.ts'
-import { type ForgeId, loggedIn } from '../monitors/forge.ts'
+import { type ForgeId, loggedIn, onPath } from '../../core/forge.ts'
 
 const log = logger('settings-panel')
-
-function onPath(cmd: string): boolean {
-  return (process.env.PATH ?? '').split(delimiter).some(dir => {
-    try {
-      accessSync(join(dir || '.', cmd), constants.X_OK)
-      return true
-    } catch {
-      // Not in this folder; the next one may have it.
-      return false
-    }
-  })
-}
 
 // Tests put stand-ins here.
 export const effects: { applyKeys: () => string; hasYazi: () => boolean; loggedIn: (forge: ForgeId, host: string) => Promise<boolean> } = {
@@ -168,7 +155,10 @@ export function follow(s: SettingsState): void {
 }
 
 // Node's errors carry a code (ENOTDIR, EACCES) that says it in a word.
-const errorCode = (e: unknown): string => (e instanceof Error && 'code' in e && typeof e.code === 'string' ? e.code : errorMessage(e))
+const errorCode = (e: unknown): string => {
+  const code = errCode(e)
+  return typeof code === 'string' ? code : errorMessage(e)
+}
 
 function saving(s: SettingsState, message: string, fields: { key: SettingKey; value?: unknown }, write: () => void): boolean {
   try {

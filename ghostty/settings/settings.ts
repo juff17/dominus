@@ -4,12 +4,12 @@
 // reads as its default, so a hand-edited file can't break anything that
 // reads it.
 
-import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { readFileSync, statSync, } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
-import { isRecord } from '../core/json.ts'
-import { errorMessage, logger } from '../core/log.ts'
+import { isRecord, writeAtomic } from '../core/json.ts'
+import { errCode, errorMessage, logger } from '../core/log.ts'
 import { expandHome } from '../core/paths.ts'
 import { t, text } from '../core/text.ts'
 import { FILER_MODELS, MODEL_IDS, type ModelId } from './models.ts'
@@ -532,7 +532,7 @@ export function addedId(name: string, list: readonly { id: string }[]): string {
   return id
 }
 
-const isMissing = (e: unknown): boolean => e instanceof Error && 'code' in e && e.code === 'ENOENT'
+const isMissing = (e: unknown): boolean => errCode(e) === 'ENOENT'
 
 // {} when it's missing; throws when it's there but unreadable, broken or not
 // an object.
@@ -614,13 +614,7 @@ export const get = <K extends SettingKey>(key: K, file = settingsFile()): Settin
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)
 
-// Written whole, through a rename, so a reader never sees half of it.
-function writeJson(file: string, value: unknown): void {
-  mkdirSync(dirname(file), { recursive: true })
-  const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`)
-  renameSync(tmp, file)
-}
+const writeJson = (file: string, value: unknown): void => writeAtomic(file, `${JSON.stringify(value, null, 2)}\n`)
 
 // A value back at its default is left out, so a default changed here later
 // reaches everyone who never changed it. Keys this version doesn't know are

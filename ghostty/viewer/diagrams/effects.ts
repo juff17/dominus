@@ -2,15 +2,16 @@
 // tests can hand it a fake. dv reads before it goes on, so its runs are
 // synchronous.
 
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, } from 'node:fs'
 
-import { errorMessage, logger } from '../../core/log.ts'
+import { errCode, errorMessage, logger } from '../../core/log.ts'
 import type { SyncRunner } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { failing } from '../logging.ts'
 import { captureWindow } from '../../tui/backdrop.ts'
 import { type PaneState, diagramKey, dropTab, jobFile, newestPane, paneFile, paneState, reread, tabTitle } from './diagram.ts'
 import { type DiagramState, type Size, diagram, select } from './state.ts'
+import { writeAtomic } from '../../core/json.ts'
 
 const log = logger('diagrams')
 
@@ -134,12 +135,11 @@ export function diagramEffects(s: DiagramState, io: DiagramsIo): DiagramEffects 
     const index = showing ? fresh.diagrams.findIndex(d => diagramKey(d) === diagramKey(showing)) : -1
     const next = dropTab(fresh, at, index < 0 ? at : index)
     try {
-      writeFileSync(`${s.paneFile}.tmp`, JSON.stringify(next))
-      renameSync(`${s.paneFile}.tmp`, s.paneFile)
+      writeAtomic(s.paneFile, JSON.stringify(next))
     } catch (err) {
       log.error('pane file not written', { path: s.paneFile, index: i, err: errorMessage(err), stack: err instanceof Error ? err.stack : undefined })
-      const code = err instanceof Error && 'code' in err && typeof err.code === 'string' ? err.code : undefined
-      io.say(t('diagrams.notClosed', { title, err: code ?? errorMessage(err) }))
+      const code = errCode(err)
+      io.say(t('diagrams.notClosed', { title, err: typeof code === 'string' ? code : errorMessage(err) }))
       return
     }
     s.list = next

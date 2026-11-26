@@ -7,7 +7,8 @@ import { after, test } from 'node:test'
 
 process.env.AGENT_HUB_SETTINGS = '/nonexistent/agent-hub/settings.json'
 
-const { blockedSources, kubeconfigs, matchesAny, mcpServers, onPath } = await import('./sources.ts')
+const { blockedSources, kubeconfigs, matchesAny, mcpServers } = await import('./sources.ts')
+const { onPath } = await import('../../core/forge.ts')
 const { WATCH_FOR_LABEL, envOpen, envsOf, logsKey, logsLines, pasteLogs, setWorld, sourcesFor, startLogs } = await import('./logs-state.ts')
 const { launch } = await import('../../agents/launch.ts')
 type LogsState = import('./logs-state.ts').LogsState

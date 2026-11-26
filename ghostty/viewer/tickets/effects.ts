@@ -3,7 +3,7 @@
 // going to it. ticketsEffects() takes the world, so tests hand it fakes.
 
 import { type ChildProcess, type SpawnOptions, type SpawnSyncReturns, spawn } from 'node:child_process'
-import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync, } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { readState } from '../../agents/client.ts'
@@ -11,7 +11,7 @@ import { type Agent, type TicketSpec, launch } from '../../agents/model.ts'
 import { slug } from '../../agents/launch.ts'
 import { locate } from '../../agents/locate.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
-import { isRecord } from '../../core/json.ts'
+import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
 import { bin, claudeBin, tilde } from '../../core/paths.ts'
 import { type Runner, run } from '../../core/proc.ts'
@@ -52,7 +52,6 @@ export type World = {
 export type ViewIo = { draw: () => void; quit: () => void; outside: (cmd: string, args: string[]) => SpawnSyncReturns<Buffer> }
 export type Where = { client: string; layout: string }
 
-const readText = (path: string): string => readFileSync(path, 'utf8')
 
 export const world = (runner: Runner = run): World => ({
   env: () => readEnv(),
@@ -75,22 +74,9 @@ export const world = (runner: Runner = run): World => ({
 
 // ------------------------------------------------------------ files
 
-// Written whole, through a rename, so a reader never sees half of it.
-function writeJson(file: string, value: unknown): void {
-  mkdirSync(dirname(file), { recursive: true })
-  const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, `${JSON.stringify(value)}\n`)
-  renameSync(tmp, file)
-}
-
-function readJson(file: string): unknown {
-  try {
-    return JSON.parse(readText(file))
-  } catch {
-    // None yet, or broken: start without it.
-    return null
-  }
-}
+const writeJson = (file: string, value: unknown): void => writeAtomic(file, `${JSON.stringify(value)}\n`)
+// None yet, or broken: start without it.
+const readJson = (file: string): unknown => readJsonFile(file, log)
 
 // What the popup keeps between openings: the last board, for the board it was,
 // and when the MCP was last found.

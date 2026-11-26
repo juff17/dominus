@@ -3,11 +3,12 @@
 // the kubeconfig's, and Claude Code's MCP settings for an Elastic server.
 // Nothing reaches a cluster or Elastic, and the skill picks the kube context.
 
-import { accessSync, constants, existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
 import { errorMessage, logger } from '../../core/log.ts'
 import { expandHome } from '../../core/paths.ts'
+import { onPath } from '../../core/forge.ts'
 
 const log = logger('monitors')
 
@@ -22,17 +23,6 @@ export type Blocked = Partial<Record<Remote, 'kubectl' | 'kubeconfig' | 'elastic
 // Globs with * and ?.
 export const matchesAny = (name: string, patterns: readonly string[]): boolean =>
   patterns.some(p => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`).test(name))
-
-export const onPath = (cmd: string, path: string | undefined): boolean =>
-  (path ?? '').split(delimiter).some(dir => {
-    if (!dir) return false
-    try {
-      accessSync(join(dir, cmd), constants.X_OK)
-      return true
-    } catch {
-      return false
-    }
-  })
 
 // As kubectl reads them: Settings' file and every one $KUBECONFIG names,
 // else ~/.kube/config.

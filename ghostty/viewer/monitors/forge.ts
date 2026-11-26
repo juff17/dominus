@@ -3,15 +3,10 @@
 // GitHub is one GraphQL call per host. GitLab's GraphQL differs between
 // versions, so it's REST: the user, two lists, then several calls per MR.
 
-import { accessSync, constants } from 'node:fs'
-import { delimiter, join } from 'node:path'
-
-import { type JsonRecord, isRecord } from '../../core/json.ts'
-import type { Logger } from '../../core/log.ts'
-import type { RunResult, Runner } from '../../core/proc.ts'
-
-export type ForgeId = 'gh' | 'gl'
-export const CLI = { gh: 'gh', gl: 'glab' } as const satisfies Record<ForgeId, string>
+import { CLI, CallFailed, type ForgeId, type Why, failure, jsonCall } from '../../core/forge.ts'
+import { type JsonRecord, isRecord, num, rec, str } from '../../core/json.ts'
+import { type Logger, errorMessage } from '../../core/log.ts'
+import { type Runner, pool } from '../../core/proc.ts'
 
 export type PipelineState = 'passed' | 'failed' | 'running' | 'pending' | 'manual' | 'canceled' | 'none'
 // `job` names the failed or manual job.
@@ -44,43 +39,13 @@ export type Pr = {
   review: boolean
 }
 
-// missing: CLI not installed; auth: not logged in; failed: anything else
-// (a timeout, the network, an answer it couldn't read).
-export type Why = 'missing' | 'auth' | 'failed'
 // A failure keeps the PRs it had before, which the popup still shows.
 export type HostResult = { forge: ForgeId; host: string; me: string; at: number; ms: number; prs: Pr[] } & ({ ok: true } | { ok: false; why: Why; err: string })
 
 export type ForgeClient = { fetch: (forge: ForgeId, host: string, before?: HostResult) => Promise<HostResult> }
 
-// ------------------------------------------------------------ ready
-
-export function onPath(cmd: string, path = process.env.PATH ?? ''): boolean {
-  return path.split(delimiter).some(dir => {
-    if (!dir) return false
-    try {
-      accessSync(join(dir, cmd), constants.X_OK)
-      return true
-    } catch {
-      // Not in this folder: try the next.
-      return false
-    }
-  })
-}
-
-// The CLI is logged in to the host (gh auth login / glab auth login) when it
-// can read the user there. A real call, since a stored login can be expired or
-// revoked; only its exit status is kept, so the hub never handles a token.
-export const loginArgs = (forge: ForgeId, host: string): string[] => [CLI[forge], 'api', '--hostname', host, 'user']
-
-export async function loggedIn(forge: ForgeId, host: string, run: Runner, timeoutMs = 10000): Promise<boolean> {
-  return (await run(loginArgs(forge, host), { timeout: timeoutMs })).ok
-}
-
 // ------------------------------------------------------------ parsing
 
-const str = (v: unknown): string => (typeof v === 'string' ? v : '')
-const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
-const rec = (v: unknown): JsonRecord => (isRecord(v) ? v : {})
 const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
 const nodes = (v: unknown): JsonRecord[] => list(rec(v).nodes).filter(isRecord)
 const time = (v: unknown): number => Date.parse(str(v)) || 0
@@ -314,27 +279,6 @@ export const githubArgs = (host: string): string[] => [
 
 export const gitlabArgs = (host: string, path: string): string[] => ['api', '--hostname', host, path]
 
-export function whyFailed(r: Pick<RunResult, 'err' | 'exit'>): Why {
-  if (/ENOENT/.test(r.err)) return 'missing'
-  if (/auth login|not logged|logged in|401|unauthori[sz]ed|authenticat|no token|bad credentials/i.test(r.err)) return 'auth'
-  return 'failed'
-}
-
-const firstLine = (s: string): string => s.split('\n').find(l => l.trim())?.trim().slice(0, 200) ?? ''
-
-async function pool<T, R>(items: readonly T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length)
-  let next = 0
-  const worker = async (): Promise<void> => {
-    while (next < items.length) {
-      const i = next++
-      out[i] = await fn(items[i])
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker))
-  return out
-}
-
 export type ForgeClientOptions = {
   run: Runner
   log: Pick<Logger, 'debug' | 'info' | 'warn'>
@@ -343,35 +287,15 @@ export type ForgeClientOptions = {
   now?: () => number
 }
 
-class CallFailed extends Error {
-  readonly why: Why
-  readonly cmd: string[]
-  readonly exit: number | null
-  constructor(r: RunResult, cmd: string[]) {
-    super(firstLine(r.err) || `exit ${r.exit}`)
-    this.why = whyFailed(r)
-    this.cmd = cmd
-    this.exit = r.exit
-  }
-}
-
 export function forgeClient({ run, log, timeoutMs = 30000, now = Date.now }: ForgeClientOptions): ForgeClient {
-  const json = async (cmd: string[]): Promise<unknown> => {
-    const r = await run(cmd, { timeout: timeoutMs, maxBuffer: 32 * 1024 * 1024 })
-    if (!r.ok) throw new CallFailed(r, cmd)
-    try {
-      return JSON.parse(r.out)
-    } catch {
-      throw new CallFailed({ ...r, err: 'not JSON' }, cmd)
-    }
-  }
+  const json = jsonCall(run, timeoutMs)
   // A part of an MR may fail on its own (approvals need a licence on some
   // GitLabs) without failing the host.
   const maybe = async (cmd: string[]): Promise<unknown> => {
     try {
       return await json(cmd)
     } catch (err) {
-      log.debug('mr part not fetched', { cmd, err: err instanceof Error ? err.message : String(err) })
+      log.debug('mr part not fetched', { cmd, err: errorMessage(err) })
       return null
     }
   }
@@ -379,7 +303,7 @@ export function forgeClient({ run, log, timeoutMs = 30000, now = Date.now }: For
   async function github(host: string): Promise<{ me: string; prs: Pr[] }> {
     const cmd = [CLI.gh, ...githubArgs(host)]
     const parsed = parseGithub(await json(cmd), host)
-    if (!parsed) throw new CallFailed({ ok: false, out: '', err: 'not a GraphQL answer', exit: 0 }, cmd)
+    if (!parsed) throw new CallFailed({ err: 'not a GraphQL answer', exit: 0 }, cmd)
     return parsed
   }
 
@@ -426,10 +350,8 @@ export function forgeClient({ run, log, timeoutMs = 30000, now = Date.now }: For
         return { forge, host, me, at: now(), ms, prs, ok: true }
       } catch (err) {
         const ms = now() - started
-        const failed = err instanceof CallFailed ? err : null
-        const why: Why = failed?.why ?? 'failed'
-        const message = err instanceof Error ? err.message : String(err)
-        log.warn('prs not fetched', { forge, host, ms, why, err: message, ...(failed ? { cmd: failed.cmd.slice(0, 4), exit: failed.exit } : {}) })
+        const { why, err: message, fields } = failure(err)
+        log.warn('prs not fetched', { forge, host, ms, why, err: message, ...fields })
         // Missing or auth shows no rows; any other failure keeps the old ones.
         const prs = why === 'failed' ? (before?.prs ?? []) : []
         return { forge, host, me: before?.me ?? '', at: before?.at ?? 0, ms, prs, ok: false, why, err: message }

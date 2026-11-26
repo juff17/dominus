@@ -22,6 +22,20 @@ export const runSync: SyncRunner = ([cmd = '', ...args], { maxBuffer } = {}) => 
   }
 }
 
+// fn over items, at most n at a time, the results in the items' order.
+export async function pool<T, R>(items: readonly T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const i = next++
+      out[i] = await fn(items[i])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker))
+  return out
+}
+
 export const run: Runner = (args, opts = {}) =>
   new Promise(resolve =>
     execFile(args[0], args.slice(1), { ...opts, encoding: 'utf8' }, (err, out, errOut) =>

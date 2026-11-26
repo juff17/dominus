@@ -4,7 +4,8 @@
 import type { Agent, MonitorState, StripMonitor } from '../../agents/model.ts'
 import { monitorsOf } from '../../agents/model.ts'
 import { type Proposal, sessionOf } from '../../tray/approvals.ts'
-import type { ForgeId, HostResult, Pr } from './forge.ts'
+import type { ForgeId } from '../../core/forge.ts'
+import type { HostResult, Pr } from './forge.ts'
 import { HUB_PLUGIN, skillAt } from '../../core/hub-skills.ts'
 import { parsePipeTarget, targetLabel } from './pipelines.ts'
 

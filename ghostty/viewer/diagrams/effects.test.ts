@@ -118,7 +118,7 @@ test('a pane file it can’t write keeps the diagram and says why', t => {
   write('a-1.json', { diagrams: [diagram('one')], current: 0 })
   fx.readState()
   // Something else holds the name the new file is written under.
-  mkdirSync(`${s.paneFile}.tmp`)
+  mkdirSync(`${s.paneFile}.${process.pid}.tmp`)
   fx.closeTab(0)
   assert.equal(s.list.diagrams.length, 1)
   assert.equal(said.length, 1)

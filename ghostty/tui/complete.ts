@@ -4,7 +4,7 @@
 import { type Dirent, readdirSync, statSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
-import { logger } from '../core/log.ts'
+import { errCode, logger } from '../core/log.ts'
 import { expandHome, tilde } from '../core/paths.ts'
 
 const log = logger('complete')
@@ -45,7 +45,7 @@ export function matchesOf(text: string, { files = false }: CompleteOptions = {})
 // but can't be read is worth a line, once, as a field asks on every key.
 const warned = new Set<string>()
 function unlisted(dir: string, err: unknown): void {
-  const code = err instanceof Error && 'code' in err ? err.code : undefined
+  const code = errCode(err)
   if (code === 'ENOENT' || code === 'ENOTDIR' || warned.has(dir)) return
   warned.add(dir)
   log.warn('folder unreadable', { path: dir, err })

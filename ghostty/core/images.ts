@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 
 import { isRecord } from './json.ts'
 import { images as imagesPrompt } from './prompts/shared.ts'
-import { errorMessage, logger } from './log.ts'
+import { errCode, errorMessage, logger } from './log.ts'
 import { t } from './text.ts'
 
 const log = logger('images')
@@ -88,7 +88,7 @@ const MAX_IMAGE_BYTES = 64 * 1024 * 1024
 
 const grab: Grab = ([cmd = '', ...args], env) => {
   const r = spawnSync(cmd, args, { env, stdio: ['ignore', 'pipe', 'pipe'], timeout: GRAB_TIMEOUT_MS, maxBuffer: MAX_IMAGE_BYTES })
-  const code = r.error && 'code' in r.error ? r.error.code : undefined
+  const code = errCode(r.error)
   return {
     ok: !r.error && r.status === 0,
     out: r.stdout ?? Buffer.alloc(0),
@@ -241,7 +241,7 @@ export function sweepImages(dir: string, keep: ReadonlySet<string>, ms: number, 
   try {
     names = readdirSync(dir)
   } catch (err) {
-    if (!(err instanceof Error && 'code' in err && err.code === 'ENOENT')) log.warn('images folder unreadable', { path: dir, err })
+    if (errCode(err) !== 'ENOENT') log.warn('images folder unreadable', { path: dir, err })
     return 0
   }
   let removed = 0

@@ -7,7 +7,8 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { type RunResult, type Runner, run } from '../../core/proc.ts'
-import { type Pr, forgeClient, githubPipeline, gitlabPipeline, loggedIn, onPath, parseGithub, whyFailed } from './forge.ts'
+import { loggedIn, onPath, whyFailed } from '../../core/forge.ts'
+import { type Pr, forgeClient, githubPipeline, gitlabPipeline, parseGithub } from './forge.ts'
 
 const FIXTURES = join(import.meta.dirname, '../../../tests/fixtures/viewer/monitors')
 const FAKE = join(FIXTURES, 'fake-forge.mjs')

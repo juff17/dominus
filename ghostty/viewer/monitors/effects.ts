@@ -3,21 +3,20 @@
 // world, so tests hand it fakes.
 
 import { type ChildProcess, type SpawnOptions, type SpawnSyncReturns, spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 
 import { readState } from '../../agents/client.ts'
 import { type Agent, type MonitorSpec, launch } from '../../agents/model.ts'
 import { type StopResult, type StopTarget, stopMonitor, stopWorld } from '../../agents/stop.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import type { Image } from '../../core/images.ts'
-import { isRecord } from '../../core/json.ts'
+import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
 import { TABS_SOCKET, claudeBin } from '../../core/paths.ts'
 import { type Runner, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
-import { storePaths } from '../../settings/prefs.ts'
+import { savedRecents } from '../../settings/prefs.ts'
 import { type Settings, defaultFolder, load as loadSettings, set as setSetting } from '../../settings/settings.ts'
 import { type Proposal, readApprovals } from '../../tray/approvals.ts'
 import { type Reachable, type Shown, go } from '../../tray/navigate.ts'
@@ -25,7 +24,8 @@ import type { State as ApprovalsState } from '../approvals/approvals.ts'
 import { type ApprovalsWorld, approvalEffects, world as approvalsWorld } from '../approvals/effects.ts'
 import { type AttachOptions, BRIEF_LABEL, attachLine,attachedFile, monitorsDir, readAttached, recordAttached } from './attach.ts'
 import { findCheckouts, repoKey } from './checkout.ts'
-import { type ForgeClient, type ForgeId, type HostResult, type Pr, forgeClient } from './forge.ts'
+import type { ForgeId } from '../../core/forge.ts'
+import { type ForgeClient, type HostResult, type Pr, forgeClient } from './forge.ts'
 import { type Blocked, blockedSources, kubeconfigs } from './sources.ts'
 import { type LogsSpec, WATCH_FOR_LABEL, logsLines, logsName, setWorld } from './logs-state.ts'
 import { keptDismissed, keptSkips } from './pipe-state.ts'
@@ -65,18 +65,7 @@ export type World = {
 // outside runs a program on the whole terminal (the panel's $EDITOR).
 export type ViewIo = { draw: () => void; quit: () => void; outside: (cmd: string, args: string[]) => SpawnSyncReturns<Buffer> }
 
-const readText = (path: string): string => readFileSync(path, 'utf8')
 
-// New agent's recent folders.
-function recentFolders(): string[] {
-  try {
-    const v: unknown = JSON.parse(readText(storePaths().recents))
-    return Array.isArray(v) ? v.filter((p): p is string => typeof p === 'string') : []
-  } catch {
-    // No recents yet.
-    return []
-  }
-}
 
 // The tab session of layout session layout-<n> is ghostty-<n>; its active
 // pane's folder is the tab's.
@@ -113,7 +102,7 @@ export const world = (runner: Runner = run): World => ({
   plugin: pluginInstalled,
   cacheFile: join(monitorsDir(), 'cache.json'),
   attachedFile: attachedFile(),
-  known: recentFolders,
+  known: () => savedRecents(),
   home: homedir(),
   now: Date.now,
 })
@@ -137,29 +126,21 @@ const isPipeHost = (v: unknown): v is PipeHost => isRecord(v) && (v.forge === 'g
 
 export function readCache(file: string): Cache {
   const none: Cache = { prs: [], pipes: { hosts: [], skipped: {}, dismissed: [] } }
-  try {
-    const v: unknown = JSON.parse(readText(file))
-    if (!isRecord(v)) return none
-    const p = isRecord(v.pipelines) ? v.pipelines : {}
-    const skipped = isRecord(p.skipped) ? Object.fromEntries(Object.entries(p.skipped).filter((e): e is [string, string] => typeof e[1] === 'string')) : {}
-    const dismissed = Array.isArray(p.dismissed) ? p.dismissed.filter((k): k is string => typeof k === 'string') : []
-    return {
-      prs: Array.isArray(v.prs) ? v.prs.filter(isHostResult) : [],
-      pipes: { hosts: Array.isArray(p.hosts) ? p.hosts.filter(isPipeHost) : [], skipped, dismissed },
-    }
-  } catch (err) {
-    if (!(err instanceof Error && 'code' in err && err.code === 'ENOENT')) log.warn('cache unreadable', { path: file, err: errorMessage(err) })
-    return none
+  const v = readJsonFile(file, log, 'cache unreadable')
+  if (!isRecord(v)) return none
+  const p = isRecord(v.pipelines) ? v.pipelines : {}
+  const skipped = isRecord(p.skipped) ? Object.fromEntries(Object.entries(p.skipped).filter((e): e is [string, string] => typeof e[1] === 'string')) : {}
+  const dismissed = Array.isArray(p.dismissed) ? p.dismissed.filter((k): k is string => typeof k === 'string') : []
+  return {
+    prs: Array.isArray(v.prs) ? v.prs.filter(isHostResult) : [],
+    pipes: { hosts: Array.isArray(p.hosts) ? p.hosts.filter(isPipeHost) : [], skipped, dismissed },
   }
 }
 
 function writeCache(file: string, s: Pick<MonitorsState, 'hosts' | 'pipes'>): void {
   const value = { v: 1, prs: s.hosts, pipelines: { hosts: s.pipes.hosts, skipped: s.pipes.skipped, dismissed: [...s.pipes.dismissed] } }
   try {
-    mkdirSync(dirname(file), { recursive: true })
-    const tmp = `${file}.${process.pid}.tmp`
-    writeFileSync(tmp, `${JSON.stringify(value)}\n`)
-    renameSync(tmp, file)
+    writeAtomic(file, `${JSON.stringify(value)}\n`)
   } catch (err) {
     log.warn('cache not written', { path: file, err: errorMessage(err) })
   }

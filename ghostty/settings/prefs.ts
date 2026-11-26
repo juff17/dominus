@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join } from 'node:path'
 
+import { readJsonFile } from '../core/json.ts'
 import { errorMessage, logger } from '../core/log.ts'
 import { load as settings } from './settings.ts'
 
@@ -20,13 +21,9 @@ export function storePaths(env: Record<string, string | undefined> = process.env
 }
 
 // A broken file reads as none; remember writes a new one.
-function savedRecents(file: string): string[] {
-  try {
-    const v: unknown = JSON.parse(readFileSync(file, 'utf8'))
-    return Array.isArray(v) ? v.filter((p: unknown): p is string => typeof p === 'string') : []
-  } catch {
-    return []
-  }
+export function savedRecents(file = storePaths().recents): string[] {
+  const v = readJsonFile(file, log, 'recents unreadable')
+  return Array.isArray(v) ? v.filter((p: unknown): p is string => typeof p === 'string') : []
 }
 
 // A worktree counts as its repo. Only whole paths: a relative one, which

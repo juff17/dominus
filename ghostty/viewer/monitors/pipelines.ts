@@ -8,7 +8,10 @@
 
 import type { Logger } from '../../core/log.ts'
 import type { Runner } from '../../core/proc.ts'
-import { CLI, type ForgeId, type Why, whyFailed } from './forge.ts'
+import { CLI, CallFailed, type ForgeId, type Why, failure, jsonCall } from '../../core/forge.ts'
+import { type JsonRecord as Json, isRecord, num, rec, records as list, str } from '../../core/json.ts'
+import { errorMessage } from '../../core/log.ts'
+import { pool } from '../../core/proc.ts'
 
 export type Trigger = 'push' | 'tag' | 'schedule' | 'mr' | 'pr' | 'manual' | 'other'
 export type StageState = 'passed' | 'failed' | 'running' | 'manual' | 'waiting' | 'canceled' | 'skipped'
@@ -99,12 +102,6 @@ export function targetLabel(t: PipeTarget): string {
 
 // ------------------------------------------------------------ parsing
 
-type Json = Record<string, unknown>
-const isObj = (v: unknown): v is Json => typeof v === 'object' && v !== null && !Array.isArray(v)
-const str = (v: unknown): string => (typeof v === 'string' ? v : '')
-const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
-const rec = (v: unknown): Json => (isObj(v) ? v : {})
-const list = (v: unknown): Json[] => (Array.isArray(v) ? v.filter(isObj) : [])
 const time = (v: unknown): number => Date.parse(str(v)) || 0
 
 // A job's state, the same on both hosts and the same as agent_hub.forge's
@@ -286,45 +283,13 @@ export type PipelinesClientOptions = {
   now?: () => number
 }
 
-class CallFailed extends Error {
-  readonly why: Why
-  readonly cmd: string[]
-  readonly exit: number | null
-  constructor(err: string, exit: number | null, cmd: string[]) {
-    super(err.split('\n').find(l => l.trim())?.trim().slice(0, 200) || `exit ${exit}`)
-    this.why = whyFailed({ err, exit })
-    this.cmd = cmd
-    this.exit = exit
-  }
-}
-
 const enc = encodeURIComponent
-
-async function pool<T, R>(items: readonly T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length)
-  let next = 0
-  const worker = async (): Promise<void> => {
-    while (next < items.length) {
-      const i = next++
-      out[i] = await fn(items[i])
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker))
-  return out
-}
 
 export function pipelinesClient({ run, log, timeoutMs = 30000, now = Date.now }: PipelinesClientOptions): PipelinesClient {
   // `post` (its fields, maybe none) makes it a POST.
-  const call = async (forge: ForgeId, host: string, path: string, post?: string[]): Promise<unknown> => {
-    const cmd = [CLI[forge], 'api', '--hostname', host, ...(post ? ['-X', 'POST', ...post] : []), path]
-    const r = await run(cmd, { timeout: timeoutMs, maxBuffer: 32 * 1024 * 1024 })
-    if (!r.ok) throw new CallFailed(r.err, r.exit, cmd)
-    try {
-      return r.out.trim() ? JSON.parse(r.out) : {}
-    } catch {
-      throw new CallFailed('not JSON', r.exit, cmd)
-    }
-  }
+  const json = jsonCall(run, timeoutMs)
+  const call = (forge: ForgeId, host: string, path: string, post?: string[]): Promise<unknown> =>
+    json([CLI[forge], 'api', '--hostname', host, ...(post ? ['-X', 'POST', ...post] : []), path])
   // One project's or PR's part, which may fail alone (a project you can't
   // see, a PR since merged): logged and left out, unless the CLI can't run
   // or isn't logged in, which fails the whole host.
@@ -333,7 +298,7 @@ export function pipelinesClient({ run, log, timeoutMs = 30000, now = Date.now }:
       return await fn()
     } catch (err) {
       if (err instanceof CallFailed && err.why !== 'failed') throw err
-      log.warn('pipelines part not fetched', { ...what, err: err instanceof Error ? err.message : String(err), ...(err instanceof CallFailed ? { cmd: err.cmd.slice(0, 4), exit: err.exit } : {}) })
+      log.warn('pipelines part not fetched', { ...what, err: errorMessage(err), ...failure(err).fields })
       return []
     }
   }
@@ -354,7 +319,7 @@ export function pipelinesClient({ run, log, timeoutMs = 30000, now = Date.now }:
     const [latest] = list(await call('gl', host, `${p}/merge_requests/${pr.number}/pipelines?per_page=1`))
     if (!latest) return []
     const full = await call('gl', host, `${p}/pipelines/${num(latest.id)}`)
-    const pipe = gitlabPipe(isObj(full) && full.id ? full : latest, await call('gl', host, `${p}/pipelines/${num(latest.id)}/jobs?per_page=100`), host, pr.project, { pr: pr.url, prRef: `!${pr.number}` })
+    const pipe = gitlabPipe(isRecord(full) && full.id ? full : latest, await call('gl', host, `${p}/pipelines/${num(latest.id)}/jobs?per_page=100`), host, pr.project, { pr: pr.url, prRef: `!${pr.number}` })
     return pipe ? [pipe] : []
   }
 
@@ -400,10 +365,8 @@ export function pipelinesClient({ run, log, timeoutMs = 30000, now = Date.now }:
       return { forge: q.forge, host: q.host, at: now(), ms, pipes, ok: true }
     } catch (err) {
       const ms = now() - started
-      const failed = err instanceof CallFailed ? err : null
-      const why: Why = failed?.why ?? 'failed'
-      const message = err instanceof Error ? err.message : String(err)
-      log.warn('pipelines not fetched', { forge: q.forge, host: q.host, ms, why, err: message, ...(failed ? { cmd: failed.cmd.slice(0, 4), exit: failed.exit } : {}) })
+      const { why, err: message, fields } = failure(err)
+      log.warn('pipelines not fetched', { forge: q.forge, host: q.host, ms, why, err: message, ...fields })
       return { forge: q.forge, host: q.host, at: before?.at ?? 0, ms, pipes: why === 'failed' ? (before?.pipes ?? []) : [], ok: false, why, err: message }
     }
   }
@@ -437,7 +400,7 @@ export function pipelinesClient({ run, log, timeoutMs = 30000, now = Date.now }:
       log.info('gate ran', { ...ids, ok: true, ms: now() - started })
       return { ok: true }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
+      const message = errorMessage(err)
       log.error('gate not run', { ...ids, ms: now() - started, err: message, ...(err instanceof CallFailed ? { cmd: err.cmd.slice(0, 6), exit: err.exit } : {}) })
       return { ok: false, why: 'failed', err: message }
     }

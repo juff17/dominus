@@ -2,11 +2,10 @@
 // pr-babysit's SKILL.md (Attach options) reads, and a record per PR so
 // Running can say what a monitor watches.
 
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { isRecord } from '../../core/json.ts'
-import { errorMessage, type Logger } from '../../core/log.ts'
+import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
+import type { Logger } from '../../core/log.ts'
 import { settingsFile } from '../../settings/settings.ts'
 
 // ping: every comment pings you.
@@ -62,13 +61,7 @@ const isRecordOf = (v: unknown): v is AttachRecord =>
   typeof v.at === 'number'
 
 export function readAttached(file = attachedFile(), log?: Pick<Logger, 'warn'>): Attached {
-  let raw: unknown
-  try {
-    raw = JSON.parse(readFileSync(file, 'utf8'))
-  } catch (err) {
-    if (!(err instanceof Error && 'code' in err && err.code === 'ENOENT')) log?.warn('attach records unreadable', { path: file, err: errorMessage(err) })
-    return {}
-  }
+  const raw = readJsonFile(file, log, 'attach records unreadable')
   if (!isRecord(raw)) return {}
   return Object.fromEntries(Object.entries(raw).filter((e): e is [string, AttachRecord] => isRecordOf(e[1])))
 }
@@ -77,9 +70,6 @@ export function readAttached(file = attachedFile(), log?: Pick<Logger, 'warn'>):
 export function recordAttached(urls: readonly string[], o: AttachOptions, now: number, file = attachedFile()): Attached {
   const kept = Object.entries(readAttached(file)).filter(([, r]) => now - r.at < KEEP_MS)
   const next: Attached = Object.fromEntries([...kept, ...urls.map(u => [u, { ...o, at: now }] as const)])
-  mkdirSync(dirname(file), { recursive: true })
-  const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, `${JSON.stringify(next, null, 2)}\n`)
-  renameSync(tmp, file)
+  writeAtomic(file, `${JSON.stringify(next, null, 2)}\n`)
   return next
 }
