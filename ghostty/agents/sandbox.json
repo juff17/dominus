@@ -23,7 +23,9 @@
         "~/.config/gh",
         "~/.config/glab-cli",
         "~/.docker/config.json",
-        "~/projects/**/.env*"
+        "~/projects/**/.env",
+        "~/projects/**/.env.local",
+        "~/projects/**/.env.*.local"
       ],
       "allowWrite": [
         "~/.npm",
