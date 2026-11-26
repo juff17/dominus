@@ -7,7 +7,7 @@
 
 import { join } from 'node:path'
 import { activeWindow, markedPane } from './board.ts'
-import type { Tmux } from './tmux.ts'
+import type { Tmux } from '../core/tmux.ts'
 import type { Agent, Pane } from '../agents/model.ts'
 import type { Fields, Logger } from '../core/log.ts'
 import type { Runner } from '../core/proc.ts'

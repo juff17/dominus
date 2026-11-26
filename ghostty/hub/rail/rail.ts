@@ -12,7 +12,6 @@ import { follow } from '../../agents/client.ts'
 import { type Counts, counts } from '../../agents/model.ts'
 import { logCrashes } from '../../core/crash.ts'
 import { NEW_AGENT_KEY } from '../keys.ts'
-import { tmuxOf } from '../tmux.ts'
 import { type Mark, type Pressable, type RailActs, type RailView, frame, pressed } from './railview.ts'
 import { load as settings } from '../../settings/settings.ts'
 import { type Cell, RAIL_IDS, fit, gearFile, gearRow, sendGear } from '../../tui/gear.ts'
@@ -21,6 +20,7 @@ import { ACCENT, enter, leave, paint, tokens } from '../../tui/term.ts'
 import { logger } from '../../core/log.ts'
 import { RUN, conf } from '../../core/paths.ts'
 import { run } from '../../core/proc.ts'
+import { CELL_ARGS, parseCell, tmuxOf } from '../../core/tmux.ts'
 
 const log = logger('rail')
 logCrashes(log)
@@ -30,7 +30,7 @@ const WIN = Number(process.env.HUB_WIN) || 0
 const session = `layout-${WIN}`
 let c: Pick<Counts, 'needs' | 'working' | 'done' | 'idle'> = { needs: 0, working: 0, done: 0, idle: 0 }
 
-// Failures are logged (hub/tmux.ts); the rail carries on as if they worked.
+// Failures are logged (core/tmux.ts); the rail carries on as if they worked.
 const { layout: tmux } = tmuxOf({ log })
 const show = (view: RailView) => tmux('select-window', '-t', `${session}:${view}`)
 
@@ -99,11 +99,10 @@ let turned = 0
 let setup = ''
 
 async function readCell() {
-  const r = await tmux('display', '-p', '#{client_cell_width} #{client_cell_height}')
-  const [cw, ch] = r.out.trim().split(' ').map(Number)
-  if (!r.ok || !cw || !ch || (cw === cell?.cw && ch === cell?.ch)) return
+  const read = parseCell(await tmux(...CELL_ARGS))
+  if (!read || (read.cw === cell?.cw && read.ch === cell?.ch)) return
   const opening = !cell
-  cell = { cw, ch }
+  cell = read
   draw()
   if (opening) spin()
 }

@@ -33,6 +33,7 @@ import { type Gate, type Pipe, type PipeHost, type PipeQuery, type PipelinesClie
 import { type RunRow, matchName, matchTarget, parsePrUrl, refLabel } from './rows.ts'
 import { type Act, type MonitorsState, allRunning, panelEmptied, panelRow, setAgents, setHosts, setProposals, started, startedOne } from './state.ts'
 import { startBg } from '../../agents/launch.ts'
+import { paneFolderArgs } from '../../core/tmux.ts'
 
 const log = logger('monitors')
 
@@ -73,7 +74,7 @@ export type ViewIo = { draw: () => void; quit: () => void; outside: (cmd: string
 async function activeTabFolder(runner: Runner, layout: string): Promise<string> {
   const n = /^layout-(\d+)$/.exec(layout)?.[1]
   if (!n) return ''
-  const cmd = ['tmux', '-L', TABS_SOCKET, 'display', '-p', '-t', `ghostty-${n}:`, '#{pane_current_path}']
+  const cmd = ['tmux', '-L', TABS_SOCKET, ...paneFolderArgs(`ghostty-${n}`)]
   const r = await runner(cmd, { timeout: 3000 })
   if (!r.ok) log.warn('tab folder unreadable', { cmd, exit: r.exit, err: r.err.slice(0, 160) })
   return r.ok ? r.out.trim() : ''

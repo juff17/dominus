@@ -40,6 +40,7 @@ import {
 } from './todo.ts'
 import * as ui from './todo-ui.ts'
 import { startBg } from '../../agents/launch.ts'
+import { paneFolderArgs } from '../../core/tmux.ts'
 
 const log = logger('todo')
 
@@ -124,7 +125,7 @@ const REFRESH_STUCK_MS = 20000
 async function activeFolder({ s, io, polls }: Ctx): Promise<string> {
   const { dir, tabsSocket, tabsSession } = s.config
   if (!tabsSession) return dir
-  const cmd = ['tmux', '-L', tabsSocket, 'display', '-p', '-t', `${tabsSession}:`, '#{pane_current_path}']
+  const cmd = ['tmux', '-L', tabsSocket, ...paneFolderArgs(tabsSession)]
   const shown = await io.run(cmd, { timeout: POLL_TIMEOUT_MS })
   if (shown.ok) polls.ok('folder')
   else polls.failed('folder', 'active tab unreadable', { cmd, err: shown.err })

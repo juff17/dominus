@@ -8,6 +8,7 @@ import { type Runner, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { type Failing, failing } from '../logging.ts'
 import { type CachedCount, type DiffFile, type DiffRow, countUntracked, keepCursor, openAfter, parseDiff, parseNumstat, parseStatus } from './diff.ts'
+import { paneFolderArgs } from '../../core/tmux.ts'
 
 const log = logger('diff')
 
@@ -238,7 +239,7 @@ export function diffEffects(s: DiffState, where: Where, io: DiffIo): DiffEffects
   // jump to dir.
   async function activeFolder(): Promise<string> {
     if (!tabsSession) return dir
-    const cmd = ['tmux', '-L', tabsSocket, 'display', '-p', '-t', `${tabsSession}:`, '#{pane_current_path}']
+    const cmd = ['tmux', '-L', tabsSocket, ...paneFolderArgs(tabsSession)]
     const res = await io.run(cmd)
     if (res.ok) polls.ok('folder')
     else polls.failed('folder', 'active tab unreadable', { cmd, err: res.err })

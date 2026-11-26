@@ -1,8 +1,8 @@
-// node --test ghostty/hub/tmux.test.ts
+// node --test ghostty/core/tmux.test.ts
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { Level } from '../core/log.ts'
-import type { RunResult } from '../core/proc.ts'
+import type { Level } from './log.ts'
+import type { RunResult } from './proc.ts'
 import { tmuxOf } from './tmux.ts'
 
 type Logged = { level: Level; message: string; [field: string]: unknown }

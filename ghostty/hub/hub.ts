@@ -31,7 +31,7 @@ import {
 import { logCrashes } from '../core/crash.ts'
 import { type Action, AGENT_VIEW_KEY, DIAGRAMS_KEY, EDITOR_KEY, NEW_AGENT_KEY, OPEN_AGENT_KEY, PEEK_CLOSING_KEY, answerConfirm, filterKey, hitAt, keyAction, mouseAction, splashAction } from './keys.ts'
 import { peekOf } from './peek.ts'
-import { tmuxOf } from './tmux.ts'
+import { CELL_ARGS, parseCell, tmuxOf } from '../core/tmux.ts'
 import { type ClickActs, type Hit, type HubPrefs, type HubUi, type Note, type Scroll, boardFrame, listFrame, quiet } from './view.ts'
 import { follow, markReviewed } from '../agents/client.ts'
 import { type Agent, attentionTags, brokeTags, lanes, monitorsOf } from '../agents/model.ts'
@@ -335,10 +335,9 @@ let cell: Cell | null = null
 let sent = ''
 
 async function readCell() {
-  const r = await outer('display', '-p', '#{client_cell_width} #{client_cell_height}')
-  const [cw, ch] = r.out.trim().split(' ').map(Number)
-  if (!r.ok || !cw || !ch || (cw === cell?.cw && ch === cell?.ch)) return
-  cell = { cw, ch }
+  const read = parseCell(await outer(...CELL_ARGS))
+  if (!read || (read.cw === cell?.cw && read.ch === cell?.ch)) return
+  cell = read
   draw()
 }
 

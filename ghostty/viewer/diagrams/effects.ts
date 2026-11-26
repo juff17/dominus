@@ -12,6 +12,7 @@ import { captureWindow } from '../../tui/backdrop.ts'
 import { type PaneState, diagramKey, dropTab, jobFile, newestPane, paneFile, paneState, reread, tabTitle } from './diagram.ts'
 import { type DiagramState, type Size, diagram, select } from './state.ts'
 import { writeAtomic } from '../../core/json.ts'
+import { CELL_ARGS, parseCell } from '../../core/tmux.ts'
 
 const log = logger('diagrams')
 
@@ -38,14 +39,13 @@ export function diagramEffects(s: DiagramState, io: DiagramsIo): DiagramEffects 
   // tmux may not answer the cell size query, but it knows the size itself.
   function readCell(): void {
     if (!process.env.TMUX) return
-    const r = tmux(['display', '-p', '#{client_cell_width} #{client_cell_height}'])
+    const r = tmux(CELL_ARGS)
     // An older tmux without the formats; the size query or the default stands.
     if (!r.ok) {
       log.warn('cell size unread', { exit: r.exit, err: r.err })
       return
     }
-    const [cw, ch] = r.out.trim().split(' ').map(Number)
-    if (cw && ch) s.cell = { cw, ch }
+    s.cell = parseCell(r) ?? s.cell
   }
 
   function source(): Source {
