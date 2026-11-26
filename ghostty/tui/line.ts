@@ -153,6 +153,19 @@ export function editField<K extends string>(state: FieldState<K>, field: K, key:
 }
 
 // For a field that draws its caret as a bar between characters.
+// Pasted text put in state[field] at the caret, the caret after it (none at
+// the end, where it then stays).
+export function pasteField<K extends string>(state: FieldState<K>, field: K, text: string): void {
+  const texts: Record<K, string> = state
+  const r = insertAt(texts[field], state.at, text)
+  texts[field] = r.text
+  if (r.at < length(r.text)) state.at = r.at
+  else delete state.at
+}
+
+// For a single-line field: each run of whitespace, line breaks too, one space.
+export const oneLine = (text: string): string => text.replace(/\s+/g, ' ')
+
 export function splitAt(text: string, at: number | undefined): [before: string, after: string] {
   const chars = [...text]
   const i = at ?? chars.length

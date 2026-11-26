@@ -14,7 +14,7 @@ import type { Image } from '../../core/images.ts'
 import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
 import { TABS_SOCKET, claudeBin } from '../../core/paths.ts'
-import { type Runner, run } from '../../core/proc.ts'
+import { type Runner, openUrl, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { savedRecents } from '../../settings/prefs.ts'
 import { type Settings, defaultFolder, load as loadSettings, set as setSetting } from '../../settings/settings.ts'
@@ -324,13 +324,11 @@ export function monitorsEffects(s: MonitorsState, io: World & ViewIo, { layout =
   }
 
   function browse(url: string): void {
-    const child = io.spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
-    child.on('error', err => {
+    openUrl(io.spawn, url, err => {
       log.warn('link not opened', { url, err: err.message })
       s.note = { text: t('monitors.notes.noOpener', { url }), tone: 'red' }
       io.draw()
     })
-    child.unref()
     log.info('link opened', { url })
     s.note = { text: t('monitors.notes.opened', { url }), tone: 'green' }
   }

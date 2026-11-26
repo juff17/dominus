@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 import type { Agent } from '../../agents/model.ts'
 import { errorMessage, logger } from '../../core/log.ts'
-import { runSync } from '../../core/proc.ts'
+import { openUrl, runSync } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { set as setSetting } from '../../settings/settings.ts'
 import { type ApprovalResult, type Proposal, runApproval, sessionOf } from '../../tray/approvals.ts'
@@ -175,13 +175,11 @@ export function approvalEffects(s: State, io: ApprovalsIo) {
   }
 
   function open(p: Proposal, url: string) {
-    const child = io.spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
-    child.on('error', err => {
+    openUrl(io.spawn, url, err => {
       log.warn('link not opened', { id: p.id, url, err: err.message })
       s.note = { text: t('approvals.notes.noOpener', { url }), tone: 'red' }
       io.draw()
     })
-    child.unref()
     log.info('link opened', { id: p.id, url })
     s.note = { text: t('approvals.notes.opened', { url }), tone: 'green' }
   }

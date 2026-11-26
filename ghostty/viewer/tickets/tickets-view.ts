@@ -7,17 +7,18 @@
 // state and what each key does, draw.ts draws it, effects.ts does what
 // touches the world.
 
-import { spawnSync } from 'node:child_process'
 
 import { logger } from '../../core/log.ts'
 import { tilde } from '../../core/paths.ts'
 import { load as settings } from '../../settings/settings.ts'
 import { type Overlay, openOverlay } from '../../tui/overlay.ts'
-import { enter, leave, tokens } from '../../tui/term.ts'
+import { tokens } from '../../tui/term.ts'
 import { logCrashes } from '../logging.ts'
 import { frame } from './draw.ts'
 import { prefsOf, setupOf, ticketsEffects, world } from './effects.ts'
-import { type Note, mayClose, onKey, onPaste, start } from './state.ts'
+import { mayClose, onKey, onPaste, start } from './state.ts'
+import { noteExpiry } from '../../tui/note.ts'
+import { outside } from '../../tui/screen.ts'
 
 const log = logger('tickets')
 logCrashes(log)
@@ -39,30 +40,16 @@ function draw() {
   expireNote()
 }
 
-let shownNote: Note | null = null
-let noteTimer: NodeJS.Timeout | undefined
-function expireNote() {
-  if (s.note === shownNote) return
-  shownNote = s.note
-  clearTimeout(noteTimer)
-  const note = shownNote
-  if (!note) return
-  noteTimer = setTimeout(() => {
-    if (s.note !== note) return
+// A footer note goes this long after it first shows, unless a key or a newer
+// note has replaced it by then.
+const expireNote = noteExpiry(
+  () => s.note,
+  () => {
     s.note = null
-    draw()
-  }, NOTE_MS)
-}
-
-// $EDITOR on .env, on the whole terminal.
-function outside(cmd: string, args: string[]) {
-  leave()
-  process.stdin.setRawMode(false)
-  const r = spawnSync(cmd, args, { stdio: 'inherit' })
-  process.stdin.setRawMode(true)
-  enter()
-  return r
-}
+  },
+  draw,
+  NOTE_MS,
+)
 
 const fx = ticketsEffects(s, { ...w, draw, quit: () => ov.quit(), outside }, { client, layout })
 fx.load()

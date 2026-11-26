@@ -3,7 +3,7 @@
 
 import { t } from '../../core/text.ts'
 import { type Image, keptImages } from '../../core/images.ts'
-import { editField, insertAt, length } from '../../tui/line.ts'
+import { editField, pasteField } from '../../tui/line.ts'
 import { type Blocked, LOCAL, REMOTES, type Source, matchesAny } from './sources.ts'
 
 export type LogsField = 'env' | 'source' | 'task' | 'level' | 'for' | 'model' | 'effort'
@@ -192,10 +192,7 @@ export function logsKey(l: LogsState, key: string, say: Note): LogsAct {
 
 // Unlike the other fields, Watch for keeps line breaks.
 export function typeTask(l: LogsState, text: string): void {
-  const r = insertAt(l.task, l.at, text.replace(/\r\n?/g, '\n').replace(/\t/g, ' '))
-  l.task = r.text
-  if (r.at < length(r.text)) l.at = r.at
-  else delete l.at
+  pasteField(l, 'task', text.replace(/\r\n?/g, '\n').replace(/\t/g, ' '))
 }
 
 export function pasteLogs(l: LogsState, text: string): void {

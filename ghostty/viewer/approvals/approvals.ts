@@ -8,7 +8,7 @@
 
 import { t } from '../../core/text.ts'
 import { load as settings } from '../../settings/settings.ts'
-import { editField, insertAt } from '../../tui/line.ts'
+import { editField, pasteField } from '../../tui/line.ts'
 import type { Proposal } from '../../tray/approvals.ts'
 import { proposalLink } from '../../tray/links.ts'
 import type { DiffFile, DiffRow } from '../diff/diff.ts'
@@ -238,9 +238,7 @@ function editKey(s: State, p: Proposal, key: string): KeyResult {
 }
 
 export function paste(s: State, text: string): void {
-  const typed = insertAt(s.draft, s.at, text)
-  s.draft = typed.text
-  s.at = typed.at < [...typed.text].length ? typed.at : undefined
+  pasteField(s, 'draft', text)
 }
 
 export function openDiff(s: State, { title, from, to, files, error = '' }: Pick<DiffView, 'title' | 'from' | 'to' | 'files'> & { error?: string }): void {

@@ -9,6 +9,8 @@
 // reports and pastes as keys. So enter() also gives the terminal back on a
 // crash, and turns off whatever modes a crashed view before it left on.
 
+import { type SpawnSyncReturns, spawnSync } from 'node:child_process'
+
 import { errorMessage, logger } from '../core/log.ts'
 
 const log = logger('screen')
@@ -63,6 +65,17 @@ export const enter = (opts: ScreenModes = {}, then = ''): boolean => {
 export const leave = (opts: ScreenModes = {}): boolean => {
   entered = false
   return out(leaveSeq(opts))
+}
+
+// Runs a program on the whole terminal (an $EDITOR): the screen is given
+// back for it and taken again after.
+export function outside(cmd: string, args: string[], opts: ScreenModes = {}): SpawnSyncReturns<Buffer> {
+  leave(opts)
+  process.stdin.setRawMode(false)
+  const r = spawnSync(cmd, args, { stdio: 'inherit' })
+  process.stdin.setRawMode(true)
+  enter(opts)
+  return r
 }
 
 // One write inside synchronized output (2026), so a redraw never flickers.

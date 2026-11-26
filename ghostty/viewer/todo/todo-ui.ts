@@ -10,7 +10,7 @@ import type { Agent } from '../../agents/model.ts'
 import { width as cells } from '../../tui/term.ts'
 import { type Hint, type ModeTab, keyHintsWidth, tabAt } from '../../tui/chrome.ts'
 import { type Mouse, type Token, leftPress, tokenizer } from '../../tui/input.ts'
-import { type FieldState, caretParts, caretShown, editField, editLine, head, insertAt, length, tail, withCaret } from '../../tui/line.ts'
+import { caretParts, caretShown, editField, editLine, head, pasteField, tail, withCaret } from '../../tui/line.ts'
 import { clampScroll, keepInView } from '../../tui/list.ts'
 import { fit, tidy, visible, wrapText as wrap } from '../../tui/text.ts'
 import { load as settings } from '../../settings/settings.ts'
@@ -430,13 +430,6 @@ export function promptKey(prompt: Prompt, key: string, current?: Item): PromptSt
   return { prompt }
 }
 
-function insertInto<K extends string>(state: FieldState<K>, field: K, text: string): void {
-  const texts: Record<K, string> = state
-  const { text: next, at } = insertAt(texts[field], state.at, text)
-  texts[field] = next
-  if (at < length(next)) state.at = at
-  else delete state.at
-}
 
 // The text field Ctrl+V puts an image in, or none: the prompts that write a
 // todo's title or note.
@@ -457,8 +450,8 @@ export function attachImage(prompt: Prompt | null, path: string): boolean {
   const n = nextNumber(prompt.images ?? [])
   prompt.images = [...(prompt.images ?? []), { n, path }]
   const mark = placeholder(n)
-  if (prompt.kind !== 'edit') insertInto(prompt, 'text', mark)
-  else if (field !== 'text') insertInto(prompt, field, mark)
+  if (prompt.kind !== 'edit') pasteField(prompt, 'text', mark)
+  else if (field !== 'text') pasteField(prompt, field, mark)
   return true
 }
 
@@ -468,7 +461,7 @@ export function attachImage(prompt: Prompt | null, path: string): boolean {
 export function pasteInto(prompt: Prompt | null, text: string): boolean {
   const flat = tidy(text.replace(/\r\n?|\n/g, ' '))
   if (prompt?.kind === 'claude' || prompt?.kind === 'title' || prompt?.kind === 'note') {
-    insertInto(prompt, 'text', flat)
+    pasteField(prompt, 'text', flat)
     return true
   }
   if (prompt?.kind !== 'edit') return false
@@ -479,7 +472,7 @@ export function pasteInto(prompt: Prompt | null, text: string): boolean {
     return true
   }
   if (prompt.field !== 'title' && prompt.field !== 'note') return false
-  insertInto(prompt, prompt.field, flat)
+  pasteField(prompt, prompt.field, flat)
   return true
 }
 

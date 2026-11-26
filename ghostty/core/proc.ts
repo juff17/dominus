@@ -22,6 +22,17 @@ export const runSync: SyncRunner = ([cmd = '', ...args], { maxBuffer } = {}) => 
   }
 }
 
+type Detachable = { on(event: 'error', fn: (err: Error) => void): unknown; unref(): void }
+export type DetachedSpawn = (cmd: string, args: string[], opts: { detached: true; stdio: 'ignore' }) => Detachable
+
+// Opens url in the desktop's browser, without waiting; onError hears when
+// xdg-open can't be started.
+export function openUrl(spawn: DetachedSpawn, url: string, onError: (err: Error) => void): void {
+  const child = spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
+  child.on('error', onError)
+  child.unref()
+}
+
 // fn over items, at most n at a time, the results in the items' order.
 export async function pool<T, R>(items: readonly T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length)

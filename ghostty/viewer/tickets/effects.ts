@@ -14,7 +14,7 @@ import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
 import { bin, claudeBin, tilde } from '../../core/paths.ts'
-import { type Runner, run } from '../../core/proc.ts'
+import { type Runner, openUrl, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { type Settings, defaultFolder, load as loadSettings, set as setSetting, settingsFile } from '../../settings/settings.ts'
 import { type Reachable, type Shown, go } from '../../tray/navigate.ts'
@@ -287,13 +287,11 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
   }
 
   function open(url: string, key: string): void {
-    const child = io.spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
-    child.on('error', err => {
+    openUrl(io.spawn, url, err => {
       log.warn('ticket not opened', { id: key, err: err.message })
       s.note = { text: t('tickets.notes.noOpener'), tone: 'bad' }
       io.draw()
     })
-    child.unref()
     log.info('ticket opened', { id: key })
     s.note = { text: t('tickets.notes.opened', { key }), tone: 'ok' }
   }

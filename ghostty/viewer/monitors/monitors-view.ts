@@ -9,20 +9,21 @@
 // state and what each key does, draw.ts draws it, effects.ts does what
 // touches the world.
 
-import { spawnSync } from 'node:child_process'
 
 import { type Pasted, attachFiles, imageFiles, imagesDir, pasteImage } from '../../core/images.ts'
 import { logger } from '../../core/log.ts'
 import { MODEL_IDS } from '../../settings/models.ts'
 import { load as settings, row } from '../../settings/settings.ts'
 import { type Overlay, closes, openOverlay } from '../../tui/overlay.ts'
-import { enter, leave, tokens } from '../../tui/term.ts'
+import { tokens } from '../../tui/term.ts'
 import { mayClose } from '../approvals/approvals.ts'
 import { logCrashes } from '../logging.ts'
 import { untilOf, watchOf } from './attach.ts'
 import { frame } from './draw.ts'
 import { monitorsEffects, world } from './effects.ts'
-import { type Note, attachImage, onKey, openOldest, openOn, paste, start, takesImages } from './state.ts'
+import { attachImage, onKey, openOldest, openOn, paste, start, takesImages } from './state.ts'
+import { noteExpiry } from '../../tui/note.ts'
+import { outside } from '../../tui/screen.ts'
 
 const log = logger('monitors')
 logCrashes(log)
@@ -89,30 +90,14 @@ function draw() {
 // A footer note goes this long after it first shows, unless a key or a newer
 // note has replaced it by then.
 const NOTE_MS = 5000
-let shownNote: Note | null = null
-let noteTimer: NodeJS.Timeout | undefined
-function expireNote() {
-  if (s.note === shownNote) return
-  shownNote = s.note
-  clearTimeout(noteTimer)
-  const note = shownNote
-  if (!note) return
-  noteTimer = setTimeout(() => {
-    if (s.note !== note) return
+const expireNote = noteExpiry(
+  () => s.note,
+  () => {
     s.note = null
-    draw()
-  }, NOTE_MS)
-}
-
-// For the panel's $EDITOR.
-function outside(cmd: string, args: string[]) {
-  leave()
-  process.stdin.setRawMode(false)
-  const r = spawnSync(cmd, args, { stdio: 'inherit' })
-  process.stdin.setRawMode(true)
-  enter()
-  return r
-}
+  },
+  draw,
+  NOTE_MS,
+)
 
 const fx = monitorsEffects(s, { ...world(), draw, quit: () => ov.quit(), outside }, { layout })
 fx.load()

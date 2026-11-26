@@ -4,7 +4,7 @@
 import { t } from '../../core/text.ts'
 import type { Hint } from '../../tui/chrome.ts'
 import { type Mouse, leftPress } from '../../tui/input.ts'
-import { editField, insertAt, length } from '../../tui/line.ts'
+import { editField, oneLine, pasteField } from '../../tui/line.ts'
 import { width } from '../../tui/term.ts'
 import { type HelpSection, SECTIONS, filter, startAt } from './help.ts'
 
@@ -110,10 +110,7 @@ export function onMouse(s: HelpState, m: Mouse, body: number) {
 
 export const onPaste = (s: HelpState, text: string): void => {
   if (!s.typing) return
-  const { text: query, at } = insertAt(s.query, s.at, text.replace(/\s+/g, ' '))
-  s.query = query
-  if (at < length(query)) s.at = at
-  else delete s.at
+  pasteField(s, 'query', oneLine(text))
 }
 
 export const footerHints = (s: Pick<HelpState, 'typing' | 'query'>): Hint[] =>

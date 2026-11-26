@@ -6,7 +6,7 @@ import type { Agent } from '../../agents/model.ts'
 import { t } from '../../core/text.ts'
 import type { Proposal } from '../../tray/approvals.ts'
 import { type Image, keptImages, nextNumber, placeholder } from '../../core/images.ts'
-import { editField, insertAt, length } from '../../tui/line.ts'
+import { editField, oneLine, pasteField } from '../../tui/line.ts'
 import {
   type Effect as ApprovalEffect,
   type State as ApprovalsState,
@@ -242,12 +242,9 @@ function filterKey(s: MonitorsState, f: Filter, key: string): void {
   else editField(f, 'query', key)
 }
 
-// Whitespace runs collapse to one space: both fields are single-line.
+// Both fields are single-line.
 function insertInto<K extends 'brief' | 'query'>(into: Record<K, string> & { at?: number }, field: K, text: string): void {
-  const r = insertAt(into[field], into.at, text.replace(/\s+/g, ' '))
-  into[field] = r.text as (typeof into)[K]
-  if (r.at < length(r.text)) into.at = r.at
-  else delete into.at
+  pasteField(into, field, oneLine(text))
 }
 
 // The text an image pasted now goes in: the attach drawer's brief, or Logs'

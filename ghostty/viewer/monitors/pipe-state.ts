@@ -2,7 +2,7 @@
 // Pipelines is the view.
 
 import { t } from '../../core/text.ts'
-import { editField, insertAt, length } from '../../tui/line.ts'
+import { editField, oneLine, pasteField } from '../../tui/line.ts'
 import { type PipeItem, type PipeView, pipeItems } from './pipe-rows.ts'
 import { type Gate, type Pipe, type PipeHost, gateKey, gateSig, parsePipeTarget, pipeKey } from './pipelines.ts'
 
@@ -142,10 +142,7 @@ function watchKey(p: PipesState, key: string, say: Say): PipeAct {
 
 export function pastePipes(p: PipesState, text: string): void {
   if (!p.watch.typing) return
-  const r = insertAt(p.watch.text, p.watch.at, text.replace(/\s+/g, ' ').trim())
-  p.watch.text = r.text
-  if (r.at < length(r.text)) p.watch.at = r.at
-  else delete p.watch.at
+  pasteField(p.watch, 'text', oneLine(text).trim())
 }
 
 export function pipesKey(p: PipesState, key: string, watched: ReadonlySet<string>, say: Say, query = ''): PipeAct {
