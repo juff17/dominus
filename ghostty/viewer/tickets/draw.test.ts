@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import type { Agent } from '../../agents/model.ts'
 import { columnsShown, frame, shortDate, title } from './draw.ts'
 import { type Setup, type TicketsState, onKey, setBoard, start } from './state.ts'
-import { BOARD } from './fixtures.test.ts'
+import { BOARD, prefsAt } from './fixtures.test.ts'
 import type { Board } from './tracker.ts'
 
 const plain = (s: string): string => s.replace(/\x1b\[[0-9;]*[mGX]/g, '')
@@ -13,7 +13,7 @@ const NOW = Date.parse('2026-11-22T12:00:00Z')
 const SIZE = { cols: 140, rows: 40 }
 
 const ready: Setup = { env: { JIRA_SITE: true, JIRA_EMAIL: true, JIRA_API_TOKEN: true, JIRA_TOKEN_KIND: false }, board: '42', team: 'Payments', mcp: true, check: { state: 'ok', name: 'Me' } }
-const prefs = { showDone: false, folder: '~/projects', model: 'opus', effort: 'medium' }
+const prefs = prefsAt('~/projects')
 
 const boardState = (b: Board = BOARD): TicketsState => {
   const s = start(ready, prefs)
@@ -42,17 +42,30 @@ test('the board draws both lanes in Jira’s columns, its cards, and Done as a c
 
 test('a linked agent shows on its card in the hub’s words, and an ended one says so', () => {
   const s = boardState()
-  s.links = { 'ENG-4': { name: 'eng-4', at: 1 }, 'ENG-5': { name: 'eng-5', at: 1 } }
+  s.links = { 'ENG-4': { work: { name: 'eng-4', at: 1 } }, 'ENG-5': { work: { name: 'eng-5', at: 1 } } }
   s.agents = [{ kind: 'bg', title: 'eng-4', state: 'needs', cmd: 'which repo?' } as Agent]
   const out = text(frame(s, SIZE, NOW).lines)
   assert.match(out, /▲ Needs you · which repo\?/)
   assert.match(out, /○ ended · a starts a new agent/)
 })
 
-test('the confirm names the ticket, folder, model and effort', () => {
+test('a card names its most urgent agent’s role, with a mark for each other one', () => {
+  const s = boardState()
+  s.links = { 'ENG-4': { work: { name: 'w', at: 1 }, review: { name: 'r', at: 2 } } }
+  s.agents = [{ kind: 'bg', title: 'w', state: 'working' } as Agent, { kind: 'bg', title: 'r', state: 'needs', cmd: 'post 3 comments?' } as Agent]
+  const out = text(frame(s, SIZE, NOW).lines)
+  assert.match(out, /▲ Needs you · reviewer {2}✻w · …/)
+})
+
+test('the confirm asks the role, then fixes or feedback, naming the model and effort', () => {
   const s = boardState()
   onKey(s, 'a')
-  assert.match(plain(frame(s, SIZE, NOW).lines.at(-1) ?? ''), /Start an agent on ENG-1 in ~\/projects \(opus · medium\)\?.*y\sstart\s+n\scancel/)
+  assert.match(plain(frame(s, SIZE, NOW).lines.at(-1) ?? ''), /Start an agent on ENG-1:.*w\sworker\s+r\sreviewer\s+t\stester\s+esc\scancel/)
+  onKey(s, 'r')
+  assert.match(plain(frame(s, SIZE, NOW).lines.at(-1) ?? ''), /Start a reviewer on ENG-1 \(opus · high\): may it fix what it finds\?.*f\sfixes allowed\s+o\sfeedback only/)
+  onKey(s, '\x1b')
+  onKey(s, 'w')
+  assert.match(plain(frame(s, SIZE, NOW).lines.at(-1) ?? ''), /Start a worker on ENG-1 in ~\/projects \(opus · medium\)\?.*y\sstart\s+n\scancel/)
 })
 
 test('at most 6 columns show, never under 24 cells, and the focused one stays in view', () => {

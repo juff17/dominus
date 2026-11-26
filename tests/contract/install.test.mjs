@@ -48,6 +48,13 @@ function install(args, { claude = true, more = {} } = {}) {
   return { r, calls, box }
 }
 
+// The two official plugins the review and test skills call, installed last.
+const TOOLKITS = [
+  'claude plugin marketplace add anthropics/claude-plugins-official',
+  'claude plugin install pr-review-toolkit@claude-plugins-official --scope user',
+  'claude plugin install playwright@claude-plugins-official --scope user',
+]
+
 // The calls that change the machine; the rest only look.
 const changes = calls => calls.filter(c => /^(sudo|apt-get|snap install|curl|npm ci|claude plugin (install|update|marketplace add))\b/.test(c))
 
@@ -78,6 +85,7 @@ test('approved, it installs what is missing in order, with one sudo, then links 
       'claude plugin install dominus@dominus --scope user',
       'npm ci --omit=dev --no-audit --no-fund',
       'claude plugin install diagram-pane@dominus --scope user',
+      ...TOOLKITS,
     ])
     assert.ok(calls.includes(`npm ran in ${join(REPO, 'diagram-plugin')} skip=1`), calls.join('\n'))
     const surface = join(box.home, '.config', 'ghostty', 'bin', 'ghostty-surface')
@@ -102,6 +110,7 @@ test('on a machine without Claude Code, its installer runs first and the plugin 
       'claude plugin install dominus@dominus --scope user',
       'npm ci --omit=dev --no-audit --no-fund',
       'claude plugin install diagram-pane@dominus --scope user',
+      ...TOOLKITS,
     ])
   } finally {
     box.cleanup()
@@ -120,7 +129,7 @@ test('a plugin installed already is updated, since Claude Code runs a copy made 
   const { r, calls, box } = install(['--yes'], { more: { claude: listed } })
   try {
     assert.equal(r.status, 0, r.stderr + r.stdout)
-    const plugin = changes(calls).filter(c => c.startsWith('claude plugin') && !c.includes('diagram-pane'))
+    const plugin = changes(calls).filter(c => c.startsWith('claude plugin') && !c.includes('diagram-pane') && !TOOLKITS.includes(c))
     assert.deepEqual(plugin, [`claude plugin marketplace add ${REPO}`, 'claude plugin update dominus@dominus --scope user'])
   } finally {
     box.cleanup()

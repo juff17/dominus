@@ -2,6 +2,7 @@
 // asks of the world comes back as an Act, which effects.ts carries out.
 
 import type { Agent } from '../../agents/model.ts'
+import { ROLES, Role } from '../../agents/launch.ts'
 import type { Board, BoardChoice, Person, Ticket, Why } from './tracker.ts'
 import { JIRA_NEEDED, type JiraKey } from '../../settings/env.ts'
 
@@ -23,12 +24,20 @@ export type Setup = {
 
 export type Picker = { query: string; searched: string; state: 'loading' | 'ok' | 'failed'; boards: BoardChoice[]; sel: number; err?: string; why?: Why }
 
-// A ticket's agent: its session's name, which agentd lists as a bg agent's title.
+// A ticket's agent: its session's name, which agentd lists as a bg agent's
+// title. A ticket has at most one agent of each role.
 export type Link = { name: string; at: number }
+export type Links = Partial<Record<Role, Link>>
 
 export type Fetch = { state: 'idle' | 'loading' | 'failed'; why?: Why; err?: string; retryAfter?: number; at: number }
 
-export type Prefs = { showDone: boolean; folder: string; model: string; effort: string }
+// What the start line says each role will run with: Settings › Tickets'.
+export type RolePrefs = { model: string; effort: string }
+export type Prefs = { showDone: boolean; folder: string; roles: Record<Role, RolePrefs> }
+
+// Starting an agent on a ticket asks first: which role (a), then for a
+// reviewer or tester whether it may fix what it finds, then for a worker y/n.
+export type Confirm = { key: string; step: 'role' } | { key: string; step: 'mode'; role: Role } | { key: string; step: 'start'; role: Role }
 
 export type TicketsState = {
   screen: Screen
@@ -45,16 +54,16 @@ export type TicketsState = {
   row: number
   // The first column shown, when they don't all fit.
   firstCol: number
-  confirm: { key: string } | null
+  confirm: Confirm | null
   note: Note | null
-  links: Record<string, Link>
+  links: Record<string, Links>
   agents: Agent[]
   prefs: Prefs
 }
 
 export type Act =
   | { do: 'open'; url: string; key: string }
-  | { do: 'start'; ticket: Ticket }
+  | { do: 'start'; ticket: Ticket; role: Role; fix: boolean }
   | { do: 'go'; agent: Agent; key: string }
   | { do: 'refresh' }
   | { do: 'settings' }
@@ -118,12 +127,25 @@ export function selected(s: TicketsState): Ticket | null {
   return columnTickets(s.board, s.lane, s.col)[s.row] ?? null
 }
 
-// The agent linked to a ticket, as agentd lists it now; null when it has
+// The ticket's agent of a role, as agentd lists it now; null when it has
 // ended or there's none.
-export function agentOf(s: Pick<TicketsState, 'links' | 'agents'>, key: string): Agent | null {
-  const link = s.links[key]
+export function agentOf(s: Pick<TicketsState, 'links' | 'agents'>, key: string, role: Role = Role.Work): Agent | null {
+  const link = s.links[key]?.[role]
   if (!link) return null
   return s.agents.find(a => a.kind === 'bg' && a.title === link.name) ?? null
+}
+
+// The order a card's agents are shown and ↵ picks one in: the one that needs
+// you first, then the busy ones.
+const URGENCY: Record<Agent['state'], number> = { needs: 0, working: 1, idle: 2, done: 3 }
+
+// A ticket's live agents, most urgent first, the worker first among equals.
+export function agentsOf(s: Pick<TicketsState, 'links' | 'agents'>, key: string): { role: Role; agent: Agent }[] {
+  const live = ROLES.flatMap(role => {
+    const agent = agentOf(s, key, role)
+    return agent ? [{ role, agent }] : []
+  })
+  return live.sort((a, b) => URGENCY[a.agent.state] - URGENCY[b.agent.state])
 }
 
 // Keeps the focus on a ticket that's still there after a refresh, and in
@@ -199,32 +221,63 @@ const RIGHT = ['\x1b[C', 'l']
 const UP = ['\x1b[A', 'k']
 const DOWN = ['\x1b[B', 'j']
 
-function boardKey(s: TicketsState, key: string): Act | null {
-  if (s.confirm) {
-    const ticket = s.board && [...s.board.unassigned, ...s.board.mine].find(t => t.key === s.confirm?.key)
-    s.confirm = null
-    if ((key === 'y' || key === 'Y') && ticket) return { do: 'start', ticket }
+// The keys that pick a role, in the role step and straight from the board.
+export const ROLE_KEYS: Record<Role, string> = { work: 'w', review: 'r', test: 't' }
+const roleOfKey = (key: string): Role | undefined => ROLES.find(r => ROLE_KEYS[r] === key)
+
+// A role picked for a ticket: its agent when it has one, else the next
+// question. A worker asks y/n; a reviewer or tester asks fix or feedback.
+function pickRole(s: TicketsState, ticket: Ticket, role: Role): Act | null {
+  const agent = agentOf(s, ticket.key, role)
+  if (agent) return { do: 'go', agent, key: ticket.key }
+  s.confirm = role === Role.Work ? { key: ticket.key, step: 'start', role } : { key: ticket.key, step: 'mode', role }
+  return null
+}
+
+function confirmKey(s: TicketsState, c: Confirm, key: string): Act | null {
+  const ticket = s.board && [...s.board.unassigned, ...s.board.mine].find(t => t.key === c.key)
+  s.confirm = null
+  if (!ticket) return null
+  if (c.step === 'role') {
+    const role = roleOfKey(key)
+    return role ? pickRole(s, ticket, role) : null
+  }
+  if (c.step === 'mode') {
+    // ↵ takes the default: the board's tickets are your team's, so fixes.
+    if (key === 'f' || key === '\r') return { do: 'start', ticket, role: c.role, fix: true }
+    if (key === 'o') return { do: 'start', ticket, role: c.role, fix: false }
     return null
   }
+  if (key === 'y' || key === 'Y') return { do: 'start', ticket, role: c.role, fix: true }
+  return null
+}
+
+function boardKey(s: TicketsState, key: string): Act | null {
+  if (s.confirm) return confirmKey(s, s.confirm, key)
   if (LEFT.includes(key)) move(s, -1, 0)
   else if (RIGHT.includes(key)) move(s, 1, 0)
   else if (UP.includes(key)) move(s, 0, -1)
   else if (DOWN.includes(key)) move(s, 0, 1)
   else if (key === '\t' || key === '\x1b[Z') switchLane(s)
-  else if (key === 'r') return { do: 'refresh' }
+  // R, as r starts a reviewer.
+  else if (key === 'R') return { do: 'refresh' }
   else if (key === 's') return { do: 'settings' }
   else if (key === 'b') return openPicker(s)
   else if (key === 'q' || key === '\x1b') return { do: 'quit' }
   else {
     const t = selected(s)
     if (!t) return null
-    const agent = agentOf(s, t.key)
     if (key === 'o') return { do: 'open', url: t.url, key: t.key }
-    if (key === '\r') return agent ? { do: 'go', agent, key: t.key } : { do: 'open', url: t.url, key: t.key }
-    if (key === 'a') {
-      // One agent a ticket: a goes to the one it has.
-      if (agent) return { do: 'go', agent, key: t.key }
-      s.confirm = { key: t.key }
+    if (key === '\r') {
+      const first = agentsOf(s, t.key)[0]
+      return first ? { do: 'go', agent: first.agent, key: t.key } : { do: 'open', url: t.url, key: t.key }
+    }
+    if (key === 'a') s.confirm = { key: t.key, step: 'role' }
+    else {
+      // w, r and t skip the role question. One agent a role: a role that has
+      // one goes to it.
+      const role = roleOfKey(key)
+      if (role) return pickRole(s, t, role)
     }
   }
   return null
@@ -266,7 +319,7 @@ function setupKey(s: TicketsState, key: string): Act | null {
   if (key === 'q' || key === '\x1b') return { do: 'quit' }
   if (key === 'e') return { do: 'env' }
   if (key === 's') return { do: 'settings' }
-  if (key === 'r') return { do: 'check' }
+  if (key === 'R' || key === 'r') return { do: 'check' }
   if (key === 'b' && !missing({ ...s.setup, board: 'x' }).length) return openPicker(s)
   if (key === '\r' && !missing(s.setup).length && s.setup.check.state === 'ok') {
     s.screen = 'board'

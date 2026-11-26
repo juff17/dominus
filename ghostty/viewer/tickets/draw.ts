@@ -8,7 +8,8 @@ import { type BoxLine, type HeaderTitle, card, field, laneHeader } from '../../t
 import type { Size } from '../../tui/overlay.ts'
 import { ACCENT, BOLD, ITALIC, type Line, P, STATE, type Span, ago, bg, clean, fg, render, split, width } from '../../tui/term.ts'
 import { JIRA_KEYS } from '../../settings/env.ts'
-import { LANES, type TicketsState, agentOf, columnTickets, laneTickets, missing, pickable } from './state.ts'
+import { ROLES, Role } from '../../agents/launch.ts'
+import { type Confirm, LANES, ROLE_KEYS, type TicketsState, agentOf, agentsOf, columnTickets, laneTickets, missing, pickable } from './state.ts'
 import type { Phase, Ticket } from './tracker.ts'
 
 export type { Size }
@@ -42,13 +43,17 @@ export function columnsShown(total: number, cols: number, focused: number, first
 
 const ARROW: Record<string, string> = { highest: '⇈', high: '↑', medium: '→', low: '↓', lowest: '⇊' }
 
-// The card's last line: its agent in the hub's colours, else its priority
-// and parent, quiet.
+// The card's last line: its most urgent agent in the hub's words and
+// colours, named by role unless it's the worker, then a glyph and key for
+// each other live agent (`✻w`, `●t`); else its priority and parent, quiet.
 function bottomLine(s: TicketsState, x: Ticket): { line: Span[]; needs: boolean } {
-  const agent = agentOf(s, x.key)
-  if (agent) {
-    const look = STATE[agent.state]
-    return { line: [[`${look.glyph} ${look.name}`, BOLD + fg(look.color)], [agent.cmd ? ` · ${clean(agent.cmd)}` : '', fg(look.color)]], needs: agent.state === 'needs' }
+  const [lead, ...others] = agentsOf(s, x.key)
+  if (lead) {
+    const look = STATE[lead.agent.state]
+    const role = lead.role === Role.Work ? '' : ` · ${t(`tickets.roles.${lead.role}`)}`
+    const marks: Span[] = others.map(o => [`  ${STATE[o.agent.state].glyph}${ROLE_KEYS[o.role]}`, BOLD + fg(STATE[o.agent.state].color)])
+    const cmd = lead.agent.cmd ? ` · ${clean(lead.agent.cmd)}` : ''
+    return { line: [[`${look.glyph} ${look.name}`, BOLD + fg(look.color)], [role, fg(look.color)], ...marks, [cmd, fg(look.color)]], needs: agentsOf(s, x.key).some(a => a.agent.state === 'needs') }
   }
   if (s.links[x.key]) return { line: [[`○ ${t('tickets.card.ended')}`, fg(P.overlay1)]], needs: false }
   const prio = x.priority ? `${ARROW[x.priority.toLowerCase()] ?? '·'} ${x.priority}` : ''
@@ -136,26 +141,40 @@ function hintsFor(s: TicketsState): Hint[] {
   const H = (k: string) => t(`tickets.keys.${k}`)
   if (s.screen === 'setup') {
     const ready = !missing(s.setup).length && s.setup.check.state === 'ok'
-    return [['e', H('env')], ['s', H('settings')], ...(missing({ ...s.setup, board: 'x' }).length ? [] : ([['b', H('board')]] as Hint[])), ['r', H('check')], ...(ready ? ([['↵', H('openBoard')]] as Hint[]) : []), ['esc', H('close')]]
+    return [['e', H('env')], ['s', H('settings')], ...(missing({ ...s.setup, board: 'x' }).length ? [] : ([['b', H('board')]] as Hint[])), ['R', H('check')], ...(ready ? ([['↵', H('openBoard')]] as Hint[]) : []), ['esc', H('close')]]
   }
   if (s.screen === 'picker') return [['↑↓', H('pickBoard')], ['↵', s.picker && s.picker.query.trim() !== s.picker.searched ? H('search') : H('choose')], ['esc', H('cancel')]]
-  return [['←→', H('column')], ['↑↓', H('card')], ['tab', H('lane')], ['o', H('open')], ['a', H('agent')], ['↵', H('go')], ['r', H('refresh')], ['b', H('board')], ['s', H('settings')]]
+  return [['←→', H('column')], ['↑↓', H('card')], ['tab', H('lane')], ['o', H('open')], ['a', H('agent')], ['r', H('reviewer')], ['t', H('tester')], ['↵', H('go')], ['R', H('refresh')], ['b', H('board')], ['s', H('settings')]]
+}
+
+const ROLE_HINT: Record<Role, string> = { work: 'worker', review: 'reviewer', test: 'tester' }
+
+// The question a start asks, and the keys that answer it.
+function asking(s: TicketsState, c: Confirm): { ask: string; keys: Hint[] } {
+  const K = (k: string) => t(`tickets.keys.${k}`)
+  if (c.step === 'role') {
+    // A role that has a live agent goes to it rather than starting another.
+    const keys = ROLES.map((r): Hint => [ROLE_KEYS[r], agentOf(s, c.key, r) ? `${K(ROLE_HINT[r])} ↗` : K(ROLE_HINT[r])])
+    return { ask: t('tickets.confirm.role', { key: c.key }), keys: [...keys, ['esc', K('cancel')]] }
+  }
+  const p = s.prefs.roles[c.role]
+  const words = { key: c.key, role: t(`tickets.roles.${c.role}`), folder: s.prefs.folder, model: p.model, effort: p.effort }
+  if (c.step === 'mode') return { ask: t('tickets.confirm.mode', words), keys: [['f', K('fix')], ['o', K('feedback')], ['esc', K('cancel')]] }
+  return { ask: t('tickets.confirm.start', words), keys: [['y', K('start')], ['n', K('cancel')]] }
 }
 
 function footer(s: TicketsState, cols: number): string {
   if (s.confirm) {
-    const p = s.prefs
-    const ask = t('tickets.confirm.start', { key: s.confirm.key, folder: p.folder, model: p.model, effort: p.effort })
-    const warn = s.setup.mcp === false ? `  ${t('tickets.confirm.noMcp')}` : ''
+    const { ask, keys } = asking(s, s.confirm)
+    // Only the worker writes to the tracker, so only it needs the MCP to.
+    const writes = s.confirm.step === 'start' && s.confirm.role === Role.Work
+    const warn = writes && s.setup.mcp === false ? `  ${t('tickets.confirm.noMcp')}` : ''
     return split(
       [
         [` ${ask}`, BOLD + fg(P.text)],
         [warn, fg(P.yellow)],
       ],
-      [...hintSpans([
-        ['y', t('tickets.keys.start')],
-        ['n', t('tickets.keys.cancel')],
-      ]), [' ', '']],
+      [...hintSpans(keys), [' ', '']],
       cols,
       bg(P.surface0),
     )

@@ -31,6 +31,8 @@ export type Probe = {
   diagrams: boolean
   // Google Chrome, which diagram-pane renders with, is at /usr/bin/google-chrome.
   chrome: boolean
+  // Which of TOOLKITS are installed, at user scope.
+  toolkits: readonly string[]
 }
 
 export type Plan = {
@@ -46,6 +48,8 @@ export type Plan = {
   // Diagrams need Chrome, which apt can't install: shown, but left to you.
   chromeByHand: boolean
   widget: boolean
+  // TOOLKITS ids to install.
+  toolkits: string[]
 }
 
 // Agent Hub's own: Ghostty and tmux for its windows, jq for its hooks.
@@ -54,6 +58,13 @@ export const ALWAYS = ['ghostty', 'tmux', 'jq']
 export const SANDBOX = ['bubblewrap', 'socat']
 // The Header runs btop.
 export const HEADER = ['btop']
+
+// Anthropic's own plugins the hub's skills call rather than copy: the
+// reviewer's general pass and the tester's browser.
+export const TOOLKITS = [
+  { id: 'pr-review-toolkit@claude-plugins-official', name: 'pr-review-toolkit', why: 'the reviewer’s general pass' },
+  { id: 'playwright@claude-plugins-official', name: 'playwright', why: 'the tester’s browser' },
+] as const
 
 export const packagesFor = (c: Choices): string[] => [...ALWAYS, ...(c.sandbox ? SANDBOX : []), ...(c.header ? HEADER : [])]
 
@@ -68,11 +79,12 @@ export function planOf(c: Choices, probe: Probe): Plan {
     diagrams: c.sidePanel && !probe.diagrams,
     chromeByHand: c.sidePanel && !probe.chrome,
     widget: c.widget,
+    toolkits: TOOLKITS.filter(k => !probe.toolkits.includes(k.id)).map(k => k.id),
   }
 }
 
 // Nothing to install, so there's nothing to approve: install.sh only links.
-export const nothingToInstall = (p: Plan): boolean => !p.apt.length && !p.yazi && !p.claude && !p.plugin && !p.diagrams
+export const nothingToInstall = (p: Plan): boolean => !p.apt.length && !p.yazi && !p.claude && !p.plugin && !p.diagrams && !p.toolkits.length
 
 // One package's paragraph of `apt-cache show --no-all-versions`.
 export function parseAptShow(text: string): AptInfo | null {
@@ -114,9 +126,10 @@ export function reviewLines(p: Plan, probe: Pick<Probe, 'aptInfo'>): Line[] {
   if (p.yazi) lines.push({ text: 'Snap', tone: 'head' }, { text: '  yazi', dim: 'file manager, for the Side panel' })
   if (p.claude)
     lines.push({ text: 'Claude Code', dim: 'its own installer, from claude.ai/install.sh', tone: 'head' }, { text: '  claude' })
-  if (p.plugin || p.diagrams) lines.push({ text: 'Claude Code plugins', dim: 'claude plugin install', tone: 'head' })
+  if (p.plugin || p.diagrams || p.toolkits.length) lines.push({ text: 'Claude Code plugins', dim: 'claude plugin install', tone: 'head' })
   if (p.plugin) lines.push({ text: '  dominus', dim: "the hub's skills and hooks" })
   if (p.diagrams) lines.push({ text: '  diagram-pane', dim: 'for the Side panel’s Diagrams, with mermaid-cli from npm' })
+  for (const k of TOOLKITS.filter(k => p.toolkits.includes(k.id))) lines.push({ text: `  ${k.name}`, dim: `from claude-plugins-official, for ${k.why}` })
   const known = p.apt.map(n => probe.aptInfo[n]).filter(i => i !== undefined)
   if (known.length) {
     const get = known.reduce((n, i) => n + i.size, 0)
@@ -142,6 +155,7 @@ export function planFile(p: Plan): string {
     p.claude ? 'claude' : '',
     p.plugin ? 'plugin' : '',
     p.diagrams ? 'diagrams' : '',
+    ...p.toolkits.map(id => `toolkit ${id}`),
     `widget ${p.widget ? 'on' : 'off'}`,
   ]
   return `${steps.filter(Boolean).join('\n')}\n`

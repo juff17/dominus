@@ -13,7 +13,7 @@ and hooks.
 |---|---|---|
 | [`ghostty/`](ghostty) | the layout's config, and the hub, rail, tray, viewer and `agentd` (Node.js); see [`docs/architecture.md`](docs/architecture.md) | `~/.config/ghostty/`, file by file |
 | [`plasmoid/`](plasmoid) | the Agents panel widget (QML) | `~/.local/share/plasma/plasmoids/`, as one folder |
-| [`hub-plugin/`](hub-plugin) | the `dominus` Claude Code plugin: the hub's skills (pr-babysit, pipeline-watch, log-watcher, todo) and hooks; see [The hub plugin](docs/ghostty.md#the-hub-plugin) | loaded in place, by `claude plugin install` |
+| [`hub-plugin/`](hub-plugin) | the `dominus` Claude Code plugin: the hub's skills (pr-babysit, pipeline-watch, log-watcher, todo, ticket-work, review, test) and hooks; see [The hub plugin](docs/ghostty.md#the-hub-plugin) | loaded in place, by `claude plugin install` |
 | [`diagram-plugin/`](diagram-plugin) | the `diagram-pane` Claude Code plugin: the mod that draws the Side panel's Diagrams, and the make-diagram skill | loaded in place, by `claude plugin install`, with the Side panel |
 | [`install/`](install) | the install walkthrough (`install/walkthrough`, Node) and what runs after linking | |
 | [`tests/`](tests) | contract tests, and the fixtures and golden screens unit tests share | |
@@ -39,7 +39,7 @@ Ubuntu or Kubuntu, with Node.js 24 or later (the hub, tray and viewer run on it;
 - **Answers are kept.** The hub's own settings go to its Settings (change them there later); the
   rest to `~/.config/dominus/install.json`. A later run asks nothing and only installs what's
   missing.
-- **Your Claude setup stays yours.** The only Claude Code change is the `dominus` plugin; your
+- **Your Claude setup stays yours.** The only Claude Code changes are the `dominus` plugin and the two official plugins its reviewer and tester call (pr-review-toolkit, playwright); your
   settings, skills and other plugins aren't touched.
 - **Live.** The Ghostty files are symlinks into this checkout, so edits apply at once. The plugin
   is a copy Claude Code makes when it installs it: after a pull that changes `hub-plugin/` (a new

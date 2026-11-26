@@ -122,7 +122,7 @@ async function main(argv: string[]): Promise<number> {
 
   const choices = { header: picked.header, sidePanel: picked.sidePanel, widget: picked.widget, sandbox: picked.sandbox }
   if (flag('--links')) {
-    writeFileSync(planPath, planFile({ apt: [], byHand: [], yazi: false, claude: false, plugin: false, diagrams: false, chromeByHand: false, widget: choices.widget }))
+    writeFileSync(planPath, planFile({ apt: [], byHand: [], yazi: false, claude: false, plugin: false, diagrams: false, chromeByHand: false, widget: choices.widget, toolkits: [] }))
     return 0
   }
   const found = probe(packagesFor(choices))

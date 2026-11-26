@@ -181,7 +181,9 @@ In that worktree only:
    chat: what changes, where, and how you'll test it. If the ticket is
    unclear on something that changes the plan, ask with AskUserQuestion,
    with the choices you see as options, rather than guess.
-2. **Build** it, following the repo's own style and its CLAUDE.md.
+2. **Build** it, following the repo's own style and its CLAUDE.md. Where the
+   repo has no pattern of its own, follow
+   `${CLAUDE_PLUGIN_ROOT}/references/standards.md`.
 3. **Test** it with the repo's own test and lint commands. Add tests for
    what you changed where the repo has them.
 4. **Commit** locally on the ticket's branch, in the repo's commit style,

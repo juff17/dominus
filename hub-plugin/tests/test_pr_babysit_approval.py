@@ -191,6 +191,32 @@ class Approvals(unittest.TestCase):
         self.run_cli("approve", pid)
         self.assertIn("repos/u/gad/issues/91/comments", self.posts()[0])
 
+    # -------------------------------------------------------- review comments
+
+    def test_a_review_comment_waits_then_posts_on_its_line_at_the_head_it_was_read_on(self):
+        self.reply({"repos/u/gad/pulls/91": {"head": {"sha": "abc1234def"}}})
+        # Even with replies posting on their own, a review comment waits.
+        self.set(**{"approvals.reply": "post"})
+        code, out, pid = self.propose("comment", "--path", "src/auth.py", "--line", "42", "--body", "[nit] Use `Car.Ferrari`.")
+        self.assertEqual(code, 0)
+        self.assertTrue(out.startswith("[proposed] "), out)
+        p = ap.load(pid)
+        self.assertEqual((p["title"], p["comment"]), ("Comment on src/auth.py:42", {"path": "src/auth.py", "line": 42, "side": "RIGHT", "sha": "abc1234def"}))
+        self.assertFalse(self.posts())
+        edit = self.tmp / "edit.txt"
+        edit.write_text("[nit] `Car.Ferrari`, not `'ferrari'`.\n")
+        self.assertEqual(self.run_cli("approve", pid, "--body-file", str(edit))[0], 0)
+        post = self.posts()[0]
+        self.assertIn("repos/u/gad/pulls/91/comments", post)
+        for field in ("commit_id=abc1234def", "path=src/auth.py", "side=RIGHT", "line=42", "body=[nit] `Car.Ferrari`, not `'ferrari'`."):
+            self.assertIn(field, post)
+
+    def test_a_review_comment_needs_its_place(self):
+        with self.assertRaises(SystemExit):
+            self.propose("comment", "--path", "src/auth.py", "--body", "x")
+        with self.assertRaises(SystemExit):
+            self.propose("comment", "--path", "src/auth.py", "--line", "3", "--side", "UP", "--body", "x")
+
     def test_replies_off_refuses_and_post_runs_without_asking(self):
         self.set(**{"approvals.reply": "off"})
         code, out, _ = self.propose("reply", "--comment", "rc:55", "--body", "x")

@@ -20,8 +20,10 @@ const fresh: Probe = {
   plugin: false,
   diagrams: false,
   chrome: false,
+  toolkits: [],
 }
-const done: Probe = { ...fresh, installed: new Set(['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop']), aptInfo: {}, yazi: true, claude: true, plugin: true, diagrams: true, chrome: true }
+const TOOLKIT_IDS = ['pr-review-toolkit@claude-plugins-official', 'playwright@claude-plugins-official']
+const done: Probe = { ...fresh, installed: new Set(['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop']), aptInfo: {}, yazi: true, claude: true, plugin: true, diagrams: true, chrome: true, toolkits: TOOLKIT_IDS }
 
 test('the hub always needs ghostty, tmux and jq; the sandbox adds bubblewrap and socat, the Header btop', () => {
   assert.deepEqual(packagesFor(all), ['ghostty', 'tmux', 'jq', 'bubblewrap', 'socat', 'btop'])
@@ -40,6 +42,7 @@ test('a fresh machine needs everything; yazi, diagram-pane and Chrome only with 
     diagrams: true,
     chromeByHand: true,
     widget: true,
+    toolkits: TOOLKIT_IDS,
   })
   const bare = planOf({ ...all, sidePanel: false }, fresh)
   assert.deepEqual([bare.yazi, bare.diagrams, bare.chromeByHand], [false, false, false])
@@ -97,6 +100,8 @@ test('the review lists each step and totals what apt fetches', () => {
     'Claude Code plugins claude plugin install',
     "  dominus the hub's skills and hooks",
     '  diagram-pane for the Side panel’s Diagrams, with mermaid-cli from npm',
+    '  pr-review-toolkit from claude-plugins-official, for the reviewer’s general pass',
+    '  playwright from claude-plugins-official, for the tester’s browser',
     '',
     'Need to get 18.7 MB of archives. After this operation, 36.6 MB of additional disk space will be used.',
     '',
@@ -106,6 +111,10 @@ test('the review lists each step and totals what apt fetches', () => {
 })
 
 test('install.sh reads one step a line', () => {
-  assert.equal(planFile(planOf(all, fresh)), 'apt ghostty tmux jq bubblewrap socat btop\nyazi\nclaude\nplugin\ndiagrams\nwidget on\n')
+  assert.equal(
+    planFile(planOf(all, fresh)),
+    'apt ghostty tmux jq bubblewrap socat btop\nyazi\nclaude\nplugin\ndiagrams\ntoolkit pr-review-toolkit@claude-plugins-official\ntoolkit playwright@claude-plugins-official\nwidget on\n',
+  )
+  assert.equal(planFile(planOf(all, { ...done, toolkits: [TOOLKIT_IDS[0]] })), 'toolkit playwright@claude-plugins-official\nwidget on\n', 'only the toolkit that is missing')
   assert.equal(planFile(planOf({ ...all, widget: false }, done)), 'widget off\n')
 })

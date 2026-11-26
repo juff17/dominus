@@ -1,5 +1,9 @@
 // The board the tickets tests draw and move around; no tests of its own.
+import type { Prefs } from './state.ts'
 import type { Board, Ticket } from './tracker.ts'
+
+const run = { model: 'opus', effort: 'medium' }
+export const prefsAt = (folder: string): Prefs => ({ showDone: false, folder, roles: { work: run, review: { model: 'opus', effort: 'high' }, test: run } })
 
 export const tk = (key: string, column: string, assignee = false): Ticket => ({
   key,

@@ -1,15 +1,15 @@
 import type { Agent } from '../agents/model.ts'
-import type { Proposal, ProposalCommit } from '../agents/proposals.ts'
+import { type Proposal, type ProposalCommit, editable } from '../agents/proposals.ts'
 import { t } from '../core/text.ts'
 import { proposalLink } from './links.ts'
 import { type Action, type ApprovalRow, agentOf, row } from './rows.ts'
 
-export const APPROVE = { reply: 'post', push: 'push', manual: 'run', deploy: 'approve', retry: 'retry', move: 'move' } as const satisfies Record<string, Action>
+export const APPROVE = { reply: 'post', comment: 'post', push: 'push', manual: 'run', deploy: 'approve', retry: 'retry', move: 'move' } as const satisfies Record<string, Action>
 // approval.py may write a kind the tray doesn't know yet.
 export type ProposalKind = keyof typeof APPROVE
 const isKind = (kind: string): kind is ProposalKind => Object.hasOwn(APPROVE, kind)
 export const APPROVE_ACTIONS: ReadonlySet<string> = new Set<Action>([...Object.values(APPROVE), 'again'])
-const GLYPH: Record<ProposalKind, string> = { reply: '↩', push: '↑', manual: '▶', deploy: '▶', retry: '✗', move: '⇅' }
+const GLYPH: Record<ProposalKind, string> = { reply: '↩', comment: '✎', push: '↑', manual: '▶', deploy: '▶', retry: '✗', move: '⇅' }
 export const glyphOf = (kind: string): string => (isKind(kind) ? GLYPH[kind] : '▲')
 // The longest reply the inbox's three-line preview shows whole.
 export const PREVIEW_MOST = 200
@@ -21,6 +21,7 @@ const lines = (commits: readonly ProposalCommit[] = [], key: 'added' | 'removed'
 
 const DETAIL: Record<ProposalKind, (p: Proposal) => string[]> = {
   reply: () => [t('tray.approval.reply')],
+  comment: () => [t('tray.approval.comment')],
   push: p => [`${p.local} → ${p.branch}`, `+${lines(p.commits, 'added')} −${lines(p.commits, 'removed')}`],
   manual: p => [p.job?.stage ? t('tray.approval.stage', { stage: p.job.stage }) : t('tray.approval.manualJob')],
   deploy: () => [t('tray.approval.deployment')],
@@ -30,6 +31,7 @@ const DETAIL: Record<ProposalKind, (p: Proposal) => string[]> = {
 
 const OWN_ACTIONS: Record<ProposalKind, Action[]> = {
   reply: ['post', 'edit', 'skip'],
+  comment: ['post', 'edit', 'skip'],
   push: ['push', 'review', 'go'],
   retry: ['retry', 'go'],
   manual: [APPROVE.manual, 'skip'],
@@ -43,7 +45,7 @@ const OWN_ACTIONS: Record<ProposalKind, Action[]> = {
 function ownActions(p: Proposal, buttons: boolean): Action[] {
   if (!buttons) return ['review', 'go']
   const whole = String(p.body ?? '').length <= PREVIEW_MOST && !/\n/.test(p.body ?? '')
-  if (p.kind === 'reply' && !whole) return ['review', 'skip']
+  if (editable(p) && !whole) return ['review', 'skip']
   if (p.kind === 'push' && p.removes?.length) return ['review', 'go']
   return isKind(p.kind) ? [...OWN_ACTIONS[p.kind]] : ['review', 'skip']
 }
@@ -66,6 +68,6 @@ export function approvalRow(p: Proposal, agents: readonly Agent[], buttons = tru
   return {
     ...row(p.kind === 'retry' ? 'broke' : 'you', glyph, `a:${p.id}`, a, title, [where, ...detail].join(' · '), p.at ?? 0, actionsOf(p, Boolean(a), buttons)),
     ...base,
-    preview: p.kind === 'reply' ? (p.body ?? '') : '',
+    preview: editable(p) ? (p.body ?? '') : '',
   }
 }

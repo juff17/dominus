@@ -9,7 +9,7 @@ import { CARET_MARK, caretParts, length, withCaret } from '../../tui/line.ts'
 import { BG } from '../../tui/palette.ts'
 import { ACCENT, ACCENT_INK, BOLD, type Line, P, type Span, ago, bg, clean, fg, render, spanWidth, split, width } from '../../tui/term.ts'
 import { wrapText as wrap } from '../../tui/text.ts'
-import type { Proposal, ProposalCommit } from '../../agents/proposals.ts'
+import { type Proposal, type ProposalCommit, editable } from '../../agents/proposals.ts'
 import { proposalLink } from '../../tray/links.ts'
 import { clampScroll, bodyRows as diffBodyRows, followCursor } from '../diff/diff.ts'
 import { diffRow, fileRow, scaleOf } from '../diff/diff-rows.ts'
@@ -84,6 +84,7 @@ function diffLines(d: DiffView, w: number, height: number): { lines: string[]; s
 function metaOf(p: Proposal): (string | number | undefined)[] {
   const where = `${p.pr?.repo ?? ''} ${p.pr?.ref ?? ''}`.trim()
   if (p.kind === 'reply') return [where, p.thread?.where, p.thread?.id && t('approvals.meta.thread', { id: p.thread.id })]
+  if (p.kind === 'comment') return [where, p.comment && `${p.comment.path}:${p.comment.line}`, p.comment?.sha && t('approvals.meta.at', { sha: short(p.comment.sha) })]
   if (p.kind === 'push') return [where, `${p.local} → ${p.remote}/${p.branch}`]
   if (p.kind === 'move') return [where, t('approvals.meta.onto', { local: p.local ?? '', sha: short(p.onto) })]
   return [where, p.job?.stage && t('approvals.meta.stage', { stage: p.job.stage }), p.job?.id && t('approvals.meta.job', { id: p.job.id })]
@@ -100,9 +101,12 @@ function heading(p: Proposal, w: number): string[] {
   return [...out, blank(w)]
 }
 
+// A reply under their comment, or a review comment of the user's own, which
+// answers nothing.
 function replyBody(s: State, p: Proposal, w: number, env: Env): Body {
-  const out = [label(p.thread?.author ? t('approvals.labels.theirCommentBy', { author: p.thread.author }) : t('approvals.labels.theirComment'), w)]
-  out.push(...box(p.thread?.body ?? '', w, 12))
+  const reply = p.kind === 'reply'
+  const out = reply ? [label(p.thread?.author ? t('approvals.labels.theirCommentBy', { author: p.thread.author }) : t('approvals.labels.theirComment'), w)] : []
+  if (reply) out.push(...box(p.thread?.body ?? '', w, 12))
   if (p.briefing) out.push(blank(w), label(t('approvals.labels.briefing'), w), ...box(p.briefing, w))
   if (p.commit) {
     const commit: Line = [
@@ -112,7 +116,9 @@ function replyBody(s: State, p: Proposal, w: number, env: Env): Body {
     ]
     out.push(blank(w), label(t('approvals.labels.whatIDid'), w), render(commit, w, BASE))
   }
-  out.push(blank(w), label(t(s.editing ? 'approvals.labels.replyEditing' : 'approvals.labels.reply'), w, P.peach))
+  const which = reply ? 'reply' : 'comment'
+  if (out.length) out.push(blank(w))
+  out.push(label(t(s.editing ? `approvals.labels.${which}Editing` : `approvals.labels.${which}`), w, P.peach))
   let caret: number | undefined
   if (s.editing) {
     // `at` is left off at the end, where the caret still shows. The 1 is the
@@ -182,7 +188,7 @@ function jobBody(p: Proposal, w: number): string[] {
 type Body = { lines: string[]; caret?: number }
 
 function body(s: State, p: Proposal, w: number, env: Env): Body {
-  const own: Body = p.kind === 'reply' ? replyBody(s, p, w, env) : { lines: p.kind === 'push' ? pushBody(s, p, w) : jobBody(p, w) }
+  const own: Body = editable(p) ? replyBody(s, p, w, env) : { lines: p.kind === 'push' ? pushBody(s, p, w) : jobBody(p, w) }
   const top = heading(p, w)
   return { lines: [...top, ...own.lines], caret: own.caret === undefined ? undefined : top.length + own.caret }
 }
@@ -194,7 +200,7 @@ function buttons(s: State, p: Proposal, w: number): string {
   const link = proposalLink(p)
   const list: ButtonSpec[] = [
     { label: approve, key: 'a', main: true, color: P.peach },
-    ...(p.kind === 'reply' && p.status === 'pending' ? [{ label: B('edit'), key: 'e' }] : []),
+    ...(editable(p) && p.status === 'pending' ? [{ label: B('edit'), key: 'e' }] : []),
     ...(p.kind === 'push' ? [{ label: B('openDiff'), key: 'd' }] : []),
     p.status === 'failed' ? { label: B('dismiss'), key: 'x' } : { label: B(p.kind === 'push' || p.kind === 'move' ? 'notYet' : 'reject'), key: 'r' },
     { label: B('goToSession'), key: 'g' },
@@ -224,6 +230,7 @@ export function keysFor(s: State, p: Proposal | null): [key: string, what: strin
   // d isn't here: the Open diff button shows it.
   if (p.kind === 'push') return [step, ['↑ ↓', K('commits')], ['enter', K('itsDiff')], ['space', K('keepDrop')], ['A', K('always')]]
   if (p.kind === 'reply') return [step, ['e', H('edit')], ['A', K('alwaysReplies')]]
+  if (p.kind === 'comment') return [step, ['e', H('edit')], ['r', K('reject')]]
   if (p.kind === 'deploy') return [step, ['r', K('reject')], ['g', K('goToSession')]]
   return [step, ['A', K(p.kind === 'retry' ? 'alwaysRetries' : 'alwaysKind')]]
 }

@@ -41,11 +41,22 @@ export type MonitorSpec = SpecBase & {
   lines?: string[]
   typed?: { label: string; text: string }
 }
-// A ticket from Tickets (Alt+J): the prompt starts with the ticket-work
-// skill and the ticket's link, so the skill runs, then `lines` (the ticket's
-// facts, viewer/tickets/tracker.ts factLines), one each, then your
-// instructions for ticket agents (~/.config/dominus/prompts/ticket.md).
-export type TicketSpec = SpecBase & { kind: 'ticket'; url: string; lines: string[] }
+// The agents Tickets (Alt+J) starts on a ticket: the worker builds it, the
+// reviewer reviews its branch or PR, the tester runs the app and proves it.
+export const Role = { Work: 'work', Review: 'review', Test: 'test' } as const
+export type Role = (typeof Role)[keyof typeof Role]
+export const ROLES: readonly Role[] = Object.values(Role)
+// Each role's skill and the file of your instructions it gets.
+export const ROLE_SKILL: Record<Role, string> = { work: 'ticket-work', review: 'review', test: 'test' }
+export const ROLE_PROMPT: Record<Role, PromptId> = { work: 'ticket', review: 'review', test: 'test' }
+
+// A ticket from Tickets: the prompt starts with the role's skill and the
+// ticket's link, so the skill runs (a reviewer or tester also gets --fix or
+// --feedback), then `lines` (the ticket's facts, viewer/tickets/tracker.ts
+// factLines), one each, then your instructions for that role
+// (~/.config/dominus/prompts/<ticket|review|test>.md). A tester always runs
+// with --chrome, for the browser it tests in.
+export type TicketSpec = SpecBase & { kind: 'ticket'; url: string; lines: string[]; role?: Role; fix?: boolean }
 export type LaunchSpec = TaskSpec | MonitorSpec | TicketSpec
 
 // Every agent runs in the background: `claude --bg`, which prints its id and
@@ -111,7 +122,7 @@ function options(spec: LaunchSpec): string[] {
     ['--effort', spec.effort],
   ] as const
   for (const [flag, value] of flags) if (value && value !== 'default') opts.push(flag, value)
-  if (spec.chrome) opts.push('--chrome')
+  if (spec.chrome || (spec.kind === 'ticket' && spec.role === Role.Test)) opts.push('--chrome')
   if (spec.sandbox && spec.kind !== 'monitor') opts.push('--settings', SANDBOX_SETTINGS)
   return opts
 }
@@ -130,8 +141,10 @@ function job(spec: LaunchSpec): { prompt: string; name: string } {
     return { prompt: spec.typed ? withTyped(head, spec.typed.label, spec.typed.text) : head, name }
   }
   if (spec.kind === 'ticket') {
-    const own = [spec.sandbox && SANDBOX, instructions('ticket').replace(/\s*\n\s*/g, ' ').trim()].filter(Boolean).join(' ')
-    const prompt = [`${skillCommand('ticket-work')} ${spec.url.trim()}`, ...spec.lines, own && `${HUB} ${own}`].filter(Boolean).join('\n')
+    const role = spec.role ?? Role.Work
+    const own = [spec.sandbox && SANDBOX, instructions(ROLE_PROMPT[role]).replace(/\s*\n\s*/g, ' ').trim()].filter(Boolean).join(' ')
+    const mode = role === Role.Work ? '' : spec.fix ? ' --fix' : ' --feedback'
+    const prompt = [`${skillCommand(ROLE_SKILL[role])} ${spec.url.trim()}${mode}`, ...spec.lines, own && `${HUB} ${own}`].filter(Boolean).join('\n')
     return { prompt, name: spec.name || slug(spec.url) }
   }
   const typed = spec.prompt ?? ''

@@ -16,7 +16,7 @@ import { join } from 'node:path'
 export const promptsDir = (): string =>
   process.env.AGENT_HUB_PROMPTS || join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'dominus', 'prompts')
 
-export const AGENTS = ['task', 'todo-handoff', 'ticket'] as const
+export const AGENTS = ['task', 'todo-handoff', 'ticket', 'review', 'test'] as const
 export type PromptId = (typeof AGENTS)[number]
 
 export const fileOf = (id: PromptId): string => join(promptsDir(), `${id}.md`)
@@ -51,7 +51,7 @@ export function typedPart(s: unknown): string {
   return at < 0 ? '' : text.slice(at + 2).replace(/^[^\n]*:\n/, '')
 }
 
-const LABEL: Record<PromptId, string> = { task: 'My prompt:', 'todo-handoff': 'My todo:', ticket: 'My ticket:' }
+const LABEL: Record<PromptId, string> = { task: 'My prompt:', 'todo-handoff': 'My todo:', ticket: 'My ticket:', review: 'My review:', test: 'My test:' }
 
 // The hub's sentences and your instructions make the first paragraph, kept to
 // one line so a blank line in them can't split it; what was typed follows as

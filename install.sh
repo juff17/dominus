@@ -145,6 +145,21 @@ refresh_plugin() { # refresh_plugin <plugin@marketplace>
   "$(claude_cmd)" plugin update "$1" --scope user || echo "    couldn't update $1: run claude plugin update $1 --scope user" >&2
 }
 
+# Anthropic's plugins the review and test skills call (plan.ts TOOLKITS), from
+# its official marketplace, added first if this Claude Code doesn't have it.
+# A failed one is said, not fatal: the skill asks for it when it runs.
+official=0
+install_toolkit() { # install_toolkit <plugin@claude-plugins-official>
+  local claude
+  claude=$(claude_cmd)
+  echo "==> Claude Code plugin $1"
+  if ((!official)) && ! "$claude" plugin marketplace list --json 2>/dev/null | grep -q '"claude-plugins-official"'; then
+    "$claude" plugin marketplace add anthropics/claude-plugins-official || true
+  fi
+  official=1
+  "$claude" plugin install "$1" --scope user || echo "    couldn't install $1: run claude plugin install $1 --scope user" >&2
+}
+
 # diagram-pane renders with mermaid-cli, from npm; it uses the system Chrome,
 # so puppeteer's own copy isn't downloaded. Any npm will do, so one on PATH
 # goes first and the Node found above is only the fallback.
@@ -191,13 +206,14 @@ case $status in
   *) exit "$status" ;;
 esac
 
-apt=() yazi=0 claude=0 plugin=0 diagrams=0 widget=off
+apt=() toolkits=() yazi=0 claude=0 plugin=0 diagrams=0 widget=off
 while read -r step rest; do
   case $step in
     apt) read -ra apt <<<"$rest" ;;
     yazi) yazi=1 ;;
     claude) claude=1 ;;
     plugin) plugin=1 ;;
+    toolkit) toolkits+=("$rest") ;;
     diagrams) diagrams=1 ;;
     widget) widget=$rest ;;
   esac
@@ -225,6 +241,7 @@ if ((plugin || diagrams || refresh)); then ensure_marketplace; fi
 if ((plugin)); then install_plugin "$PLUGIN"; fi
 if ((refresh)); then refresh_plugin "$PLUGIN"; fi
 if ((diagrams)); then install_diagrams; fi
+for t in "${toolkits[@]}"; do install_toolkit "$t"; done
 echo "==> Done"
 if [[ $mode == install ]]; then
   echo "    The PR and pipeline features call GitHub and GitLab through gh and glab: log each in to your hosts"

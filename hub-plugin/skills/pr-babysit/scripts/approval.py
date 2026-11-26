@@ -10,6 +10,7 @@ auto.
   approval.py propose manual <url> --session S --job ID --name NAME [--stage STAGE]
   approval.py propose deploy <url> --session S --job ID --name NAME
   approval.py propose move   <url> --session S --onto SHA
+  approval.py propose comment <url> --session S --path FILE --line N [--side RIGHT|LEFT] --body TEXT
   approval.py approve <id> [--body-file FILE] [--drop SHA]...
   approval.py reject <id>
   approval.py dismiss <id>
@@ -47,7 +48,7 @@ LOGGER = logger("approval")
 
 ROOT = files.runtime_dir() / "approvals"
 LOG = ROOT / "log.jsonl"
-KINDS = ("reply", "push", "retry", "manual", "deploy", "move")
+KINDS = ("reply", "push", "retry", "manual", "deploy", "move", "comment")
 # A manual job whose name or stage says it deploys always waits for the user,
 # whatever Settings say.
 DEPLOYS = re.compile(r"deploy|release|prod", re.IGNORECASE)
@@ -62,7 +63,8 @@ def policy(kind):
     """'auto', 'ask' or 'off' for a kind of action, from Settings > Approvals."""
     if kind == "reply":
         return {"post": "auto", "draft": "ask", "off": "off"}[w.choice("approvals.reply", "draft", ("off", "draft", "post"))]
-    if kind == "deploy":
+    # A review comment on someone else's PR always waits for the user.
+    if kind in ("deploy", "comment"):
         return "ask"
     return w.choice(f"approvals.{kind}", "ask", ("ask", "auto"))
 
@@ -313,6 +315,21 @@ def build(args):
                 raise SystemExit("--commit needs the worktree saved with watch_pr.py --set worktree=...")
             p["commit"] = commit_info(notes["worktree"], args.commit)
         p["key"] = f"reply:{c['id']}"
+    elif args.kind == "comment":
+        if not args.path or not args.line or args.body is None:
+            raise SystemExit("A comment needs --path, --line and --body")
+        if args.line < 1:
+            raise SystemExit("--line is a line number in the file, from 1")
+        side = (args.side or "RIGHT").upper()
+        if side not in ("RIGHT", "LEFT"):
+            raise SystemExit("--side is RIGHT (the new file) or LEFT (the old one)")
+        forge, number = w.parse_url(args.url)
+        # Pinned to the head the reviewer read, so the comment lands on the
+        # line it was written about.
+        p["comment"] = {"path": args.path, "line": args.line, "side": side, "sha": head_now(forge, number)}
+        p["body"] = args.body
+        p["title"] = f"Comment on {args.path}:{args.line}"
+        p["key"] = f"comment:{side}:{args.path}:{args.line}"
     elif args.kind in ("push", "move"):
         need = [k for k in ("worktree", "lease_sha", "branch", "remote") if not notes.get(k)]
         if need:
@@ -499,6 +516,25 @@ def run_reply(p, forge):
     return f"Posted the reply to @{t['author']}"
 
 
+def run_comment(p, forge):
+    """One review comment on one line of the PR's diff, as the user."""
+    c, body, number = p["comment"], p["body"], p["pr"]["number"]
+    if isinstance(forge, w.GitHub):
+        api(forge, f"repos/{forge.project}/pulls/{number}/comments", "POST",
+            {"body": body, "commit_id": c["sha"], "path": c["path"], "side": c["side"]}, {"line": c["line"]})
+    else:
+        refs = forge.api(f"{forge.proj()}/merge_requests/{number}").get("diff_refs") or {}
+        if not refs.get("head_sha"):
+            raise RuntimeError("GitLab gave no diff refs for the MR; nothing was posted")
+        line = "new_line" if c["side"] == "RIGHT" else "old_line"
+        api(forge, f"{forge.proj()}/merge_requests/{number}/discussions", "POST",
+            {"body": body, "position[position_type]": "text", "position[base_sha]": refs["base_sha"],
+             "position[start_sha]": refs["start_sha"], "position[head_sha]": refs["head_sha"],
+             "position[new_path]": c["path"], "position[old_path]": c["path"]},
+            {f"position[{line}]": c["line"]})
+    return f"Posted the comment on {c['path']}:{c['line']}"
+
+
 def run_push(p):
     wt = p["worktree"]
     head = git(wt, "rev-parse", "HEAD")
@@ -573,7 +609,7 @@ def approve(pid, body=None, drop=(), auto=False):
             return {"ok": False, "message": "That approval is gone"}
         if p["status"] not in ("pending", "failed"):
             return {"ok": False, "message": f"Already {p['status']}"}
-        if body is not None and p["kind"] == "reply" and body != p["body"]:
+        if body is not None and p["kind"] in ("reply", "comment") and body != p["body"]:
             p["body"], p["edited"] = body, True
         if p["kind"] == "move":
             return finish(p, "handed", True, f"Approved: the session moves its commits onto {p['onto'][:7]}")
@@ -601,6 +637,8 @@ def approve(pid, body=None, drop=(), auto=False):
             forge = forge_of(p)
             if p["kind"] == "reply":
                 message = run_reply(p, forge)
+            elif p["kind"] == "comment":
+                message = run_comment(p, forge)
             elif p["kind"] == "push":
                 message, extra = run_push(p)
             else:
@@ -714,7 +752,7 @@ def outcome(p):
     what = f"{p['kind']} {p['id']} ({p['title']})"
     event = None
     if p["status"] == "done":
-        edited = " with the reply as the user edited it" if p.get("edited") else ""
+        edited = f" with the {p['kind']} as the user edited it" if p.get("edited") else ""
         event = f"{what} approved{edited}: {r.get('message', '')}"
     elif p["status"] == "failed":
         event = f"{what} failed: {r.get('message', '')}. Work out why, fix what you can, and propose it again"
@@ -745,7 +783,7 @@ def main(argv=None):
     pr.add_argument("url")
     pr.add_argument("--session", required=True, help="the babysit's session id, as given to watch_pr.py")
     pr.add_argument("--comment", help="reply: the comment's id from its [comment] event (rc:, ic:, rv: or note:)")
-    pr.add_argument("--body", help="reply: the text to post, exactly")
+    pr.add_argument("--body", help="reply, comment: the text to post, exactly")
     pr.add_argument("--commit", help="reply: the commit that addressed it")
     pr.add_argument("--briefing", help="reply: why it needs the user's call; such a reply always waits for them")
     pr.add_argument("--check", action="append", help="push: a check you ran, NAME=ok or NAME=failed")
@@ -755,9 +793,12 @@ def main(argv=None):
     pr.add_argument("--reason", help="retry: why it looks flaky")
     pr.add_argument("--stage", help="manual: the job's stage")
     pr.add_argument("--onto", help="move: the PR's new head")
+    pr.add_argument("--path", help="comment: the file, as the diff names it")
+    pr.add_argument("--line", type=int, help="comment: the line in that file the comment is on")
+    pr.add_argument("--side", help="comment: RIGHT, the new file (the default), or LEFT, the old one")
     ok = sub.add_parser("approve", help="run an approval as proposed")
     ok.add_argument("id")
-    ok.add_argument("--body-file", help="reply: post this file's text instead")
+    ok.add_argument("--body-file", help="reply, comment: post this file's text instead")
     ok.add_argument("--drop", action="append", default=[], help="push: leave this commit out; hands the push back")
     no = sub.add_parser("reject", help="turn a proposal down")
     no.add_argument("id")

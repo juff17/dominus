@@ -173,6 +173,20 @@ const DEFINED = [
     choice('tickets.handoff.effort', EFFORT, 'medium'),
     bool('tickets.handoff.sandbox', false),
     prompt('ticket'),
+    head('reviewer'),
+    choice('tickets.review.model', MODEL_IDS, 'opus'),
+    choice('tickets.review.mode', MODE, 'auto'),
+    choice('tickets.review.effort', EFFORT, 'high'),
+    bool('tickets.review.sandbox', false),
+    prompt('review'),
+    head('tester'),
+    choice('tickets.test.model', MODEL_IDS, 'opus'),
+    choice('tickets.test.mode', MODE, 'auto'),
+    choice('tickets.test.effort', EFFORT, 'medium'),
+    // Off by default: the sandbox gives each command its own network, so
+    // the app the tester boots can't be reached.
+    bool('tickets.test.sandbox', false),
+    prompt('test'),
   ]),
   // The read-only claude -p that picks the repo an agent starts in
   // (agents/locate.ts), shared by whatever starts agents in a folder of repos.

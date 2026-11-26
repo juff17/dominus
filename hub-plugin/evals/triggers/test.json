@@ -1,0 +1,50 @@
+[
+ {
+  "query": "/dominus:test https://acme.atlassian.net/browse/ENG-412 --fix\nTicket: ENG-412 (jira)\nLink: https://acme.atlassian.net/browse/ENG-412\nSite: https://acme.atlassian.net\nBoard: Payments, Sprint 42\nRepo: ~/projects/payments\nFrom the hub: Ask through AskUserQuestion.",
+  "should_trigger": true
+ },
+ {
+  "query": "/dominus:test https://acme.atlassian.net/browse/WEB-31 --feedback\nTicket: WEB-31 (jira)\nLink: https://acme.atlassian.net/browse/WEB-31\nSite: https://acme.atlassian.net\nBoard: Web, Sprint 12\nFolder: ~/projects",
+  "should_trigger": true
+ },
+ {
+  "query": "QA ENG-412: boot the app, click through the new checkout flow and screenshot it",
+  "should_trigger": true
+ },
+ {
+  "query": "test the new /invoices endpoints against the local docker app with real API calls",
+  "should_trigger": true
+ },
+ {
+  "query": "I changed the triage agent's prompt on this branch, run the evals and make sure nothing regressed",
+  "should_trigger": true
+ },
+ {
+  "query": "test this PR end to end in the browser: https://github.com/acme/web/pull/88",
+  "should_trigger": true
+ },
+ {
+  "query": "review ENG-412's branch for code quality",
+  "should_trigger": false
+ },
+ {
+  "query": "work on ENG-412",
+  "should_trigger": false
+ },
+ {
+  "query": "run the unit tests",
+  "should_trigger": false
+ },
+ {
+  "query": "watch the logs of the payments service and tell me if anything breaks",
+  "should_trigger": false
+ },
+ {
+  "query": "watch the CI pipeline on main",
+  "should_trigger": false
+ },
+ {
+  "query": "write unit tests for utils/dates.ts",
+  "should_trigger": false
+ }
+]

@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 
 import { readState } from '../../agents/client.ts'
 import { type Agent, type TicketSpec, launch } from '../../agents/model.ts'
-import { slug, startBg } from '../../agents/launch.ts'
+import { ROLES, Role, slug, startBg } from '../../agents/launch.ts'
 import { locate } from '../../agents/locate.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
@@ -21,7 +21,7 @@ import type { Settings } from '../../settings/catalog.ts'
 import { type Reachable, type Shown, go } from '../../tray/navigate.ts'
 import { JIRA_NEEDED, type JiraKey, envFile, envSet, readEnv } from '../../settings/env.ts'
 import { type FetchLike, type JiraConfig, jiraClient, trimSite } from './jira.ts'
-import { type Act, type Link, type Prefs, type Setup, type TicketsState, screenFor, setBoard } from './state.ts'
+import { type Act, type Link, type Links, type Prefs, type Setup, type TicketsState, screenFor, setBoard } from './state.ts'
 import { type Board, type BoardChoice, type Person, type Ticket, type Tracker, factLines, handoffFacts, scoutText } from './tracker.ts'
 
 const log = logger('tickets')
@@ -92,14 +92,34 @@ export function readCache(file: string): Cache | null {
   return { boardId: v.boardId, board, fetchedAt: typeof v.fetchedAt === 'number' ? v.fetchedAt : 0, me, mcp }
 }
 
-export function readLinks(file: string): Record<string, Link> {
+const isLink = (v: unknown): v is Link => isRecord(v) && typeof v.name === 'string' && typeof v.at === 'number'
+
+// Each ticket's agents by role. A link on its own, as the popup kept them
+// before tickets had a reviewer and a tester, is the worker's.
+export function readLinks(file: string): Record<string, Links> {
   const v = readJson(file)
   if (!isRecord(v)) return {}
-  return Object.fromEntries(Object.entries(v).filter((e): e is [string, Link] => isRecord(e[1]) && typeof e[1].name === 'string' && typeof e[1].at === 'number'))
+  const out: Record<string, Links> = {}
+  for (const [key, entry] of Object.entries(v)) {
+    if (isLink(entry)) out[key] = { [Role.Work]: entry }
+    else if (isRecord(entry)) {
+      const links: Links = {}
+      for (const role of ROLES) if (isLink(entry[role])) links[role] = entry[role]
+      if (Object.keys(links).length) out[key] = links
+    }
+  }
+  return out
 }
 
 // A ticket's link is kept 30 days after its agent started.
 const LINK_DAYS = 30
+
+// The Settings › Tickets rows each role's agent starts with.
+export function roleSettings(v: Settings, role: Role): { model: string; mode: string; effort: string; sandbox: boolean } {
+  if (role === Role.Review) return { model: v['tickets.review.model'], mode: v['tickets.review.mode'], effort: v['tickets.review.effort'], sandbox: v['tickets.review.sandbox'] }
+  if (role === Role.Test) return { model: v['tickets.test.model'], mode: v['tickets.test.mode'], effort: v['tickets.test.effort'], sandbox: v['tickets.test.sandbox'] }
+  return { model: v['tickets.handoff.model'], mode: v['tickets.handoff.mode'], effort: v['tickets.handoff.effort'], sandbox: v['tickets.handoff.sandbox'] }
+}
 
 // ------------------------------------------------------------ what Settings and .env say
 
@@ -123,8 +143,7 @@ export const setupOf = (w: Pick<World, 'envSet' | 'settings'>, mcp: boolean | nu
 export const prefsOf = (v: Settings): Prefs => ({
   showDone: v['tickets.showDone'],
   folder: tilde(v['tickets.folder'] || defaultFolder(v)),
-  model: v['tickets.handoff.model'],
-  effort: v['tickets.handoff.effort'],
+  roles: Object.fromEntries(ROLES.map(role => [role, { model: roleSettings(v, role).model, effort: roleSettings(v, role).effort }])) as Prefs['roles'],
 })
 
 const DAY = 24 * 3600 * 1000
@@ -153,7 +172,11 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
 
   function saveLinks(): void {
     const keep = io.now() - LINK_DAYS * DAY
-    const links = Object.fromEntries(Object.entries(s.links).filter(([, l]) => l.at >= keep))
+    const links: Record<string, Links> = {}
+    for (const [key, roles] of Object.entries(s.links)) {
+      const kept = Object.fromEntries(Object.entries(roles).filter(([, l]) => l.at >= keep))
+      if (Object.keys(kept).length) links[key] = kept
+    }
     try {
       writeJson(io.linksFile, links)
     } catch (err) {
@@ -326,7 +349,7 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
     return found.ok && found.sure ? found.repo : null
   }
 
-  async function startAgent(ticket: Ticket): Promise<void> {
+  async function startAgent(ticket: Ticket, role: Role, fix: boolean): Promise<void> {
     if (!io.plugin()) {
       s.note = { text: pluginMissing(), tone: 'bad' }
       return
@@ -347,18 +370,23 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
     const facts = handoffFacts(tr.id, configOf(io.env(), v).site, ticket, s.me, b)
     const repo = v['tickets.findRepo'] ? await findRepo(tr, ticket, folder, v) : null
     const cwd = repo ?? folder
+    const run = roleSettings(v, role)
+    const lines = factLines(facts, role !== Role.Work)
     const spec: TicketSpec = {
       kind: 'ticket',
+      role,
+      fix,
       cwd,
-      model: v['tickets.handoff.model'],
-      mode: v['tickets.handoff.mode'],
-      effort: v['tickets.handoff.effort'],
-      sandbox: v['tickets.handoff.sandbox'],
+      model: run.model,
+      mode: run.mode,
+      effort: run.effort,
+      sandbox: run.sandbox,
       url: ticket.url,
-      lines: [...factLines(facts), repo ? `Repo: ${tilde(repo)}` : `Folder: ${tilde(folder)}`],
-      name: `${ticket.key}-${slug(ticket.title)}`.slice(0, 60),
+      lines: [...lines, repo ? `Repo: ${tilde(repo)}` : `Folder: ${tilde(folder)}`],
+      // The worker keeps the name it always had, so its card finds it.
+      name: `${ticket.key}-${role === Role.Work ? '' : `${role}-`}${slug(ticket.title)}`.slice(0, 60),
     }
-    s.note = { text: t('tickets.notes.starting', { key: ticket.key }), tone: 'working' }
+    s.note = { text: t('tickets.notes.starting', { key: ticket.key, role: t(`tickets.roles.${role}`) }), tone: 'working' }
     io.draw()
     const { err, name } = await spawnBg(spec, ticket.key)
     if (err) {
@@ -368,13 +396,14 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
       s.note = { text: untrusted ? t('tickets.notes.untrusted', { key: ticket.key, dir: tilde(cwd) }) : t('tickets.notes.startFailed', { key: ticket.key, err }), tone: 'bad' }
       return io.draw()
     }
-    s.links[ticket.key] = { name, at: io.now() }
+    s.links[ticket.key] = { ...s.links[ticket.key], [role]: { name, at: io.now() } }
     saveLinks()
     s.agents = io.agents() ?? s.agents
-    s.note = { text: t('tickets.notes.started', { key: ticket.key }), tone: 'working' }
+    s.note = { text: t('tickets.notes.started', { key: ticket.key, role: t(`tickets.roles.${role}`) }), tone: 'working' }
     io.draw()
-    // The agent assigns and moves the ticket through the MCP; search lags a
-    // write, so these ask Jira to reconcile it.
+    // A worker assigns and moves the ticket through the MCP; search lags a
+    // write, so these ask Jira to reconcile it. The others write nothing.
+    if (role !== Role.Work) return
     const id = ticket.key
     for (const ms of [30_000, 120_000]) io.later(() => void refresh({ reconcile: [id] }), ms)
   }
@@ -434,7 +463,7 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
         case 'open':
           return open(act.url, act.key)
         case 'start':
-          return startAgent(act.ticket)
+          return startAgent(act.ticket, act.role, act.fix)
         case 'go':
           return goTo(act.agent, act.key)
         case 'refresh':

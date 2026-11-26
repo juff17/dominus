@@ -23,6 +23,7 @@ My prompt:
 /dominus:ticket-work https://acme.atlassian.net/browse/ENG-412"""
 MOVE = {"cloudId": "https://acme.atlassian.net", "issueIdOrKey": "ENG-412", "transition": {"id": "21"}}
 ASSIGN = {"accountId": "5b10ac8d82e05b22cc7d4ef5"}
+COMMENT = {"cloudId": "https://acme.atlassian.net", "issueIdOrKey": "ENG-412", "commentBody": "Tested on abc1234: all pass."}
 
 
 class Guard(unittest.TestCase):
@@ -115,6 +116,34 @@ class Guard(unittest.TestCase):
     def test_malformed_input_allowed_and_logged(self):
         self.assertIsNone(self.run_hook("{not json"))
         self.assertIn("WARN ticket_guard: check failed", (self.logs / "ticket_guard.log").read_text())
+
+    def test_a_worker_may_comment(self):
+        self.assertIsNone(self.hook("mcp__atlassian__addCommentToJiraIssue", COMMENT))
+
+    def test_review_and_test_sessions_never_move_or_edit(self):
+        for skill in ("review", "test"):
+            with self.subTest(skill=skill):
+                self.start(f"/dominus:{skill} https://acme.atlassian.net/browse/ENG-412 --fix\nTicket: ENG-412 (jira)")
+                self.assertDenied(self.hook("mcp__atlassian__transitionJiraIssue", MOVE, session=skill), "only reads")
+                edit = {"issueIdOrKey": "ENG-412", "fields": {"assignee": ASSIGN}}
+                self.assertDenied(self.hook("mcp__atlassian__editJiraIssue", edit, session=skill), "only reads")
+
+    def test_a_review_session_never_comments(self):
+        self.start("/dominus:review https://acme.atlassian.net/browse/ENG-412 --feedback")
+        self.assertDenied(self.hook("mcp__atlassian__addCommentToJiraIssue", COMMENT), "doesn't comment")
+
+    def test_a_test_session_comments_once(self):
+        self.start("/dominus:test https://acme.atlassian.net/browse/ENG-412 --fix")
+        self.assertIsNone(self.hook("mcp__atlassian__addCommentToJiraIssue", COMMENT))
+        self.result("toolu_1", error=False)
+        out = self.hook("mcp__atlassian__addCommentToJiraIssue", COMMENT, tool_use_id="toolu_2")
+        self.assertDenied(out, "one comment")
+
+    def test_a_failed_comment_does_not_use_it_up(self):
+        self.start("/dominus:test https://acme.atlassian.net/browse/ENG-412 --fix")
+        self.assertIsNone(self.hook("mcp__atlassian__addCommentToJiraIssue", COMMENT))
+        self.result("toolu_1", error=True)
+        self.assertIsNone(self.hook("mcp__atlassian__addCommentToJiraIssue", COMMENT, tool_use_id="toolu_2"))
 
     def test_missing_transcript_allowed(self):
         self.transcript.unlink()

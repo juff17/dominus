@@ -33,7 +33,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*__(transitionJiraIssue|editJiraIssue|executeWrite)",
+        "matcher": "mcp__.*__(transitionJiraIssue|editJiraIssue|addCommentToJiraIssue|executeWrite)",
         "hooks": [
           {
             "type": "command",

@@ -8,7 +8,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { type AptInfo, type Probe, parseAptShow } from './plan.ts'
+import { type AptInfo, type Probe, TOOLKITS, parseAptShow } from './plan.ts'
 
 export const PLUGIN = 'dominus@dominus'
 export const DIAGRAMS = 'diagram-pane@dominus'
@@ -87,5 +87,6 @@ export function probe(pkgs: string[]): Probe {
     plugin: plugins.has(PLUGIN),
     diagrams: plugins.has(DIAGRAMS) && packagesCurrent(DIAGRAM_DIR),
     chrome: existsSync(CHROME),
+    toolkits: TOOLKITS.filter(k => plugins.has(k.id)).map(k => k.id),
   }
 }

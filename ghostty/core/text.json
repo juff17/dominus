@@ -104,7 +104,9 @@
         "heads": {
           "tracker": "Tracker",
           "board": "Board",
-          "agents": "Agents"
+          "agents": "Agents",
+          "reviewer": "Reviewer",
+          "tester": "Tester"
         },
         "env": {
           "JIRA_SITE": {
@@ -895,7 +897,7 @@
       },
       "tickets.handoff.model": {
         "label": "Model",
-        "sub": "a on a ticket asks only y/n; this is the model it uses"
+        "sub": "the worker (w, or a then w): builds the ticket and commits it"
       },
       "tickets.handoff.mode": {
         "label": "Permission mode"
@@ -906,6 +908,34 @@
       "tickets.handoff.sandbox": {
         "label": "Run in the sandbox",
         "sub": "shell commands can write only in the folder the agent starts in, can't read secrets, and reach the network through a proxy; needs bubblewrap and socat"
+      },
+      "tickets.review.model": {
+        "label": "Model",
+        "sub": "the reviewer (r): reviews the ticket’s branch or PR with pr-review-toolkit and the hub’s own checks"
+      },
+      "tickets.review.mode": {
+        "label": "Permission mode"
+      },
+      "tickets.review.effort": {
+        "label": "Effort"
+      },
+      "tickets.review.sandbox": {
+        "label": "Run in the sandbox",
+        "sub": "shell commands can write only in the folder the agent starts in, can't read secrets, and reach the network through a proxy; needs bubblewrap and socat"
+      },
+      "tickets.test.model": {
+        "label": "Model",
+        "sub": "the tester (t): boots the app, tests it in Chrome and posts the proof to Jira; always starts with --chrome"
+      },
+      "tickets.test.mode": {
+        "label": "Permission mode"
+      },
+      "tickets.test.effort": {
+        "label": "Effort"
+      },
+      "tickets.test.sandbox": {
+        "label": "Run in the sandbox",
+        "sub": "off by default: in the sandbox each command has its own network, so the app it boots can’t be reached"
       },
       "keys.jira": {
         "label": "Tickets popup",
@@ -1693,14 +1723,18 @@
           ],
           [
             "a",
-            "Start an agent on it (y/n); one with an agent goes to it"
+            "Start an agent on it: w worker, r reviewer or t tester; a role that has one goes to it"
+          ],
+          [
+            "w / r / t",
+            "Start that role at once: a worker asks y/n; a reviewer or tester asks f fixes allowed or o feedback only"
           ],
           [
             "↵",
-            "Go to its agent in the hub, or open it with none"
+            "Go to its agent in the hub (the one that needs you first), or open it with none"
           ],
           [
-            "r",
+            "R",
             "Refresh now: tickets, columns and sprint"
           ],
           [
@@ -1745,7 +1779,8 @@
       "replaces": "replaces {n} on the remote",
       "scriptGone": "The babysit script that proposed this is gone",
       "scriptSlow": "The approval script took too long and was stopped",
-      "scriptFailed": "The approval script failed"
+      "scriptFailed": "The approval script failed",
+      "comment": "review · comment"
     },
     "links": {
       "comment": "Comment",
@@ -2257,7 +2292,8 @@
       "editorFailed": "$EDITOR exited with {exit}; reply unchanged",
       "noOpener": "Couldn't open {url}: no xdg-open",
       "opened": "Opened {url}",
-      "closesWhenDone": "Closes when this is done; press again to close now"
+      "closesWhenDone": "Closes when this is done; press again to close now",
+      "commentAsks": "A review comment always asks"
     },
     "busy": {
       "reply": "Posting…",
@@ -2267,7 +2303,8 @@
       "manual": "Starting…",
       "approve": "Approving…",
       "reject": "Rejecting…",
-      "dismiss": "Dismissing…"
+      "dismiss": "Dismissing…",
+      "comment": "Posting…"
     },
     "diff": {
       "badge": "DIFF",
@@ -2288,7 +2325,8 @@
       "stage": "{stage} stage",
       "job": "job {id}",
       "proposed": "proposed {ago} ago",
-      "failed": "✗ Failed: {message}"
+      "failed": "✗ Failed: {message}",
+      "at": "at {sha}"
     },
     "labels": {
       "theirComment": "THEIR COMMENT",
@@ -2303,7 +2341,9 @@
         "one": "TAKES OFF THE BRANCH · {n} commit on {branch} now",
         "other": "TAKES OFF THE BRANCH · {n} commits on {branch} now"
       },
-      "whatApproving": "WHAT APPROVING DOES"
+      "whatApproving": "WHAT APPROVING DOES",
+      "comment": "COMMENT THAT WILL BE POSTED",
+      "commentEditing": "COMMENT THAT WILL BE POSTED · editing"
     },
     "reply": {
       "posted": "Posted as you, exactly as shown.",
@@ -2341,7 +2381,8 @@
       "dismiss": "Dismiss",
       "notYet": "Not yet",
       "reject": "Reject",
-      "goToSession": "Go to session"
+      "goToSession": "Go to session",
+      "comment": "Post comment"
     },
     "keys": {
       "file": "file",
@@ -2787,11 +2828,19 @@
       "agent": "agent",
       "go": "go to agent",
       "refresh": "refresh",
-      "start": "start"
+      "start": "start",
+      "role": "role",
+      "worker": "worker",
+      "reviewer": "reviewer",
+      "tester": "tester",
+      "fix": "fixes allowed",
+      "feedback": "feedback only"
     },
     "confirm": {
-      "start": "Start an agent on {key} in {folder} ({model} · {effort})?",
-      "noMcp": "the Atlassian MCP looks missing: it can't assign or move the ticket"
+      "start": "Start a {role} on {key} in {folder} ({model} · {effort})?",
+      "noMcp": "the Atlassian MCP looks missing: it can't assign or move the ticket",
+      "role": "Start an agent on {key}:",
+      "mode": "Start a {role} on {key} ({model} · {effort}): may it fix what it finds?"
     },
     "status": {
       "refreshing": "refreshing… board, sprint and tickets",
@@ -2857,12 +2906,17 @@
       "opened": "✓ Opened {key} in your browser",
       "noMe": "Couldn't ask Jira who you are: {err}",
       "findingRepo": "Finding the repo for {key}…",
-      "starting": "Starting an agent on {key}…",
+      "starting": "Starting a {role} on {key}…",
       "startFailed": "{key}: the agent didn't start: {err}",
       "untrusted": "{key}: Claude Code doesn't trust {dir} yet. Run claude there once and accept, then press a again",
-      "started": "✻ Started {key} · it's in the hub as a background agent",
+      "started": "✻ Started a {role} on {key} · it’s in the hub as a background agent",
       "notOpened": "Couldn't open the agent",
       "noEditor": "Couldn't run {editor}"
+    },
+    "roles": {
+      "work": "worker",
+      "review": "reviewer",
+      "test": "tester"
     }
   }
 }

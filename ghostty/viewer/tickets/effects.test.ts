@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict'
 import type { ChildProcess } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
 import type { Settings } from '../../settings/catalog.ts'
 import { type JiraTracker, type World, configOf, readCache, readLinks, ticketsEffects } from './effects.ts'
-import { BOARD } from './fixtures.test.ts'
+import { BOARD, prefsAt } from './fixtures.test.ts'
 import { start } from './state.ts'
 
 process.env.AGENT_HUB_PROMPTS = '/nonexistent/prompts'
@@ -22,6 +22,12 @@ const SETTINGS = {
   'tickets.handoff.model': 'opus',
   'tickets.handoff.mode': 'auto',
   'tickets.handoff.effort': 'medium',
+  'tickets.review.model': 'sonnet',
+  'tickets.review.mode': 'auto',
+  'tickets.review.effort': 'high',
+  'tickets.test.model': 'opus',
+  'tickets.test.mode': 'auto',
+  'tickets.test.effort': 'medium',
   'tickets.showDone': false,
   'general.folder': '',
 } as unknown as Settings
@@ -69,7 +75,7 @@ function fakeWorld(dir: string) {
 }
 
 const setup = { env: { JIRA_SITE: true, JIRA_EMAIL: true, JIRA_API_TOKEN: true, JIRA_TOKEN_KIND: false }, board: '42', team: 'Payments', mcp: true, check: { state: 'ok' as const, name: 'Me' } }
-const prefs = { showDone: false, folder: '/work', model: 'opus', effort: 'medium' }
+const prefs = prefsAt('/work')
 
 test('a refresh fetches the board and caches it for the next opening', async t => {
   const dir = mkdtempSync(join(tmpdir(), 'tickets-'))
@@ -93,7 +99,7 @@ test('starting an agent runs the skill on the ticket with its facts, never the t
   const s = start(setup, prefs)
   const fx = ticketsEffects(s, { ...w, draw: () => {}, quit: () => {}, outside: () => ({}) as never }, { client: 'c', layout: 'layout-1' })
   await fx.refresh()
-  await fx.run({ do: 'start', ticket: BOARD.unassigned[0] })
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0], role: 'work', fix: true })
   const bg = spawned.find(x => x.cmd === 'claude')
   assert.ok(bg)
   assert.ok(!bg.args.includes('--settings'), 'the sandbox is off by default')
@@ -113,9 +119,47 @@ test('starting an agent runs the skill on the ticket with its facts, never the t
     'Board: Payments, Sprint 42',
     'Folder: /work',
   ])
-  assert.deepEqual(readLinks(w.linksFile), { 'ENG-1': { name: 'ENG-1-eng-1-title', at: 1_000_000 } })
+  assert.deepEqual(readLinks(w.linksFile), { 'ENG-1': { work: { name: 'ENG-1-eng-1-title', at: 1_000_000 } } })
   // Re-read after 30 s and 2 min, to catch the assign and the move.
   assert.deepEqual(timers, [30_000, 120_000])
+})
+
+test('a reviewer and a tester run their own skill and Settings, read-only facts, and link beside the worker', async t => {
+  const dir = mkdtempSync(join(tmpdir(), 'tickets-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const { w, spawned, timers } = fakeWorld(dir)
+  const s = start(setup, prefs)
+  const fx = ticketsEffects(s, { ...w, draw: () => {}, quit: () => {}, outside: () => ({}) as never }, { client: 'c', layout: 'layout-1' })
+  await fx.refresh()
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0], role: 'review', fix: false })
+  const review = spawned.at(-1)
+  assert.ok(review)
+  assert.deepEqual(review.args.slice(0, 3), ['--bg', '--name', 'ENG-1-review-eng-1-title'])
+  assert.ok(review.args.includes('sonnet') && review.args.includes('high'))
+  assert.ok(!review.args.includes('--chrome'))
+  assert.deepEqual((review.args.at(-1) ?? '').split('\n'), [
+    '/dominus:review https://acme.atlassian.net/browse/ENG-1 --feedback',
+    'Ticket: ENG-1 (jira)',
+    'Link: https://acme.atlassian.net/browse/ENG-1',
+    'Site: https://acme.atlassian.net',
+    'Board: Payments, Sprint 42',
+    'Folder: /work',
+  ])
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0], role: 'test', fix: true })
+  const tester = spawned.at(-1)
+  assert.ok(tester?.args.includes('--chrome'), 'a tester always starts with Chrome')
+  assert.match(tester?.args.at(-1) ?? '', /^\/dominus:test https:\/\/acme\.atlassian\.net\/browse\/ENG-1 --fix\n/)
+  assert.deepEqual(Object.keys(readLinks(w.linksFile)['ENG-1'] ?? {}), ['review', 'test'])
+  // Neither writes to the ticket, so nothing is re-read for them.
+  assert.deepEqual(timers, [])
+})
+
+test('links kept before roles read as the worker’s', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'tickets-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const file = join(dir, 'links.json')
+  writeFileSync(file, JSON.stringify({ 'ENG-1': { name: 'old', at: 5 }, 'ENG-2': { review: { name: 'r', at: 6 }, bogus: { name: 'x', at: 1 } }, 'ENG-3': 7 }))
+  assert.deepEqual(readLinks(file), { 'ENG-1': { work: { name: 'old', at: 5 } }, 'ENG-2': { review: { name: 'r', at: 6 } } })
 })
 
 test('with Find the repo first, the agent starts in the repo the finder is sure of, else in the folder', async t => {
@@ -135,14 +179,14 @@ test('with Find the repo first, the agent starts in the repo the finder is sure 
   const s = start(setup, prefs)
   const fx = ticketsEffects(s, { ...w, draw: () => {}, quit: () => {}, outside: () => ({}) as never }, { client: 'c', layout: 'layout-1' })
   await fx.refresh()
-  await fx.run({ do: 'start', ticket: BOARD.unassigned[0] })
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0], role: 'work', fix: true })
   assert.match(scouted[0].at(-1) ?? '', /The work:\nENG-1: ENG-1 title\nComponents: payouts\n\nRetry payouts that failed/)
   assert.equal(spawned.at(-1)?.cwd, payouts)
   assert.ok(spawned.at(-1)?.args.includes('--settings'), 'Run in the sandbox is on')
   assert.ok((spawned.at(-1)?.args.at(-1) ?? '').split('\n').includes(`Repo: ${payouts}`))
   assert.match(spawned.at(-1)?.args.at(-1) ?? '', /\nFrom the hub: Your shell commands run in a sandbox\./)
   sure = false
-  await fx.run({ do: 'start', ticket: BOARD.unassigned[1] })
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[1], role: 'work', fix: true })
   assert.equal(spawned.at(-1)?.cwd, folder)
   assert.ok((spawned.at(-1)?.args.at(-1) ?? '').split('\n').includes(`Folder: ${folder}`))
 })
@@ -164,7 +208,7 @@ test('an agent refused for an untrusted folder says how to trust it', async t =>
   const s = start(setup, prefs)
   const fx = ticketsEffects(s, { ...w, draw: () => {}, quit: () => {}, outside: () => ({}) as never }, { client: 'c', layout: 'layout-1' })
   await fx.refresh()
-  await fx.run({ do: 'start', ticket: BOARD.unassigned[0] })
+  await fx.run({ do: 'start', ticket: BOARD.unassigned[0], role: 'work', fix: true })
   assert.equal(s.note?.tone, 'bad')
   assert.equal(s.note?.text, "ENG-1: Claude Code doesn't trust /work yet. Run claude there once and accept, then press a again")
 })

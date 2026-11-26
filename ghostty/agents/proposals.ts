@@ -45,7 +45,10 @@ export type Proposal = {
   pr?: ProposalPr
   // A reply's. `briefing` says why it needs the user's call.
   thread?: ProposalThread
+  // A reply's or a review comment's text, as it will be posted.
   body?: string
+  // A review comment's place in the PR's diff, at the head it was read on.
+  comment?: { path: string; line: number; side?: string; sha?: string }
   briefing?: string
   commit?: ProposalCommit
   // A push's. `removes` are the commits it takes off the remote.
@@ -67,6 +70,11 @@ export type Proposal = {
   // What the last try said, on a failed one.
   result?: { message?: string; at?: number }
 }
+
+// The kinds whose text you can edit before it's posted: a babysit's reply and
+// a reviewer's comment.
+export const EDITABLE: ReadonlySet<string> = new Set(['reply', 'comment'])
+export const editable = (p: Pick<Proposal, 'kind'>): boolean => EDITABLE.has(p.kind)
 
 const isProposal = (v: unknown): v is Proposal =>
   typeof v === 'object' &&

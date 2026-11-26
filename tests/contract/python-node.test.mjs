@@ -37,7 +37,7 @@ function pythonReads() {
     for (const m of text.matchAll(/\b(?:w\.)?choice\((f?)"([\w.{}]+)", ([\w"]+), \(([^)]*)\)\)/g)) {
       if (m[1]) {
         // approval.py's policy(): approvals.{kind} for the kinds that don't return before it.
-        const kinds = pyTuple(text.match(/^KINDS = \(([^)]*)\)/m)[1]).filter(k => k !== 'reply' && k !== 'deploy')
+        const kinds = pyTuple(text.match(/^KINDS = \(([^)]*)\)/m)[1]).filter(k => k !== 'reply' && k !== 'deploy' && k !== 'comment')
         for (const k of kinds) out.push([name, 'choice', m[2].replace('{kind}', k), pyValue(m[3]), pyTuple(m[4])])
       } else out.push([name, 'choice', m[2], pyValue(m[3]), pyTuple(m[4])])
     }

@@ -1,0 +1,50 @@
+[
+ {
+  "query": "/dominus:review https://acme.atlassian.net/browse/ENG-412 --fix\nTicket: ENG-412 (jira)\nLink: https://acme.atlassian.net/browse/ENG-412\nSite: https://acme.atlassian.net\nBoard: Payments, Sprint 42\nRepo: ~/projects/payments\nFrom the hub: Ask through AskUserQuestion.",
+  "should_trigger": true
+ },
+ {
+  "query": "/dominus:review https://acme.atlassian.net/browse/OPS-77 --feedback\nTicket: OPS-77 (jira)\nLink: https://acme.atlassian.net/browse/OPS-77\nSite: https://acme.atlassian.net\nBoard: Platform, Sprint 9\nFolder: ~/work",
+  "should_trigger": true
+ },
+ {
+  "query": "review ENG-412 before I open the MR",
+  "should_trigger": true
+ },
+ {
+  "query": "can you do a code review of https://github.com/acme/payments/pull/381? it's Sam's PR, leave comments for him",
+  "should_trigger": true
+ },
+ {
+  "query": "look over the changes on my branch ENG-90-retry-payouts and clean them up",
+  "should_trigger": true
+ },
+ {
+  "query": "review this MR for state bugs and tenant leaks: https://gitlab.com/acme/api/-/merge_requests/57",
+  "should_trigger": true
+ },
+ {
+  "query": "work on ENG-412",
+  "should_trigger": false
+ },
+ {
+  "query": "test ENG-412 in the browser and post screenshots to the ticket",
+  "should_trigger": false
+ },
+ {
+  "query": "babysit https://github.com/acme/payments/pull/381 until it merges",
+  "should_trigger": false
+ },
+ {
+  "query": "write a ticket for the login redirect bug",
+  "should_trigger": false
+ },
+ {
+  "query": "reply to the review comments on my PR",
+  "should_trigger": false
+ },
+ {
+  "query": "what does the payouts retry code do?",
+  "should_trigger": false
+ }
+]

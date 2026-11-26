@@ -5,8 +5,11 @@ allows one move per session and edits that set only the assignee, and denies
 the rest with a reason the model reads.
 
 A ticket session is one whose first prompt holds /dominus:ticket-work, which
-is how the Tickets popup (Alt+J) starts it. Any other session is left alone.
-A bug here must never block the user, so any error allows the call and logs."""
+is how the Tickets popup (Alt+J) starts it. Review and test sessions
+(/dominus:review, /dominus:test) only read the ticket: they may not move or
+edit it, and a test session may add one comment, its evidence. Any other
+session is left alone. A bug here must never block the user, so any error
+allows the call and logs."""
 
 import fcntl
 import json
@@ -20,8 +23,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib" / "py"))
 from agent_hub.log import logger
 
 LOG = logger("ticket_guard")
-MARK = "/dominus:ticket-work"
-MOVE, EDIT = "transitionJiraIssue", "editJiraIssue"
+# The skill a session was started on, by its first prompt's slash command.
+MARKS = {"/dominus:ticket-work": "work", "/dominus:review": "review", "/dominus:test": "test"}
+MOVE, EDIT, COMMENT = "transitionJiraIssue", "editJiraIssue", "addCommentToJiraIssue"
 # editJiraIssue arguments that name the issue or shape the call, not a field it sets.
 NOT_FIELDS = {"cloudId", "issueIdOrKey", "issueKey", "issueId", "contentFormat", "responseContentFormat",
               "notifyUsers", "returnIssue", "expand"}
@@ -32,6 +36,12 @@ INNER_ARGS = ("arguments", "args", "input", "toolInput", "params", "parameters")
 MOVE_REASON = ("This session already moved the ticket once, and the ticket-work skill allows one move: to the "
                "started column. People move it on after review, so leave its status as it is. If the user wants "
                "it moved, tell them to move it in the tracker.")
+READ_ONLY_REASON = ("The {skill} skill only reads the ticket: it never moves or edits it. People move it on after "
+                    "review. If the user wants it changed, tell them to change it in the tracker.")
+REVIEW_COMMENT_REASON = ("The review skill doesn't comment on the ticket: findings go to the PR through approvals, "
+                         "or into the report.")
+COMMENT_REASON = ("This session already added its one comment to the ticket: the test evidence. Put anything else "
+                  "in the run report, or tell the user.")
 EDIT_REASON = ("The ticket-work skill only sets the assignee, and this edit also sets {fields}. Leave the ticket's "
                "other fields as they are. If the user wants them changed, tell them to change them in the tracker.")
 
@@ -75,18 +85,19 @@ def blocks(entry):
     return [b for b in content if isinstance(b, dict)] if isinstance(content, list) else []
 
 
-def ticket_session(transcript):
-    """Whether the first prompt the user (or the hub) sent holds the mark.
-    Meta entries and tool results are user entries too, so they're skipped."""
+def session_skill(transcript):
+    """Which of MARKS the first prompt the user (or the hub) sent holds:
+    work, review, test, or None. Meta entries and tool results are user
+    entries too, so they're skipped."""
     if not transcript:
-        return False
+        return None
     for entry in entries(transcript):
         if entry.get("type") != "user" or entry.get("isMeta"):
             continue
         texts = [b.get("text", "") for b in blocks(entry) if b.get("type") == "text"]
         if texts:
-            return any(MARK in t for t in texts)
-    return False
+            return next((skill for mark, skill in MARKS.items() if any(mark in t for t in texts)), None)
+    return None
 
 
 def failed(transcript, tool_use_id):
@@ -119,11 +130,39 @@ def set_fields(args):
     return keys
 
 
-def state_file(session):
+def state_file(session, what="moves"):
     run = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
     folder = Path(run) / "agent-hub" / "ticket-guard"
     folder.mkdir(parents=True, exist_ok=True)
-    return folder / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".json")
+    tail = "" if what == "moves" else f".{what}"
+    return folder / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + tail + ".json")
+
+
+def check_comment(event, args, started):
+    """A test session's one comment: its evidence. One that failed doesn't
+    use it up. Locked, so two comments sent in one turn can't both pass."""
+    session = event.get("session_id")
+    if not isinstance(session, str) or not session:
+        raise ValueError("no session_id")
+    transcript = event.get("transcript_path")
+    issue = args.get("issueIdOrKey") or args.get("issueKey")
+    fd = os.open(state_file(session, "comments"), os.O_RDWR | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "r+", encoding="utf-8") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        text = f.read()
+        comments = json.loads(text) if text.strip() else []
+        done = [c for c in comments if not failed(transcript, c.get("toolUseId"))]
+        if done:
+            LOG.info("comment denied", id=issue, before=done[0].get("id"),
+                     ms=round((time.monotonic() - started) * 1000))
+            return COMMENT_REASON
+        comments.append({"id": issue, "toolUseId": event.get("tool_use_id"),
+                         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        f.seek(0)
+        f.truncate()
+        json.dump(comments, f)
+    LOG.info("comment allowed", id=issue, ms=round((time.monotonic() - started) * 1000))
+    return None
 
 
 def check_move(event, args, started):
@@ -171,12 +210,24 @@ def check(event, started):
     if not isinstance(tool, str) or not isinstance(args, dict):
         raise TypeError("tool_name or tool_input missing")
     name, args = unwrap(tool, args)
-    if name not in (MOVE, EDIT):
+    if name not in (MOVE, EDIT, COMMENT):
         return None
-    if not ticket_session(event.get("transcript_path")):
+    skill = session_skill(event.get("transcript_path"))
+    if not skill:
         LOG.debug("not a ticket session", tool=tool)
         return None
-    return check_move(event, args, started) if name == MOVE else check_edit(args, started)
+    if skill == "work":
+        if name == COMMENT:
+            return None
+        return check_move(event, args, started) if name == MOVE else check_edit(args, started)
+    issue = args.get("issueIdOrKey") or args.get("issueKey")
+    if name == COMMENT:
+        if skill == "test":
+            return check_comment(event, args, started)
+        LOG.info("comment denied", id=issue, skill=skill)
+        return REVIEW_COMMENT_REASON
+    LOG.info("change denied", id=issue, skill=skill, tool=name)
+    return READ_ONLY_REASON.format(skill=skill)
 
 
 def main():

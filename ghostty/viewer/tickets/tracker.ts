@@ -114,14 +114,19 @@ export function handoffFacts(provider: string, site: string, ticket: Ticket, me:
   }
 }
 
-// The facts as the lines the hub puts in the agent's prompt; the
-// ticket-work skill reads them by these labels.
-export const factLines = (f: HandoffFacts): string[] => [
+// The facts as the lines the hub puts in the agent's prompt; the skills read
+// them by these labels. A reviewer or tester (`readOnly`) never assigns or
+// moves the ticket, so it gets no lines for that.
+export const factLines = (f: HandoffFacts, readOnly = false): string[] => [
   `Ticket: ${f.key} (${f.provider})`,
   `Link: ${f.url}`,
   `Site: ${f.site}`,
-  `Assign to: account ${f.assignee.id} (${f.assignee.name})`,
-  `Unassigned: ${f.unassigned ? 'yes' : 'no'}`,
-  f.started ? `Started column: ${f.started.name} (status ids ${f.started.statusIds.join(', ')})` : 'Started column: none found',
+  ...(readOnly
+    ? []
+    : [
+        `Assign to: account ${f.assignee.id} (${f.assignee.name})`,
+        `Unassigned: ${f.unassigned ? 'yes' : 'no'}`,
+        f.started ? `Started column: ${f.started.name} (status ids ${f.started.statusIds.join(', ')})` : 'Started column: none found',
+      ]),
   `Board: ${f.board}${f.sprint ? `, ${f.sprint}` : ''}`,
 ]

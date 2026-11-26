@@ -9,7 +9,7 @@
 import { t } from '../../core/text.ts'
 import { load as settings } from '../../settings/settings.ts'
 import { editField, pasteField } from '../../tui/line.ts'
-import type { Proposal } from '../../agents/proposals.ts'
+import { type Proposal, editable } from '../../agents/proposals.ts'
 import { proposalLink } from '../../tray/links.ts'
 import type { DiffFile, DiffRow } from '../diff/diff.ts'
 
@@ -188,12 +188,13 @@ export const bodyOf = (s: State, p: Proposal): string => (s.edited ? s.reply : (
 
 export function approval(s: State, p: Proposal, always = false): Approve {
   const e: Approve = { do: 'approve', p, always }
-  if (p.kind === 'reply' && s.edited && s.reply !== p.body) e.body = s.reply
+  if (editable(p) && s.edited && s.reply !== p.body) e.body = s.reply
   if (p.kind === 'push' && s.drop.size) e.drop = [...s.drop]
   return e
 }
 
-export const canAlways = (p: Proposal): boolean => p.status === 'pending' && p.kind !== 'deploy'
+// A deployment and a review comment on someone else's PR always ask.
+export const canAlways = (p: Proposal): boolean => p.status === 'pending' && p.kind !== 'deploy' && p.kind !== 'comment'
 
 // The Settings key and value A turns on for each kind.
 export type AlwaysSetting = readonly ['approvals.reply', 'post'] | readonly ['approvals.push' | 'approvals.retry' | 'approvals.manual' | 'approvals.move', 'auto']
@@ -350,11 +351,12 @@ const KEYS: Record<string, ProposalKey> = {
   a: (s, p) => (ready(s) ? approval(s, p) : undefined),
   A: (s, p) => {
     if (canAlways(p)) return ready(s) ? approval(s, p, true) : undefined
-    s.note = { text: t(p.kind === 'deploy' ? 'approvals.notes.deployAsks' : 'approvals.notes.tryAgain'), tone: 'peach' }
+    const why = p.kind === 'deploy' ? 'approvals.notes.deployAsks' : p.kind === 'comment' ? 'approvals.notes.commentAsks' : 'approvals.notes.tryAgain'
+    s.note = { text: t(why), tone: 'peach' }
     return undefined
   },
   e: (s, p, env) => {
-    if (p.kind !== 'reply' || p.status !== 'pending') return undefined
+    if (!editable(p) || p.status !== 'pending') return undefined
     if (!inline(env)) return { do: 'editor', p, text: bodyOf(s, p) }
     s.editing = true
     s.draft = bodyOf(s, p)
