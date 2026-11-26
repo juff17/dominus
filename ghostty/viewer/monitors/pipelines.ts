@@ -11,7 +11,7 @@ import type { Runner } from '../../core/proc.ts'
 import { CLI, type ForgeId, type Why, whyFailed } from './forge.ts'
 
 export type Trigger = 'push' | 'tag' | 'schedule' | 'mr' | 'pr' | 'manual' | 'other'
-export type StageState = 'passed' | 'failed' | 'running' | 'manual' | 'waiting' | 'skipped'
+export type StageState = 'passed' | 'failed' | 'running' | 'manual' | 'waiting' | 'canceled' | 'skipped'
 export type Stage = { name: string; state: StageState; done: number; total: number }
 export type PipeState = 'running' | 'failed' | 'manual' | 'passed' | 'pending' | 'canceled' | 'skipped'
 
@@ -107,15 +107,46 @@ const rec = (v: unknown): Json => (isObj(v) ? v : {})
 const list = (v: unknown): Json[] => (Array.isArray(v) ? v.filter(isObj) : [])
 const time = (v: unknown): number => Date.parse(str(v)) || 0
 
-// A failed job with allow_failure doesn't fail the stage.
-function stageOf(statuses: { status: string; optional: boolean }[]): StageState {
-  const has = (...s: string[]) => statuses.some(j => s.includes(j.status))
-  if (statuses.some(j => j.status === 'failed' && !j.optional)) return 'failed'
-  if (has('running', 'pending', 'preparing', 'waiting_for_resource')) return 'running'
+// A job's state, the same on both hosts and the same as agent_hub.forge's
+// (pipeline-watch, pr-babysit): tests/contract/pipeline-states.test.mjs holds
+// the two to one another.
+export type JobState = 'running' | 'success' | 'failed' | 'canceled' | 'skipped' | 'manual' | 'pending' | 'waiting'
+
+// Created, scheduled, preparing and waiting_for_resource jobs wait on other
+// jobs, not a runner.
+const GL_JOB: Record<string, JobState> = {
+  running: 'running',
+  success: 'success',
+  failed: 'failed',
+  canceled: 'canceled',
+  canceling: 'canceled',
+  skipped: 'skipped',
+  manual: 'manual',
+  pending: 'pending',
+}
+export const gitlabJobState = (status: string): JobState => GL_JOB[status] ?? 'waiting'
+
+// An Actions job's status and conclusion.
+const GH_DONE: Record<string, JobState> = { success: 'success', neutral: 'success', skipped: 'skipped', cancelled: 'canceled', stale: 'canceled', action_required: 'manual' }
+export function githubJobState(status: string, conclusion: string): JobState {
+  if (status === 'in_progress') return 'running'
+  if (status === 'waiting') return 'manual'
+  if (status !== 'completed') return 'pending'
+  return GH_DONE[conclusion] ?? 'failed'
+}
+
+// Jobs allowed to fail count only when every job in the stage is.
+export function stageOf(jobs: readonly { state: JobState; optional: boolean }[]): StageState {
+  const required = jobs.filter(j => !j.optional)
+  const counted = required.length ? required : jobs
+  const has = (...s: JobState[]) => counted.some(j => s.includes(j.state))
+  if (counted.every(j => j.state === 'skipped')) return 'skipped'
+  if (has('failed')) return 'failed'
+  if (has('running', 'pending')) return 'running'
   if (has('manual')) return 'manual'
-  if (statuses.every(j => j.status === 'skipped')) return 'skipped'
-  if (statuses.every(j => ['success', 'failed', 'skipped', 'canceled'].includes(j.status))) return 'passed'
-  return 'waiting'
+  if (has('waiting')) return 'waiting'
+  if (has('canceled')) return 'canceled'
+  return 'passed'
 }
 
 const GL_STATE: Record<string, PipeState> = {
@@ -141,7 +172,7 @@ export function gitlabPipe(pipeline: unknown, jobs: unknown, host: string, proje
   if (!id) return null
   // The API lists the newest job first; stages go in the order they ran.
   const all = list(jobs)
-    .map(j => ({ id: num(j.id), name: str(j.name), stage: str(j.stage), status: str(j.status), optional: j.allow_failure === true, url: str(j.web_url), sha: str(rec(j.commit).id) }))
+    .map(j => ({ id: num(j.id), name: str(j.name), stage: str(j.stage), status: str(j.status), state: gitlabJobState(str(j.status)), optional: j.allow_failure === true, url: str(j.web_url), sha: str(rec(j.commit).id) }))
     .sort((a, b) => a.id - b.id)
   const names: string[] = []
   for (const j of all) if (!names.includes(j.stage)) names.push(j.stage)
@@ -174,21 +205,12 @@ export function gitlabPipe(pipeline: unknown, jobs: unknown, host: string, proje
 
 const GH_TRIGGER: Record<string, Trigger> = { push: 'push', schedule: 'schedule', pull_request: 'pr', pull_request_target: 'pr', workflow_dispatch: 'manual', release: 'tag' }
 
+// agent_hub.forge groups a run's jobs by the name before " / " (a reusable
+// workflow), since pr-babysit sums up every check on a PR; one run here has
+// few jobs, so each is drawn as its own stage.
 function githubStage(j: Json): Stage {
   const status = str(j.status)
-  const conclusion = str(j.conclusion)
-  const state: StageState =
-    status === 'waiting'
-      ? 'manual'
-      : status !== 'completed'
-        ? status === 'in_progress'
-          ? 'running'
-          : 'waiting'
-        : ['failure', 'timed_out', 'startup_failure'].includes(conclusion)
-          ? 'failed'
-          : conclusion === 'skipped' || conclusion === 'cancelled'
-            ? 'skipped'
-            : 'passed'
+  const state = stageOf([{ state: githubJobState(status, str(j.conclusion)), optional: false }])
   return { name: str(j.name), state, done: status === 'completed' ? 1 : 0, total: 1 }
 }
 

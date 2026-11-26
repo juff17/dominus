@@ -8,8 +8,7 @@
 
 import { readFileSync, unlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { type Asked, actionsOf, pruneResults } from './actions.ts'
 import {
   type Focus,
@@ -37,7 +36,7 @@ import { type ClickActs, type Hit, type HubPrefs, type HubUi, type Note, type Sc
 import { follow, markReviewed } from '../agents/client.ts'
 import { type Agent, attentionTags, brokeTags, lanes, monitorsOf } from '../agents/model.ts'
 import { errCode, logger } from '../core/log.ts'
-import { RUN, hubOpen } from '../core/paths.ts'
+import { CONF, RUN, claudeBin, hubOpen } from '../core/paths.ts'
 import { run } from '../core/proc.ts'
 import { load as settings } from '../settings/settings.ts'
 import { recents as recentsOf, remember as rememberIn, storePaths } from '../settings/prefs.ts'
@@ -49,11 +48,8 @@ import { ACCENT, P, enter, leave, out, paint, tokens } from '../tui/term.ts'
 const log = logger('hub')
 logCrashes(log)
 
-const HERE = dirname(fileURLToPath(import.meta.url))
-const CONF = process.env.GHOSTTY_CONF || dirname(HERE)
 const WIN = Number(process.env.HUB_WIN) || 0
-// Ghostty's own PATH may lack claude; bin/ghostty-hub finds it.
-const CLAUDE = process.env.AGENT_HUB_CLAUDE || 'claude'
+const CLAUDE = claudeBin()
 const HOME = homedir()
 const { recents: RECENTS } = storePaths(process.env, HOME)
 const listCols = () => settings()['hub.listCols']

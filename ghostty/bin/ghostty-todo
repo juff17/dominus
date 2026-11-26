@@ -38,14 +38,13 @@ const todo = await import(join(here, '../viewer/todo/todo.ts'))
 todo.moveOldStoreOnce()
 const { errorMessage, logger } = await import(join(here, '../core/log.ts'))
 const { pluginInstalled, pluginMissing } = await import(join(here, '../core/hub-skills.ts'))
+const { claudeBin } = await import(join(here, '../core/paths.ts'))
 // stdout is what Claude reads back, so what goes wrong quietly goes to the
 // todo log.
 const log = logger('todo')
 
 const TABS_SOCKET = process.env.AGENT_HUB_TABS_SOCKET || 'ghostty'
 const CLAUDE_DIR = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')
-// Where ghostty-claude-start saved claude: Ghostty's own PATH often lacks it.
-const CLAUDE_FILE = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'ghostty-layout/claude')
 // What the filer runs: this same script, as it was started (the installed
 // link, or a worktree's copy), so the filer's add matches this file.
 const CLI = process.argv[1]
@@ -142,16 +141,6 @@ function pickType(input) {
   return type
 }
 
-function claudeBin() {
-  let saved = ''
-  try {
-    saved = readFileSync(CLAUDE_FILE, 'utf8').trim()
-  } catch (error) {
-    // Not saved yet: the other places stand in.
-    log.debug('claude path unreadable', { path: CLAUDE_FILE, err: errorMessage(error) })
-  }
-  return [process.env.AGENT_HUB_CLAUDE, saved, join(homedir(), '.local/bin/claude')].find(c => c && existsSync(c)) || 'claude'
-}
 // Whether item is still filing under this process, not filed, dropped or
 // handed to a later filer by a retry.
 const ownFiling = item => item.filing?.pid === process.pid

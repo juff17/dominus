@@ -98,7 +98,7 @@ function setup({ win = true, tmux = fakeTmux(), spawn = fakeSpawn(), popup = fal
     openInHub: async () => ({ ok: true, message: '' }),
     repoOf: async dir => ({ root: dir, repo: 'alpha', worktree: '', branch: 'main' }),
     settings: () => ({ 'todo.handoff.mode': 'auto', 'todo.handoff.effort': 'medium', 'todo.noteSecs': 2 }) as Partial<Settings> as Settings,
-    claudeFile: '/cache/ghostty-layout/claude',
+    claude: () => '/opt/claude bin/claude',
     node: '/usr/bin/node',
     todoCli: '/conf/bin/ghostty-todo',
     pasteImage: () => ({ image: '/images/todo/pasted.png' }),

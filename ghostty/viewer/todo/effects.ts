@@ -8,7 +8,7 @@ import { basename } from 'node:path'
 import { type Image, type Pasted, attachFiles, pasteImage, sweepImages } from '../../core/images.ts'
 import { errorMessage, logger } from '../../core/log.ts'
 import { t } from '../../core/text.ts'
-import { CLAUDE_FILE, LAYOUT_SOCKET, bin } from '../../core/paths.ts'
+import { LAYOUT_SOCKET, bin, claudeBin } from '../../core/paths.ts'
 import { type RunResult, type Runner, run } from '../../core/proc.ts'
 import { readState } from '../../agents/client.ts'
 import { type Agent, type LaunchPlan, type TaskSpec, launch } from '../../agents/model.ts'
@@ -43,7 +43,6 @@ import * as ui from './todo-ui.ts'
 const log = logger('todo')
 
 // The claude to run, as the tab session found it (tmux.conf).
-export { CLAUDE_FILE }
 
 export type World = {
   run: Runner
@@ -59,7 +58,7 @@ export type World = {
   // Ctrl+V's image, and pasted image files, saved where todos keep them.
   pasteImage: () => Pasted
   attachFiles: (files: readonly string[]) => Pasted[]
-  claudeFile: string
+  claude: () => string
   node: string
   todoCli: string
 }
@@ -86,7 +85,7 @@ export const world = (): World => ({
   settings: loadSettings,
   pasteImage: () => pasteImage(IMAGES_DIR),
   attachFiles: files => attachFiles(files, IMAGES_DIR),
-  claudeFile: CLAUDE_FILE,
+  claude: () => claudeBin(),
   node: process.execPath,
   todoCli: bin('ghostty-todo'),
 })
@@ -400,15 +399,6 @@ function sweep({ s }: Ctx): void {
 
 // ---- Starting agents ----
 
-function claudePath({ io }: Ctx): string {
-  try {
-    return io.readFile(io.claudeFile, 'utf8').trim() || 'claude'
-  } catch (error) {
-    log.warn('claude path unreadable, using PATH', { path: io.claudeFile, err: errorMessage(error) })
-    return 'claude'
-  }
-}
-
 // Typed into the tab's shell, so the shell stays when Claude exits. '', or
 // tmux's error when it typed nothing.
 async function typeLine({ tabs }: Ctx, pane: string, line: string): Promise<string> {
@@ -495,7 +485,7 @@ type AgentRun = { error: string } | { error?: undefined; storeError?: unknown }
 
 async function startAgent(c: Ctx, item: Item, spec: TaskSpec): Promise<AgentRun> {
   const plan = launch(spec)
-  const claude = claudePath(c)
+  const claude = c.io.claude()
   const started = await startInBackground(c, spec.cwd, plan, claude)
   if (started.error !== undefined) return { error: started.error }
   const handoff = { name: plan.name, where: 'bg' as const, pane: '', at: Date.now() }
@@ -585,7 +575,7 @@ async function goTo(c: Ctx, item: Item): Promise<void> {
 async function reopen(c: Ctx, item: Item, folder: string): Promise<void> {
   const { s, io } = c
   const { win, popup } = s.config
-  const claude = claudePath(c)
+  const claude = c.io.claude()
   const made = await c.tabs('new-window', '-t', `ghostty-${win}:`, '-c', folder, '-P', '-F', '#{pane_id}')
   if (!made.ok) return io.say(t('todo.go.noTab', { err: made.err }), P.red)
   const pane = made.out.trim()

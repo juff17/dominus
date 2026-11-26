@@ -25,6 +25,7 @@ A [manual] wait, a finished pipeline, and the failure that ends an
 
 import argparse
 import json
+import math
 import os
 import re
 import subprocess
@@ -37,14 +38,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib" / "py"))
 from agent_hub import files, stops
 from agent_hub import forge as hub_forge
 from agent_hub import notes as tray_notes
+from agent_hub import settings as hub_settings
 from agent_hub.forge import ApiError, AuthError, duration, progress, stages
 from agent_hub.log import logger
 
 LOG = logger("watch_pipeline")
 
 INTERVAL = 30
-# Failed polls in a row before [error] tells the user; it keeps retrying.
-ERROR_AFTER = 5
+SETTINGS = hub_settings.default_path()
+
+
+def setting(key, default, low, high):
+    return hub_settings.number(SETTINGS, key, default, low, high)
 
 
 class GitHub(hub_forge.GitHub):
@@ -331,6 +336,10 @@ def watch(args, forge, pid, ref, path):
             tray_notes.tray_note(title, message, log)
 
     failures = 0
+    # Settings may hold a fraction; 2.5 failed polls means the third.
+    # Failed polls in a row before [error] tells the user, as for pr-babysit;
+    # it keeps retrying.
+    error_after = math.ceil(setting("prBabysit.errorAfter", 5, 1, 20))
     while True:
         over = None
         if snap is not None:
@@ -363,8 +372,8 @@ def watch(args, forge, pid, ref, path):
             snap = None
             failures += 1
             log.warning("poll failed", failures=failures, err=e)
-            if failures == ERROR_AFTER:
-                emit("error", f"API calls failed {ERROR_AFTER} polls in a row, still retrying: {e}")
+            if failures == error_after:
+                emit("error", f"API calls failed {error_after} polls in a row, still retrying: {e}")
 
 
 if __name__ == "__main__":

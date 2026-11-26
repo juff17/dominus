@@ -341,7 +341,7 @@ function startScreen(): void {
   }
   process.stdin.setRawMode(true)
   process.stdin.on('data', (data: Buffer) => onInput(data))
-  process.on('SIGWINCH', draw)
+  process.stdout.on('resize', draw)
   process.on('SIGTERM', () => quit())
   enter(SCREEN)
   draw()

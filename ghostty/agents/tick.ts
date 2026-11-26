@@ -6,7 +6,7 @@ import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { logger } from '../core/log.ts'
-import { AGENTD_BEAT, CLAUDE_DIR, LAYOUT_SOCKET, RUN, TABS_SOCKET } from '../core/paths.ts'
+import { AGENTD_BEAT, CLAUDE_DIR, LAYOUT_SOCKET, RUN, TABS_SOCKET, claudeBin } from '../core/paths.ts'
 import { load as settings } from '../settings/settings.ts'
 import { type Agent, type Alive, type Paired, classify, pairParked } from './classify.ts'
 import {
@@ -56,7 +56,7 @@ export const execStdout: Exec = (cmd, args) =>
     }),
   )
 
-const CLAUDE = process.env.AGENT_HUB_CLAUDE || 'claude'
+const CLAUDE = claudeBin()
 
 // Runs claude with a time limit, so one that hangs can't stop the ticks.
 const runClaude = (args: string[], timeout: number): Promise<{ ok: boolean; out: string; err: string }> =>

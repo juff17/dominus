@@ -195,7 +195,7 @@ if (!process.stdin.isTTY) {
 
 process.stdin.setRawMode(true)
 process.stdin.on('data', onInput)
-process.on('SIGWINCH', draw)
+process.stdout.on('resize', draw)
 process.on('SIGTERM', () => quit())
 // On every exit, a crash too: otherwise the alt screen and mouse reporting
 // stay on, and a click answers bin/ghostty-viewer's "press any key".

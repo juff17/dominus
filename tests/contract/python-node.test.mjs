@@ -7,7 +7,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { CONF, sandbox } from '../harness.mjs'
+import { CONF, REPO, sandbox } from '../harness.mjs'
 import { HERE as FIXTURES, LOGGER, SCRIPTS, nodeJson, stubDir } from '../fixtures/shell/lib.mjs'
 
 const settings = await import(join(CONF, 'settings/settings.ts'))
@@ -30,7 +30,7 @@ const pyTuple = s =>
 // [file, kind, key, default, min/choices, max]
 function pythonReads() {
   const out = []
-  const files = { 'watch_pr.py': join(SCRIPTS, 'watch_pr.py'), 'approval.py': join(SCRIPTS, 'approval.py'), 'watch_logs.py': join(LOGGER, 'watch_logs.py') }
+  const files = { 'watch_pr.py': join(SCRIPTS, 'watch_pr.py'), 'approval.py': join(SCRIPTS, 'approval.py'), 'watch_logs.py': join(LOGGER, 'watch_logs.py'), 'watch_pipeline.py': join(REPO, 'hub-plugin/skills/pipeline-watch/scripts/watch_pipeline.py') }
   for (const [name, file] of Object.entries(files)) {
     const text = read(file)
     for (const m of text.matchAll(/\bsetting\("([\w.]+)", (\d+), (\d+), (\d+)\)/g)) out.push([name, 'number', m[1], Number(m[2]), Number(m[3]), Number(m[4])])
@@ -65,6 +65,7 @@ test('the Settings keys Python reads are these', () => {
       'watch_logs.py number logger.lineChars',
       'watch_logs.py number logger.floodLimit',
       'watch_logs.py number logger.dedup',
+      'watch_pipeline.py number prBabysit.errorAfter',
     ],
   )
 })

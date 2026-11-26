@@ -2,9 +2,11 @@
 // folder, so moving a module never breaks a path. The environment is read once,
 // as the module loads.
 
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { errorMessage, logger } from './log.ts'
 
 const env = process.env
 
@@ -23,6 +25,22 @@ export const CLAUDE_DIR = env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')
 // Where the tab session saved the claude to run (tmux.conf), which
 // Ghostty's own PATH may lack.
 export const CLAUDE_FILE = join(env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'ghostty-layout', 'claude')
+type ClaudeBinOptions = { env?: NodeJS.ProcessEnv; read?: (path: string) => string; exists?: (path: string) => boolean }
+
+// The claude to run, which Ghostty's own PATH may lack: the one bin/ghostty-hub
+// found, else the one the tab session saved, else the installer's, else PATH's.
+export function claudeBin({ env: e = env, read = p => readFileSync(p, 'utf8'), exists = existsSync }: ClaudeBinOptions = {}): string {
+  if (e.AGENT_HUB_CLAUDE) return e.AGENT_HUB_CLAUDE
+  try {
+    const saved = read(CLAUDE_FILE).trim()
+    if (saved) return saved
+  } catch (err) {
+    logger('paths').warn('claude path unreadable, using PATH', { path: CLAUDE_FILE, err: errorMessage(err) })
+  }
+  const installed = join(homedir(), '.local/bin/claude')
+  return exists(installed) ? installed : 'claude'
+}
+
 // The tab server (tmux.conf) and the outer layout server (layout.conf).
 export const TABS_SOCKET = env.AGENT_HUB_TABS_SOCKET || 'ghostty'
 export const LAYOUT_SOCKET = env.GHOSTTY_LAYOUT_SOCKET || 'ghostty-layout'

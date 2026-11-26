@@ -13,7 +13,7 @@ import { locate } from '../../agents/locate.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import { isRecord } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
-import { CLAUDE_FILE, bin, tilde } from '../../core/paths.ts'
+import { bin, claudeBin, tilde } from '../../core/paths.ts'
 import { type Runner, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { type Settings, defaultFolder, load as loadSettings, set as setSetting, settingsFile } from '../../settings/settings.ts'
@@ -54,15 +54,6 @@ export type Where = { client: string; layout: string }
 
 const readText = (path: string): string => readFileSync(path, 'utf8')
 
-function claudePath(): string {
-  try {
-    return readText(CLAUDE_FILE).trim() || 'claude'
-  } catch (err) {
-    log.warn('claude path unreadable, using PATH', { path: CLAUDE_FILE, err: errorMessage(err) })
-    return 'claude'
-  }
-}
-
 export const world = (runner: Runner = run): World => ({
   env: () => readEnv(),
   envSet: () => envSet(),
@@ -74,7 +65,7 @@ export const world = (runner: Runner = run): World => ({
   spawn,
   agents: () => readState()?.agents ?? null,
   go,
-  claude: claudePath,
+  claude: () => claudeBin(),
   plugin: pluginInstalled,
   cacheFile: join(ticketsDir(), 'cache.json'),
   linksFile: join(ticketsDir(), 'links.json'),

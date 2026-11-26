@@ -20,8 +20,8 @@ export const BIN = join(CONF, 'bin')
 
 let serial = 0
 
-// `env` points $HOME, the XDG folders, settings and the tmux socket names
-// into a temp folder.
+// `env` points $HOME, the XDG folders, settings, temp files and the tmux
+// sockets into a temp folder.
 export function sandbox(name = 'test') {
   const root = mkdtempSync(join(tmpdir(), `agent-hub-${name}-`))
   const dir = sub => {
@@ -53,6 +53,11 @@ export function sandbox(name = 'test') {
     LANG: 'C.UTF-8',
     PATH: process.env.PATH,
     TZ: 'UTC',
+    // Temp files and tmux's sockets too, so a test needs no /tmp of its own.
+    TMPDIR: dir('tmp'),
+    TMUX_TMPDIR: dir('tmux'),
+    // Install's copy of .env.example, never the repo's own .env.
+    DOMINUS_ENV_FILE: join(root, '.env'),
   }
   mkdirSync(dirname(env.AGENT_HUB_SETTINGS), { recursive: true })
   mkdirSync(dirname(env.TODO_FILE), { recursive: true })

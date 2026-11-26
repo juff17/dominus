@@ -331,10 +331,18 @@ class Polls(unittest.TestCase):
 
     def test_failed_polls_are_retried_and_told_once(self):
         down = {GH_RUN: {"_exit": 1, "_stderr": "HTTP 502: Bad Gateway"}}
-        code, lines = self.watch(GH_URL, gh_routes(), *[down] * (wp.ERROR_AFTER + 2))
+        code, lines = self.watch(GH_URL, gh_routes(), *[down] * 7)
         self.assertEqual(code, "killed")
         errors = [line for line in lines if line.startswith("[error]")]
-        self.assertEqual(errors, [f"[error] API calls failed {wp.ERROR_AFTER} polls in a row, still retrying: HTTP 502: Bad Gateway"])
+        self.assertEqual(errors, ["[error] API calls failed 5 polls in a row, still retrying: HTTP 502: Bad Gateway"])
+
+    def test_failed_polls_are_told_after_the_settings_count(self):
+        self.box.settings.write_text(json.dumps({"prBabysit.errorAfter": 2}))
+        down = {GH_RUN: {"_exit": 1, "_stderr": "HTTP 502: Bad Gateway"}}
+        with mock.patch.object(wp, "SETTINGS", self.box.settings):
+            _, lines = self.watch(GH_URL, gh_routes(), *[down] * 3)
+        errors = [line for line in lines if line.startswith("[error]")]
+        self.assertEqual(errors, ["[error] API calls failed 2 polls in a row, still retrying: HTTP 502: Bad Gateway"])
 
     def test_a_watch_that_cannot_start_leaves_a_tray_note(self):
         # Started from the Monitors popup, nobody may be reading the chat.

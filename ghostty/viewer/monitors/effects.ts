@@ -14,7 +14,7 @@ import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import type { Image } from '../../core/images.ts'
 import { isRecord } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
-import { CLAUDE_FILE, TABS_SOCKET } from '../../core/paths.ts'
+import { TABS_SOCKET, claudeBin } from '../../core/paths.ts'
 import { type Runner, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { storePaths } from '../../settings/prefs.ts'
@@ -67,16 +67,6 @@ export type ViewIo = { draw: () => void; quit: () => void; outside: (cmd: string
 
 const readText = (path: string): string => readFileSync(path, 'utf8')
 
-// As the tab session found it, else the one on PATH.
-function claudePath(): string {
-  try {
-    return readText(CLAUDE_FILE).trim() || 'claude'
-  } catch (err) {
-    log.warn('claude path unreadable, using PATH', { path: CLAUDE_FILE, err: errorMessage(err) })
-    return 'claude'
-  }
-}
-
 // New agent's recent folders.
 function recentFolders(): string[] {
   try {
@@ -119,7 +109,7 @@ export const world = (runner: Runner = run): World => ({
   stop: m => stopMonitor(m, stopWorld()),
   settings: loadSettings,
   dontAskStop: () => setSetting('hub.askStopMonitor', false),
-  claude: claudePath,
+  claude: () => claudeBin(),
   plugin: pluginInstalled,
   cacheFile: join(monitorsDir(), 'cache.json'),
   attachedFile: attachedFile(),

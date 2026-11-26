@@ -218,7 +218,7 @@ fx.readCell()
 fx.captureBackdrop(size())
 process.stdin.setRawMode(true)
 process.stdin.on('data', onInput)
-process.on('SIGWINCH', () => {
+process.stdout.on('resize', () => {
   out('\x1b[16t')
   resend()
 })

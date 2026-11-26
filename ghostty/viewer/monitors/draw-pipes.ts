@@ -44,6 +44,7 @@ const STAGE: Record<StageState, [glyph: string, color: string]> = {
   running: ['◐', P.blue],
   manual: ['⏸', P.peach],
   waiting: ['○', P.overlay1],
+  canceled: ['⊘', P.sub],
   skipped: ['⊘', P.overlay1],
 }
 
