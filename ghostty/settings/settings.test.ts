@@ -6,8 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { type FixedLine, ROWS, SECTIONS, type SettingKey, addedId, defaultFolder, defaultFolderSetting, isSetting, load, parseHosts,
-  parseList, reset, row, set, show, step, toggleFlag, valid } from './settings.ts'
+import { addedId, defaultFolder, defaultFolderSetting, load, parseHosts, parseList, reset, set, show, step, toggleFlag, valid } from './settings.ts'
+import { ROWS, SECTIONS, type SettingKey, row } from './catalog.ts'
+import { type FixedLine, isSetting } from './rows.ts'
 
 const fresh = () => join(mkdtempSync(join(tmpdir(), 'settings-')), 'settings.json')
 const shownAs = (id: string, label: string) =>

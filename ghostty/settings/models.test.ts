@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { FILER_MODELS, LONGEST_MODEL_ID, MODEL_IDS, MODELS, model, modelLabel, modelName } from './models.ts'
-import { row } from './settings.ts'
+import { FILER_MODELS, LONGEST_MODEL_ID, MODELS, MODEL_IDS, model, modelLabel, modelName } from './models.ts'
+import { row } from './catalog.ts'
 
 const CONF = join(dirname(fileURLToPath(import.meta.url)), '..')
 

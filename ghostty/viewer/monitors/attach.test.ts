@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { row } from '../../settings/settings.ts'
+import { row } from '../../settings/catalog.ts'
 import { type AttachOptions, DEFAULT_WATCH, UNTILS, WATCH_KEYS, attachLine, readAttached, recordAttached, untilOf, watchOf } from './attach.ts'
 
 const OPTIONS: AttachOptions = { watch: DEFAULT_WATCH, until: 'merged', model: 'sonnet', effort: 'medium', brief: '' }

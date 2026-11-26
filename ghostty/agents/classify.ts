@@ -5,7 +5,8 @@
 
 import { basename, relative } from 'node:path'
 import * as text from '../core/text.ts'
-import { type SettingKey, load as settings } from '../settings/settings.ts'
+import { load as settings } from '../settings/settings.ts'
+import type { SettingKey } from '../settings/catalog.ts'
 import type { Session } from './daemon.ts'
 import type { Pane } from './panes.ts'
 import type { Subagent } from './tail.ts'

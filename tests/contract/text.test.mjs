@@ -9,7 +9,7 @@ import { test } from 'node:test'
 import { CONF } from '../harness.mjs'
 
 const { TEXT, lookup } = await import(join(CONF, 'core/text.ts'))
-const { SECTIONS } = await import(join(CONF, 'settings/settings.ts'))
+const { SECTIONS } = await import(join(CONF, 'settings/catalog.ts'))
 
 const modules = readdirSync(CONF, { recursive: true }).filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts'))
 const source = Object.fromEntries(modules.map(f => [f, readFileSync(join(CONF, f), 'utf8')]))

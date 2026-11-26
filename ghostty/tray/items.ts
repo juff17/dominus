@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, readdirSync, rmdirSync, statSync, unlinkSync, } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, rmdirSync, statSync, unlinkSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { lanes, monitorsOf } from '../agents/board.ts'

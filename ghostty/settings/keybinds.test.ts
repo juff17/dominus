@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 import { KEY_ROWS, RESERVED, captured, clash, ghosttyConf, layoutConf, statements, tmuxConf, tmuxKey } from './keybinds.ts'
-import { row } from './settings.ts'
+import { row } from './catalog.ts'
 
 const CONF = readFileSync(layoutConf(), 'utf8')
 const defaults = () => Object.fromEntries(KEY_ROWS.map(r => [r.key, r.default]))

@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { isRecord } from '../core/json.ts'
 import { warnOnce } from '../core/log.ts'
 import { type Transcript, addEntry, emptyTranscript } from './transcript.ts'
-import { log, str, type Session } from './daemon.ts'
+import { type Session, log, str } from './daemon.ts'
 
 type SessionRef = Pick<Session, 'sessionId' | 'cwd'>
 
@@ -26,7 +26,6 @@ export function findTranscript(projects: string, s: SessionRef): string | null {
 
 // `rest` is the bytes of a line not yet whole.
 type Tail = { path: string; offset: number; rest: Buffer; t: Transcript }
-
 // subs by file name
 type SessionTail = Tail & { subs: Map<string, Tail> }
 

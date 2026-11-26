@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeEach, test } from 'node:test'
 
-import { SECTIONS, isSetting, row } from '../../settings/settings.ts'
+import { SECTIONS, row } from '../../settings/catalog.ts'
+import { isSetting } from '../../settings/rows.ts'
 import { items, onKey, start } from './state.ts'
 
 const logs = mkdtempSync(join(tmpdir(), 'settings-log-'))

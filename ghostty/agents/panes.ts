@@ -1,13 +1,15 @@
+// The tab and layout servers' panes as agentd reads them: where each agent's
+// tab is, whether you can see it, the glyph each tab carries, and which pane
+// a session's Claude runs under.
 
 import { warnOnce } from '../core/log.ts'
 import { MONITOR, STATE } from '../tui/term.ts'
 import type { AgentState } from './classify.ts'
 import { parentPid, readStat } from './procfs.ts'
-import { log, type Session } from './daemon.ts'
+import { type Session, log } from './daemon.ts'
 
 export const PANE_FORMAT =
   '#{pane_id}\t#{session_name}\t#{window_id}\t#{window_index}\t#{window_active}\t#{session_attached}\t#{@agent} #{@agent_fg}\t#{pane_pid}'
-
 // For list-panes -a on the layout server.
 export const HUB_SHOWN_FORMAT = '#{session_name} #{window_name} #{window_active} #{pane_id}'
 

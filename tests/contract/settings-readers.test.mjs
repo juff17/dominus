@@ -1,5 +1,5 @@
 // Contract: every Settings key read outside Node (the bin/ scripts' `setting`,
-// popup_opens, the hooks' jq, the tray widget) exists in settings/settings.ts
+// popup_opens, the hooks' jq, the tray widget) exists in settings/catalog.ts
 // with the type and values its reader expects. A script's fallback is used when
 // Node can't answer, so it should be the default.
 import assert from 'node:assert/strict'
@@ -10,7 +10,7 @@ import { test } from 'node:test'
 import { BIN, CONF, sandbox } from '../harness.mjs'
 import { PLASMOID, nodeJson } from '../fixtures/shell/lib.mjs'
 
-const settings = await import(join(CONF, 'settings/settings.ts'))
+const settings = await import(join(CONF, 'settings/catalog.ts'))
 const read = f => readFileSync(f, 'utf8')
 const scripts = readdirSync(BIN).filter(f => statSync(join(BIN, f)).isFile())
 const libs = readdirSync(join(BIN, 'lib')).filter(f => f.endsWith('.sh')).sort().map(f => `lib/${f}`)

@@ -10,7 +10,7 @@ import { test } from 'node:test'
 import { BIN, CONF, VIEWER, sandbox } from '../harness.mjs'
 
 const modes = await import(join(VIEWER, 'modes.ts'))
-const settings = await import(join(CONF, 'settings/settings.ts'))
+const settings = await import(join(CONF, 'settings/catalog.ts'))
 const viewer = readFileSync(join(BIN, 'ghostty-viewer'), 'utf8')
 const yaziInit = readFileSync(join(CONF, 'yazi', 'init.lua'), 'utf8')
 

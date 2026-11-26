@@ -5,7 +5,8 @@
 // pane to mode i, or with GV_QUIT's code for q (0 closes the pane).
 // `popup <id>` prints on or off rather than exiting with it, as a crash exits 1 too.
 
-import { load, modeName, type Settings } from '../settings/settings.ts'
+import { load } from '../settings/settings.ts'
+import { type Settings, modeName } from '../settings/catalog.ts'
 
 export const FIRST_EXIT = 10
 

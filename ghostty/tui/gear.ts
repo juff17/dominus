@@ -5,7 +5,7 @@
 // pixels stay square and sharp instead of being smoothed by a resize.
 
 import { createHash } from 'node:crypto'
-import { existsSync, } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Art } from './gear-art.ts'
 import { type ImageId, gridRow, placeGrid, transmitFile } from './kitty.ts'

@@ -9,7 +9,7 @@
 // This file wires the keys and the terminal; state.ts holds the state,
 // draw.ts draws it and effects.ts does what touches the world.
 
-import { mkdirSync, } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { basename, dirname } from 'node:path'
 
 import { imageFiles } from '../../core/images.ts'

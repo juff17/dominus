@@ -5,7 +5,8 @@ import { basename } from 'node:path'
 
 import { t } from '../../core/text.ts'
 import { LONGEST_MODEL_ID, modelLabel, modelName } from '../../settings/models.ts'
-import { type Settings, load as loadSettings } from '../../settings/settings.ts'
+import { load as loadSettings } from '../../settings/settings.ts'
+import type { Settings } from '../../settings/catalog.ts'
 import { type Hint, keyHints, keyHintsWidth, modeHeader, switchCol } from '../../tui/chrome.ts'
 import { ansi, chips, confirm, field, fieldLabel, radio, select, spanWidth } from '../../tui/controls.ts'
 import { ACCENT, BG, BOLD, FG, ITALIC, P, RESET, STRIKE, fg } from '../../tui/palette.ts'
@@ -14,7 +15,7 @@ import { type Span, render } from '../../tui/term.ts'
 import { fit, visible, wrapText as wrap } from '../../tui/text.ts'
 import { type Arranged, CATEGORIES, type Filing, type Item, TYPES, age, categoryName, categoryShort, colorOf, filingState, imagesOf, typeColorOf, typeName } from './todo.ts'
 import * as ui from './todo-ui.ts'
-import { type AddStep, type ConfirmPrompt, type EditField, type EditPrompt, EDIT_FIELDS, FIELDS, type HandoffPrompt, type Prompt, fieldName } from './todo-ui.ts'
+import { type AddStep, type ConfirmPrompt, EDIT_FIELDS, type EditField, type EditPrompt, FIELDS, type HandoffPrompt, type Prompt, fieldName } from './todo-ui.ts'
 import { type State, cursorItem, selectable, shown } from './state.ts'
 
 // Counted from 1. The popup has no mode header: its title is in the overlay

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import type { ChildProcess, SpawnOptions } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { mkdirSync, mkdtempSync, readFileSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, rmdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -15,7 +15,7 @@ process.env.AGENT_HUB_LOG_DIR = join(root, 'logs')
 process.env.TODO_FILE = join(root, 'todos.json')
 
 import type { RunResult } from '../../core/proc.ts'
-import type { Settings } from '../../settings/settings.ts'
+import type { Settings } from '../../settings/catalog.ts'
 import type { Hint } from '../../tui/chrome.ts'
 import type { World } from './effects.ts'
 import type { Item } from './todo.ts'

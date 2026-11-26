@@ -16,7 +16,7 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { KEY_ROWS, type KeyValues, captured, clash, ghosttyConf, ghosttyFile, layoutConf, statements, tmuxConf, tmuxFile } from './keybinds.ts'
-import { row } from './settings.ts'
+import { row } from './catalog.ts'
 
 process.env.AGENT_HUB_SETTINGS = '/nonexistent/agent-hub/settings.json'
 

@@ -2,7 +2,7 @@
 // tests can hand it a fake. dv reads before it goes on, so its runs are
 // synchronous.
 
-import { existsSync, readFileSync, } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 import { errCode, errorMessage, logger } from '../../core/log.ts'
 import type { SyncRunner } from '../../core/proc.ts'

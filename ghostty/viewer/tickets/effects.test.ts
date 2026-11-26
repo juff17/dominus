@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import type { Settings } from '../../settings/settings.ts'
+import type { Settings } from '../../settings/catalog.ts'
 import { type JiraTracker, type World, configOf, readCache, readLinks, ticketsEffects } from './effects.ts'
 import { BOARD } from './fixtures.test.ts'
 import { start } from './state.ts'

@@ -3,7 +3,7 @@
 // going to it. ticketsEffects() takes the world, so tests hand it fakes.
 
 import { type ChildProcess, type SpawnOptions, type SpawnSyncReturns, spawn } from 'node:child_process'
-import { chmodSync, copyFileSync, existsSync, } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { readState } from '../../agents/client.ts'
@@ -16,7 +16,8 @@ import { errorMessage, logger } from '../../core/log.ts'
 import { bin, claudeBin, tilde } from '../../core/paths.ts'
 import { type Runner, openUrl, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
-import { type Settings, defaultFolder, load as loadSettings, set as setSetting, settingsFile } from '../../settings/settings.ts'
+import { defaultFolder, load as loadSettings, set as setSetting, settingsFile } from '../../settings/settings.ts'
+import type { Settings } from '../../settings/catalog.ts'
 import { type Reachable, type Shown, go } from '../../tray/navigate.ts'
 import { JIRA_NEEDED, type JiraKey, envFile, envSet, readEnv } from '../../settings/env.ts'
 import { type FetchLike, type JiraConfig, jiraClient, trimSite } from './jira.ts'

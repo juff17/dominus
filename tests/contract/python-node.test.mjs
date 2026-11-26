@@ -10,7 +10,7 @@ import { test } from 'node:test'
 import { CONF, REPO, sandbox } from '../harness.mjs'
 import { HERE as FIXTURES, LOGGER, SCRIPTS, nodeJson, stubDir } from '../fixtures/shell/lib.mjs'
 
-const settings = await import(join(CONF, 'settings/settings.ts'))
+const settings = await import(join(CONF, 'settings/catalog.ts'))
 const read = f => readFileSync(f, 'utf8')
 const hasPython = spawnSync('python3', ['--version']).status === 0
 const hasJq = spawnSync('jq', ['--version']).status === 0

@@ -8,28 +8,9 @@ import { t } from '../../core/text.ts'
 import { type Menu, complete, suggestion } from '../../tui/complete.ts'
 import { editField, insertAt, length } from '../../tui/line.ts'
 import { P } from '../../tui/term.ts'
-import {
-  BUILTIN_MODES,
-  type Mode,
-  SECTIONS,
-  type RowOf,
-  type SettingKey,
-  type SettingRow,
-  type Settings,
-  addedId,
-  expandHome,
-  isAdded,
-  isSetting,
-  load,
-  modeName,
-  parseHosts,
-  parseList,
-  reset,
-  row,
-  set,
-  step,
-  toggleFlag,
-} from '../../settings/settings.ts'
+import { addedId, expandHome, load, parseHosts, parseList, reset, set, step, toggleFlag } from '../../settings/settings.ts'
+import { BUILTIN_MODES, type RowOf, SECTIONS, type SettingKey, type SettingRow, type Settings, isAdded, modeName, row } from '../../settings/catalog.ts'
+import { type Mode, isSetting } from '../../settings/rows.ts'
 import { type KeybindRow, apply, captured, clash } from '../../settings/keybinds.ts'
 import { type ForgeId, loggedIn, onPath } from '../../core/forge.ts'
 

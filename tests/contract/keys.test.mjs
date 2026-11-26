@@ -10,7 +10,7 @@ import { CONF, HUB } from '../harness.mjs'
 
 const keys = await import(join(HUB, 'keys.ts'))
 const { DIAGRAMS_CLOSE_KEY } = await import(join(CONF, 'core/keys.ts'))
-const { SECTIONS } = await import(join(CONF, 'settings/settings.ts'))
+const { SECTIONS } = await import(join(CONF, 'settings/catalog.ts'))
 const { RESERVED, statements, tmuxKey } = await import(join(CONF, 'settings/keybinds.ts'))
 
 const ghostty = readFileSync(join(CONF, 'config.ghostty'), 'utf8')

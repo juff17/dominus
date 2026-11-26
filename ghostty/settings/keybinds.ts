@@ -6,14 +6,16 @@
 // Ghostty reloads its config on SIGUSR2.
 
 import { execFileSync } from 'node:child_process'
-import { readFileSync, } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { errCode, errorMessage, logger } from '../core/log.ts'
 import { t, text } from '../core/text.ts'
-import { type KeyRow, ROWS, type SettingRow, load, settingsFile } from './settings.ts'
+import { load, settingsFile } from './settings.ts'
+import { ROWS, type SettingRow } from './catalog.ts'
+import type { KeyRow } from './rows.ts'
 import { writeAtomic } from '../core/json.ts'
 
 const log = logger('settings')

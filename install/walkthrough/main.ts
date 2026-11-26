@@ -14,11 +14,12 @@
 
 import { writeFileSync } from 'node:fs'
 
-import { checkbox, confirm, input, select, Separator } from '@inquirer/prompts'
+import { Separator, checkbox, confirm, input, select } from '@inquirer/prompts'
 
 import { errorMessage, logger } from '../../ghostty/core/log.ts'
-import { ACCENT, BOLD, fg, P } from '../../ghostty/tui/palette.ts'
-import { load, row, set } from '../../ghostty/settings/settings.ts'
+import { ACCENT, BOLD, P, fg } from '../../ghostty/tui/palette.ts'
+import { load, set } from '../../ghostty/settings/settings.ts'
+import { row } from '../../ghostty/settings/catalog.ts'
 import { type Answers, loadAnswers, saveAnswers } from './answers.ts'
 import { type Current, type Picked, type Prompts, runPages } from './pages.ts'
 import { type Line, nothingToInstall, packagesFor, planFile, planOf, reviewLines } from './plan.ts'
