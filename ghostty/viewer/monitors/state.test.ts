@@ -11,7 +11,7 @@ const { takesImages } = await import('./state.ts')
 type Agent = import('../../agents/model.ts').Agent
 type HostResult = import('./forge.ts').HostResult
 type MonitorsState = import('./state.ts').MonitorsState
-type Proposal = import('../../tray/approvals.ts').Proposal
+type Proposal = import('../../agents/proposals.ts').Proposal
 
 const FIXTURES = join(import.meta.dirname, '../../../tests/fixtures/viewer/monitors')
 const NOW = Date.UTC(2026, 10, 11, 12)

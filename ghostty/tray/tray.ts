@@ -20,13 +20,15 @@ import { errCode, logger } from '../core/log.ts'
 import { AGENTD_BEAT, RUN } from '../core/paths.ts'
 import { t, text } from '../core/text.ts'
 import { type Settings, expandHome, row as settingRow, load as settings } from '../settings/settings.ts'
-import { APPROVE_ACTIONS, readApprovals, runApproval } from './approvals.ts'
+import { readApprovals, runApproval } from '../agents/proposals.ts'
+import { APPROVE_ACTIONS } from './approvals.ts'
 import { type TrayItem, type TrayItems, dropNote, notified, readNotes, readSet, seenIds, trayItems, updateSet } from './items.ts'
 import type { Row } from './rows.ts'
 
 // What other modules and the tests took from here before it was split.
 export { hubOpen } from '../core/paths.ts'
-export { APPROVALS, APPROVE, PREVIEW_MOST, approvalRow, readApprovals, runApproval } from './approvals.ts'
+export { APPROVALS, readApprovals, runApproval } from '../agents/proposals.ts'
+export { APPROVE, PREVIEW_MOST, approvalRow } from './approvals.ts'
 export { readNotes, trayItems } from './items.ts'
 export { monitorLink, proposalLink } from './links.ts'
 type Navigate = typeof import('./navigate.ts')

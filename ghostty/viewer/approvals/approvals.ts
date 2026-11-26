@@ -9,7 +9,7 @@
 import { t } from '../../core/text.ts'
 import { load as settings } from '../../settings/settings.ts'
 import { editField, pasteField } from '../../tui/line.ts'
-import type { Proposal } from '../../tray/approvals.ts'
+import type { Proposal } from '../../agents/proposals.ts'
 import { proposalLink } from '../../tray/links.ts'
 import type { DiffFile, DiffRow } from '../diff/diff.ts'
 

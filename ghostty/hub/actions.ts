@@ -93,8 +93,6 @@ export type Actions = {
   adoptResult(): Promise<void>
 }
 
-// The processes on the machine, for finding a monitor's (agents/stop.ts).
-export { processes }
 
 const missing = (err: unknown) => errCode(err) === 'ENOENT'
 // An error's code (EPERM) when it has one, for a footer note.

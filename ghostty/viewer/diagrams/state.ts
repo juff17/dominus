@@ -10,6 +10,7 @@ import { type PaneModes, paneModes, tabs as modeTabs } from '../modes.ts'
 import { type Region, type View, home } from '../view.ts'
 import { type Box, type Grid, frameBox } from '../../tui/backdrop.ts'
 import { closeLabel, mouseIn } from '../../tui/overlay.ts'
+import { t } from '../../core/text.ts'
 import {
   type CellAt,
   type Diagram,
@@ -67,7 +68,7 @@ export function config(env: NodeJS.ProcessEnv = process.env): Config {
   const [tabsSocket = '', tabsSession = ''] = (env.DV_TABS ?? '').split(':')
   const [pinSocket = '', pinPane = ''] = (env.DV_PANE ?? '').split(':')
   const frame = Boolean(env.DV_FRAME)
-  const pane = paneModes('Diagrams', frame ? {} : env)
+  const pane = paneModes(t('settings.modes.diagrams.name'), frame ? {} : env)
   const modes = modeTabs(pane).map(tab => ({ label: tab.label, exit: pane.exitOf(tab.i) }))
   const header = !frame && modes.length > 1
   const edge = frame ? 1 : 0

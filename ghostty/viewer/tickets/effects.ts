@@ -18,7 +18,7 @@ import { type Runner, openUrl, run } from '../../core/proc.ts'
 import { t } from '../../core/text.ts'
 import { type Settings, defaultFolder, load as loadSettings, set as setSetting, settingsFile } from '../../settings/settings.ts'
 import { type Reachable, type Shown, go } from '../../tray/navigate.ts'
-import { type JiraKey, envFile, envSet, readEnv } from './env.ts'
+import { JIRA_NEEDED, type JiraKey, envFile, envSet, readEnv } from '../../settings/env.ts'
 import { type FetchLike, type JiraConfig, jiraClient, trimSite } from './jira.ts'
 import { type Act, type Link, type Prefs, type Setup, type TicketsState, screenFor, setBoard } from './state.ts'
 import { type Board, type BoardChoice, type Person, type Ticket, type Tracker, factLines, handoffFacts, scoutText } from './tracker.ts'
@@ -206,7 +206,7 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
     reread()
     void checkMcp()
     const e = s.setup.env
-    if (!e.JIRA_SITE || !e.JIRA_EMAIL || !e.JIRA_API_TOKEN) {
+    if (JIRA_NEEDED.some(k => !e[k])) {
       s.screen = screenFor(s)
       return io.draw()
     }

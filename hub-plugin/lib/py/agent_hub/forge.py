@@ -140,7 +140,6 @@ class Forge:
 
 class GitHub(Forge):
     cli = "gh"
-    kind = "github"
 
     def repo(self):
         return f"repos/{self.project}"
@@ -198,7 +197,6 @@ class GitHub(Forge):
 
 class GitLab(Forge):
     cli = "glab"
-    kind = "gitlab"
 
     JOB_STATUS = {
         "running": "running",

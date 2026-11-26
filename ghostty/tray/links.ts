@@ -1,6 +1,6 @@
 import type { MonitorEvent } from '../agents/model.ts'
 import { t } from '../core/text.ts'
-import type { Proposal } from './approvals.ts'
+import type { Proposal } from '../agents/proposals.ts'
 
 export type Link = { url: string; label: string }
 

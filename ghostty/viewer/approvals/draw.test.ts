@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import type { Proposal } from '../../tray/approvals.ts'
+import type { Proposal } from '../../agents/proposals.ts'
 import { onKey, start } from './approvals.ts'
 import { dots, keysFor, panel } from './draw.ts'
 

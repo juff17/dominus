@@ -7,7 +7,7 @@ import { type Hint, hintSpans } from '../../tui/chrome.ts'
 import { type BoxLine, type HeaderTitle, card, field, laneHeader } from '../../tui/controls.ts'
 import type { Size } from '../../tui/overlay.ts'
 import { ACCENT, BOLD, ITALIC, type Line, P, STATE, type Span, ago, bg, clean, fg, render, split, width } from '../../tui/term.ts'
-import { JIRA_KEYS } from './env.ts'
+import { JIRA_KEYS } from '../../settings/env.ts'
 import { LANES, type TicketsState, agentOf, columnTickets, laneTickets, missing, pickable } from './state.ts'
 import type { Phase, Ticket } from './tracker.ts'
 

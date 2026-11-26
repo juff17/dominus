@@ -72,7 +72,6 @@ export const BG = sequences({ ...P, ...TINT, accent: ACCENT }, bg)
 
 export const BOLD = '\x1b[1m'
 export const ITALIC = '\x1b[3m'
-export const UNDERLINE = '\x1b[4m'
 export const STRIKE = '\x1b[9m'
 export const RESET = '\x1b[0m'
 

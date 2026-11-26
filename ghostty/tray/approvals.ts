@@ -4,10 +4,6 @@ import { t } from '../core/text.ts'
 import { proposalLink } from './links.ts'
 import { type Action, type ApprovalRow, agentOf, row } from './rows.ts'
 
-// The files themselves are agents/proposals.ts's; the apps take them from
-// here, the one tray module they may import.
-export * from '../agents/proposals.ts'
-
 export const APPROVE = { reply: 'post', push: 'push', manual: 'run', deploy: 'approve', retry: 'retry', move: 'move' } as const satisfies Record<string, Action>
 // approval.py may write a kind the tray doesn't know yet.
 export type ProposalKind = keyof typeof APPROVE

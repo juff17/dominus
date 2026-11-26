@@ -13,7 +13,7 @@ import { after, test } from 'node:test'
 
 import type { Agent, Monitor } from '../agents/model.ts'
 import type { Runner } from '../core/proc.ts'
-import type { Proposal } from './approvals.ts'
+import type { Proposal } from '../agents/proposals.ts'
 
 const TMP = mkdtempSync(join(tmpdir(), 'tray-pin-'))
 after(() => rmSync(TMP, { recursive: true, force: true }))
@@ -39,7 +39,7 @@ writeFileSync(
 )
 process.env.PATH = `${join(TMP, 'bin')}:${process.env.PATH}`
 const { hubOpen, act, approvalRow, go, readNotes, runApproval, trayItems } = await import('./tray.ts')
-const { APPROVAL_MS, runGroup } = await import('./approvals.ts')
+const { APPROVAL_MS, runGroup } = await import('../agents/proposals.ts')
 const { TRAY, updateSet } = await import('./items.ts')
 
 const NOTES = join(TMP, 'agent-hub', 'notes')

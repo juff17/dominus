@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CONF } from '../../core/paths.ts'
+import { CONF } from '../core/paths.ts'
 
 // The repo root: CONF is the real ghostty folder, as Node resolves the links
 // install makes in ~/.config/ghostty.

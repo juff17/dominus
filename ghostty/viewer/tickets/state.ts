@@ -2,8 +2,8 @@
 // asks of the world comes back as an Act, which effects.ts carries out.
 
 import type { Agent } from '../../agents/model.ts'
-import type { JiraKey } from './env.ts'
 import type { Board, BoardChoice, Person, Ticket, Why } from './tracker.ts'
+import { JIRA_NEEDED, type JiraKey } from '../../settings/env.ts'
 
 // setup: something is missing, or the check is running. picker: choosing the
 // board. board: the sprint.
@@ -90,7 +90,7 @@ export function start(setup: Setup, prefs: Prefs): TicketsState {
 // What's still needed before the board can show, by name: the .env keys, then
 // the board.
 export function missing(setup: Setup): string[] {
-  const env = (['JIRA_SITE', 'JIRA_EMAIL', 'JIRA_API_TOKEN'] as const).filter(k => !setup.env[k])
+  const env = JIRA_NEEDED.filter(k => !setup.env[k])
   return [...env, ...(setup.board ? [] : ['board'])]
 }
 

@@ -4,7 +4,7 @@
 
 import type { Agent } from '../../agents/model.ts'
 import { t } from '../../core/text.ts'
-import type { Proposal } from '../../tray/approvals.ts'
+import type { Proposal } from '../../agents/proposals.ts'
 import { type Image, keptImages, nextNumber, placeholder } from '../../core/images.ts'
 import { editField, oneLine, pasteField } from '../../tui/line.ts'
 import {

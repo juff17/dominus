@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { set } from '../../settings/settings.ts'
-import type { Proposal } from '../../tray/approvals.ts'
+import type { Proposal } from '../../agents/proposals.ts'
 import type { DiffFile } from '../diff/diff.ts'
 import { type Approve, type Effect, type KeyResult, type State, alwaysSetting, bodyOf, canAlways, current, edited, inline, mayClose, onKey, openDiff, reload, seen, start } from './approvals.ts'
 

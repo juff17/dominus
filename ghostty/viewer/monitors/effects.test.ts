@@ -18,7 +18,7 @@ type Pr = import('./forge.ts').Pr
 type Agent = import('../../agents/model.ts').Agent
 type Settings = import('../../settings/settings.ts').Settings
 type ApprovalsWorld = import('../approvals/effects.ts').ApprovalsWorld
-type Proposal = import('../../tray/approvals.ts').Proposal
+type Proposal = import('../../agents/proposals.ts').Proposal
 type SpawnSyncReturns<T> = import('node:child_process').SpawnSyncReturns<T>
 
 const NOW = Date.UTC(2026, 10, 11, 12)

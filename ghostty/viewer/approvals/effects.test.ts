@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import type { Agent } from '../../agents/model.ts'
-import type { ApprovalResult, Proposal } from '../../tray/approvals.ts'
+import type { ApprovalResult, Proposal } from '../../agents/proposals.ts'
 import { start } from './approvals.ts'
 import { type ApprovalsIo, approvalEffects } from './effects.ts'
 

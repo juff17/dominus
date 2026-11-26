@@ -15,7 +15,7 @@ import { clampScroll } from '../../tui/list.ts'
 import type { Size } from '../../tui/overlay.ts'
 import { ACCENT, BOLD, type Line, P, type Span, bg, fg, render, split, width } from '../../tui/term.ts'
 import { CLI, type ForgeId, onPath } from '../../core/forge.ts'
-import { type JiraKey, envFile, envSet } from '../tickets/env.ts'
+import { type JiraKey, envFile, envSet } from '../../settings/env.ts'
 import { type FileInput, type Input, type Item, type SettingItem, type SettingsState, current, loginKey, logins, modeRows, pathGhost } from './state.ts'
 
 export const NAV = 22
