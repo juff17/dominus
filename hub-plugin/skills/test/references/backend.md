@@ -35,7 +35,7 @@ until every case passes, then screenshot its output as proof.
 | Happy path | Status, response shape, the values the ticket asks for |
 | Side effects | A follow-up GET or DB read shows the write landed |
 | Validation | Missing and bad fields give a 4xx with a useful message |
-| Auth | No token → 401; another user's resource → 403/404 |
+| Auth, only when the diff changes auth (login, tokens, sessions, roles or permissions, auth middleware or guards) | No token → 401; another user's resource → 403/404 |
 | Concurrent requests | Many requests at once (10 parallel creates or updates on one resource, two users at once): no 5xx, no lost or duplicate writes, and the final state matches one valid order |
 | Not found and conflicts | An unknown id, a duplicate create, a stale update |
 | Repeat and order | The same request twice (idempotency); events out of order, from review's state machine |
