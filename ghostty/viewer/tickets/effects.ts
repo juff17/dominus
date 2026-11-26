@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 
 import { readState } from '../../agents/client.ts'
 import { type Agent, type TicketSpec, launch } from '../../agents/model.ts'
-import { slug } from '../../agents/launch.ts'
+import { slug, startBg } from '../../agents/launch.ts'
 import { locate } from '../../agents/locate.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
@@ -300,23 +300,16 @@ export function ticketsEffects(s: TicketsState, io: World & ViewIo, where: Where
   // or what went wrong.
   function spawnBg(spec: TicketSpec, key: string): Promise<{ err: string; name: string }> {
     const plan = launch(spec)
-    return new Promise(done => {
-      let out = ''
-      const ms = io.now()
-      const child = io.spawn(io.claude(), plan.argv.slice(1), { cwd: spec.cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
-      child.stdout?.on('data', (b: Buffer) => (out += b))
-      child.stderr?.on('data', (b: Buffer) => (out += b))
-      child.on('error', err => {
-        log.error('agent not started', { id: key, err: err.message })
-        done({ err: err.message, name: plan.name })
-      })
-      child.on('close', code => {
-        const said = out.trim().split('\n')[0]?.slice(0, 160) ?? ''
-        if (code === 0) log.info('agent started', { id: key, name: plan.name, cwd: spec.cwd, model: spec.model, effort: spec.effort, ms: io.now() - ms })
-        else log.error('agent not started', { id: key, exit: code, err: said })
-        done({ err: code === 0 ? '' : said || `exit ${code}`, name: plan.name })
-      })
-      child.unref()
+    const ms = io.now()
+    return startBg(io.spawn, io.claude(), plan, spec.cwd).then(({ exit, out, error }) => {
+      if (error) {
+        log.error('agent not started', { id: key, err: error.message })
+        return { err: error.message, name: plan.name }
+      }
+      const said = out.trim().split('\n')[0]?.slice(0, 160) ?? ''
+      if (exit === 0) log.info('agent started', { id: key, name: plan.name, cwd: spec.cwd, model: spec.model, effort: spec.effort, ms: io.now() - ms })
+      else log.error('agent not started', { id: key, exit, err: said })
+      return { err: exit === 0 ? '' : said || `exit ${exit}`, name: plan.name }
     })
   }
 

@@ -39,6 +39,7 @@ import {
   stamp,
 } from './todo.ts'
 import * as ui from './todo-ui.ts'
+import { startBg } from '../../agents/launch.ts'
 
 const log = logger('todo')
 
@@ -468,16 +469,10 @@ async function handOff(c: Ctx, ids: readonly string[], at: Here, how: HandoffHow
 type Started = { error?: string }
 
 // claude --bg prints its id and returns once the agent is running.
-function startInBackground({ io }: Ctx, cwd: string, plan: LaunchPlan, claude: string): Promise<Started> {
-  return new Promise(done => {
-    let output = ''
-    const child = io.spawn(claude, plan.argv.slice(1), { cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
-    child.stdout?.on('data', b => (output += b))
-    child.stderr?.on('data', b => (output += b))
-    child.on('error', e => done({ error: t('todo.handOff.noClaude', { err: e.message }) }))
-    child.on('close', code => done(code ? { error: t('todo.handOff.bgFailed', { out: ui.tidy(output).trim().slice(0, 120) }) } : {}))
-    child.unref()
-  })
+async function startInBackground({ io }: Ctx, cwd: string, plan: LaunchPlan, claude: string): Promise<Started> {
+  const { exit, out, error } = await startBg(io.spawn, claude, plan, cwd)
+  if (error) return { error: t('todo.handOff.noClaude', { err: error.message }) }
+  return exit ? { error: t('todo.handOff.bgFailed', { out: ui.tidy(out).trim().slice(0, 120) }) } : {}
 }
 
 // storeError: the agent started but its hand-off couldn't be recorded.

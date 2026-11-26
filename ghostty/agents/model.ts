@@ -13,10 +13,9 @@ export {
   monitorKind,
   monitorProcess,
   pairParked,
-  permissionTool,
   repoOf,
-  showsPermission,
 } from './classify.ts'
+export { permissionTool, showsPermission } from './permission.ts'
 export type { Agent, AgentKind, AgentState, Monitor, MonitorState, Need, Proc } from './classify.ts'
 export { cardHeights, counts, lanes, monitorsOf, scrollTo, watches } from './board.ts'
 export type { Counts, Lane, Lanes, StripMonitor } from './board.ts'

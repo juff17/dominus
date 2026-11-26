@@ -466,7 +466,9 @@ test('with Run in the sandbox on, New agent starts its task with the sandbox set
   assert.match(argv.at(-1) ?? '', /^From the hub: Your shell commands run in a sandbox\..*\n\nMy prompt:\ndo it$/s)
 })
 
-test('a background agent starts with claude --bg, and the footer says how that went', () => {
+test('a background agent starts with claude --bg, and the footer says how that went', async () => {
+  // The footer hears once the run's promise settles.
+  const settled = () => new Promise(setImmediate)
   type Fake = EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; cmd: string; args: string[]; opts: SpawnOptions }
   const children: Fake[] = []
   const spawn: Spawn = (cmd, args, opts) => {
@@ -482,10 +484,12 @@ test('a background agent starts with claude --bg, and the footer says how that w
   assert.deepEqual(w.notes.at(-1), { text: 'Starting do-it in the background…', color: P.sub, ms: 30000 })
   children[0].stdout.emit('data', 'bg-1\n')
   children[0].emit('close', 0)
+  await settled()
   assert.deepEqual(w.notes.at(-1), { text: 'Started do-it in the background bg-1', color: P.green, ms: 7000 })
   w.act.start(spec)
   children[1].stderr.emit('data', 'not logged in')
   children[1].emit('close', 1)
+  await settled()
   assert.deepEqual(w.notes.at(-1), { text: 'claude --bg failed: not logged in', color: P.red, ms: 7000 })
   // The prompt stays out of the log.
   const failed = info(w, 'agent started').at(-1)
@@ -495,6 +499,7 @@ test('a background agent starts with claude --bg, and the footer says how that w
   w.act.start(spec)
   children[2].emit('error', new Error('spawn /bin/claude ENOENT'))
   children[2].emit('close', -2)
+  await settled()
   assert.equal(w.notes.at(-1)?.text, "Couldn't start claude: spawn /bin/claude ENOENT")
   assert.equal(info(w, 'agent started').length, 3)
 })

@@ -10,7 +10,7 @@ import type { Readable } from 'node:stream'
 import { type CloseHow, type Monitored, closeQuestion, shq } from './board.ts'
 import type { HubLog, OpenTarget, Say } from './peek.ts'
 import type { Tmux } from './tmux.ts'
-import { type Agent, type LaunchSpec, type Proc, launch, monitorsOf, permissionTool, showsPermission, watches } from '../agents/model.ts'
+import { type Agent, type LaunchSpec, type Proc, launch, monitorsOf, permissionTool, watches } from '../agents/model.ts'
 import { processes, stopMonitor as stopMonitorProcess } from '../agents/stop.ts'
 import { markStopped as markStoppedIn } from '../agents/client.ts'
 import { type Fields, errCode, errorMessage } from '../core/log.ts'
@@ -19,6 +19,8 @@ import { t } from '../core/text.ts'
 import { type RunResult, type Runner, run as runProc } from '../core/proc.ts'
 import { load as settings, set as setSettingIn } from '../settings/settings.ts'
 import { P, clean } from '../tui/term.ts'
+import { startBg } from '../agents/launch.ts'
+import { answerKey, promptShown, sessionWaiting } from '../agents/permission.ts'
 
 // The setting that turns a question off, when it can be ("don't ask again").
 export type AskSetting = 'hub.askStopMonitor'
@@ -176,37 +178,21 @@ async function answer(c: Ctx, a: Agent | null, allow: boolean): Promise<void> {
 const ANSWER_SETTLE_MS = 2000
 
 async function press(c: Ctx, a: Agent, pane: string, allow: boolean, answered: (fields: Fields) => void): Promise<void> {
-  const waiting = sessionWaiting(c, a)
-  const screen = await c.tabs('capture-pane', '-p', '-t', pane)
-  if (!waiting || !showsPermission(screen.out, a.cmd)) {
-    answered({ ok: false, reason: waiting ? 'no prompt on screen' : 'not waiting' })
+  const { screen, why } = await promptShown(c.tabs, pane, a.cmd, sessionWaiting(c.claudeDir, a, c.log))
+  if (why) {
+    answered({ ok: false, reason: why })
     return c.say(t('hub.notes.noPrompt', { title: a.title }), P.peach)
   }
   // The prompt just answered, not yet redrawn away; the session file lags
   // the screen too, so it can't tell.
   const last = c.state.answered.get(a.id)
-  if (last && last.screen === screen.out && c.now() - last.at < ANSWER_SETTLE_MS) return answered({ ok: false, reason: 'already answered' })
-  const sent = await c.tabs('send-keys', '-t', pane, allow ? '1' : 'Escape')
-  if (sent.ok) c.state.answered.set(a.id, { screen: screen.out, at: c.now() })
+  if (last && last.screen === screen && c.now() - last.at < ANSWER_SETTLE_MS) return answered({ ok: false, reason: 'already answered' })
+  const sent = await c.tabs('send-keys', '-t', pane, answerKey(allow))
+  if (sent.ok) c.state.answered.set(a.id, { screen, at: c.now() })
   answered({ ok: sent.ok, ...(sent.ok ? {} : { err: sent.err }) })
   const what = permissionTool(a.cmd)
   if (!sent.ok) return c.say(t(allow ? 'hub.notes.allowFailed' : 'hub.notes.denyFailed', { what, err: clean(sent.err).trim().slice(0, 120) }), P.red, c.noteMs())
   c.say(t(allow ? 'hub.notes.allowed' : 'hub.notes.denied', { what }), allow ? P.green : P.peach)
-}
-
-function sessionWaiting(c: Ctx, a: Agent): boolean {
-  const path = join(c.claudeDir, 'sessions', `${a.pid}.json`)
-  try {
-    const session: unknown = JSON.parse(readFileSync(path, 'utf8'))
-    if (typeof session !== 'object' || session === null) {
-      c.log.warn('session file unreadable', { id: a.id, path, err: 'not a session object' })
-      return false
-    }
-    return 'status' in session && session.status === 'waiting'
-  } catch (err) {
-    c.log.warn('session file unreadable', { id: a.id, path, err })
-    return false
-  }
 }
 
 // ------------------------------------------------------------ close
@@ -477,27 +463,17 @@ async function start(c: Ctx, spec: LaunchSpec): Promise<void> {
   const argv = plan.argv.slice(1)
   // The prompt can be pages long; the log has the rest of the command.
   const cmd = [c.claude, ...argv.slice(0, -1), '<prompt>']
-  const child = c.spawn(c.claude, argv, { cwd: spec.cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
-  let outText = ''
-  const collect = (b: Buffer | string) => (outText += b.toString())
-  child.stdout.on('data', collect)
-  child.stderr.on('data', collect)
-  // A claude that couldn't be run at all (ENOENT) emits 'error', then
-  // 'close' with no output: the error has said why, once.
-  let failed = false
-  child.on('error', err => {
-    failed = true
-    started({ ok: false, cmd, err: err.message })
-    c.say(t('hub.notes.startFailed', { err: err.message }), P.red)
-  })
-  child.on('close', code => {
-    if (failed) return
-    const out = clean(outText).trim()
-    started({ ok: code === 0, exit: code, ...(code === 0 ? {} : { cmd, err: out.slice(0, 200) }) })
-    if (code === 0) c.say(t('hub.notes.startedBg', { name: plan.name, out: out.slice(0, 60) }), P.green, c.noteMs())
+  // Not awaited: the footer says it's starting until claude returns.
+  void startBg(c.spawn, c.claude, plan, spec.cwd).then(({ exit, out: said, error }) => {
+    if (error) {
+      started({ ok: false, cmd, err: error.message })
+      return c.say(t('hub.notes.startFailed', { err: error.message }), P.red)
+    }
+    const out = clean(said).trim()
+    started({ ok: exit === 0, exit, ...(exit === 0 ? {} : { cmd, err: out.slice(0, 200) }) })
+    if (exit === 0) c.say(t('hub.notes.startedBg', { name: plan.name, out: out.slice(0, 60) }), P.green, c.noteMs())
     else c.say(t('hub.notes.bgFailed', { err: out.slice(0, 120) }), P.red, c.noteMs())
   })
-  child.unref()
 }
 
 export function actionsOf(deps: ActionsDeps): Actions {

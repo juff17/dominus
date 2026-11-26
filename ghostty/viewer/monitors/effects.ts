@@ -32,6 +32,7 @@ import { keptDismissed, keptSkips } from './pipe-state.ts'
 import { type Gate, type Pipe, type PipeHost, type PipeQuery, type PipelinesClient, type PrSource, parsePipeTarget, pipelinesClient, targetLabel } from './pipelines.ts'
 import { type RunRow, matchName, matchTarget, parsePrUrl, refLabel } from './rows.ts'
 import { type Act, type MonitorsState, allRunning, panelEmptied, panelRow, setAgents, setHosts, setProposals, started, startedOne } from './state.ts'
+import { startBg } from '../../agents/launch.ts'
 
 const log = logger('monitors')
 
@@ -342,23 +343,17 @@ export function monitorsEffects(s: MonitorsState, io: World & ViewIo, { layout =
     }
     const plan = launch(spec)
     const cwd = spec.cwd
-    return new Promise(done => {
-      let out = ''
-      const ms = io.now()
-      const child = io.spawn(io.claude(), plan.argv.slice(1), { cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
-      child.stdout?.on('data', (b: Buffer) => (out += b))
-      child.stderr?.on('data', (b: Buffer) => (out += b))
-      child.on('error', err => {
-        log.error('monitor not started', { id, cmd: ['claude', ...plan.argv.slice(1, -1)], err: err.message })
-        done(err.message)
-      })
-      child.on('close', code => {
-        const said = out.trim().split('\n')[0]?.slice(0, 160) ?? ''
-        if (code === 0) log.info('monitor started', { id, skill: spec.skill, name: plan.name, cwd, model: spec.model, effort: spec.effort, ...more, ms: io.now() - ms })
-        else log.error('monitor not started', { id, cmd: ['claude', ...plan.argv.slice(1, -1)], exit: code, err: said })
-        done(code === 0 ? '' : said || `exit ${code}`)
-      })
-      child.unref()
+    const ms = io.now()
+    const cmd = ['claude', ...plan.argv.slice(1, -1)]
+    return startBg(io.spawn, io.claude(), plan, cwd).then(({ exit, out, error }) => {
+      if (error) {
+        log.error('monitor not started', { id, cmd, err: error.message })
+        return error.message
+      }
+      const said = out.trim().split('\n')[0]?.slice(0, 160) ?? ''
+      if (exit === 0) log.info('monitor started', { id, skill: spec.skill, name: plan.name, cwd, model: spec.model, effort: spec.effort, ...more, ms: io.now() - ms })
+      else log.error('monitor not started', { id, cmd, exit, err: said })
+      return exit === 0 ? '' : said || `exit ${exit}`
     })
   }
 

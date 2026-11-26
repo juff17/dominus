@@ -1,4 +1,5 @@
-// Decides the command only; the hub and the todo list run it.
+// Decides the command, and startBg runs it for the hub, Todo, Tickets and
+// Monitors.
 
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -149,4 +150,43 @@ export function launch(spec: LaunchSpec): LaunchPlan {
   // A prompt that starts with - would read as an option.
   const prompt = told.startsWith('-') ? ` ${told}` : told
   return { cwd: spec.cwd, argv: ['claude', '--bg', '--name', name, ...opts, prompt], name }
+}
+
+// What a claude --bg run left. claude prints the job's id and returns once
+// the agent runs, so exit 0 means it's running; `out` is what it printed, on
+// stdout and stderr. `error` is set when claude couldn't be run at all.
+export type BgRun = { exit: number | null; out: string; error?: Error }
+type Chunks = { on(event: 'data', listener: (chunk: Buffer | string) => void): unknown } | null
+export type BgChild = {
+  stdout: Chunks
+  stderr: Chunks
+  on(event: 'error', listener: (err: Error) => void): unknown
+  on(event: 'close', listener: (code: number | null) => void): unknown
+  unref(): void
+}
+export type BgSpawn = (cmd: string, args: string[], opts: { cwd: string; detached: true; stdio: ['ignore', 'pipe', 'pipe'] }) => BgChild
+
+// Runs plan with `claude` (the binary to run it with), detached, so the
+// agent outlives the screen that started it.
+export function startBg(spawn: BgSpawn, claude: string, plan: LaunchPlan, cwd = plan.cwd): Promise<BgRun> {
+  return new Promise(done => {
+    let out = ''
+    const collect = (b: Buffer | string) => {
+      out += b.toString()
+    }
+    const child = spawn(claude, plan.argv.slice(1), { cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    child.stdout?.on('data', collect)
+    child.stderr?.on('data', collect)
+    // A claude that couldn't be run (ENOENT) emits 'error', then 'close' with
+    // nothing said: the error says why, once.
+    let failed = false
+    child.on('error', error => {
+      failed = true
+      done({ exit: null, out, error })
+    })
+    child.on('close', exit => {
+      if (!failed) done({ exit, out })
+    })
+    child.unref()
+  })
 }
