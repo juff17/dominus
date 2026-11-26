@@ -40,6 +40,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import watch_pr as w
 from agent_hub import files
+from agent_hub import watch as hub_watch
 from agent_hub.log import logger
 
 LOGGER = logger("approval")
@@ -52,9 +53,7 @@ KINDS = ("reply", "push", "retry", "manual", "deploy", "move")
 DEPLOYS = re.compile(r"deploy|release|prod", re.IGNORECASE)
 
 
-def emit(tag, msg):
-    print(f"[{tag}] {msg}", flush=True)
-    LOGGER.info("event", tag=tag, text=msg)
+emit = hub_watch.emitter(LOGGER)
 
 
 # ------------------------------------------------------------ settings

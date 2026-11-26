@@ -31,8 +31,10 @@ NOWHERE = {"AGENT_HUB_SETTINGS": "/nonexistent/agent-hub/settings.json",
            "XDG_STATE_HOME": "/nonexistent/state"}
 
 
-def load(name, path):
-    with mock.patch.dict(os.environ, NOWHERE):
+def load(name, path, env=None, clear=False):
+    """A fresh copy of the script at path, loaded under env (NOWHERE unless
+    given), with only env when clear."""
+    with mock.patch.dict(os.environ, NOWHERE if env is None else env, clear=clear):
         spec = importlib.util.spec_from_file_location(name, path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)

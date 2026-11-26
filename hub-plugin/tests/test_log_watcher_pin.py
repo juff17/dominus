@@ -6,7 +6,6 @@ lines. docker and kubectl are fake scripts from tests/fixtures/log_watcher."""
 import collections
 import contextlib
 import gc
-import importlib.util
 import io
 import json
 import os
@@ -25,6 +24,9 @@ from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 SCRIPT = HERE.parent / "skills/log-watcher/scripts/watch_logs.py"
+sys.path.insert(0, str(HERE))
+from babysit_harness import load as load_script
+
 FIXTURES = HERE / "fixtures" / "log_watcher"
 NOW = datetime(2026, 10, 8, 14, 0, 0, tzinfo=UTC)
 REAL_SLEEP = time.sleep
@@ -32,11 +34,7 @@ REAL_SLEEP = time.sleep
 
 def load(env):
     """A fresh watch_logs, its module-level limits read under env alone."""
-    with mock.patch.dict(os.environ, env, clear=True):
-        spec = importlib.util.spec_from_file_location("watch_logs", SCRIPT)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    return module
+    return load_script("watch_logs", SCRIPT, env, clear=True)
 
 
 wl = load({"AGENT_HUB_SETTINGS": "/nonexistent/agent-hub/settings.json"})

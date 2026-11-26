@@ -4,7 +4,6 @@ finds in a branch's diff. No docker, kubectl or Kibana: stand-ins and canned
 lines take their place, and change_markers runs against a throwaway git repo."""
 
 import contextlib
-import importlib.util
 import io
 import json
 import os
@@ -24,16 +23,16 @@ from urllib.parse import unquote
 SCRIPTS = Path(__file__).resolve().parents[1] / "skills/log-watcher/scripts"
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from babysit_harness import load as load_script
+
+
 def load(name):
-    spec = importlib.util.spec_from_file_location(name, SCRIPTS / f"{name}.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_script(name, SCRIPTS / f"{name}.py")
 
 
 # The limits are read from Settings as the module loads; none are set here.
-with mock.patch.dict(os.environ, {"AGENT_HUB_SETTINGS": "/nonexistent/agent-hub/settings.json"}):
-    wl = load("watch_logs")
+wl = load("watch_logs")
 dl = load("discover_link")
 cm = load("change_markers")
 
@@ -870,8 +869,7 @@ class Settings(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "settings.json"
             path.write_text(text)
-            with mock.patch.dict(os.environ, {"AGENT_HUB_SETTINGS": str(path)}):
-                return load("watch_logs")
+            return load_script("watch_logs", SCRIPTS / "watch_logs.py", {"AGENT_HUB_SETTINGS": str(path)})
 
     def test_saved_values_set_the_limits(self):
         m = self.load_with(json.dumps({"logger.traceLines": 30, "logger.lineChars": 120, "logger.floodLimit": 50}))

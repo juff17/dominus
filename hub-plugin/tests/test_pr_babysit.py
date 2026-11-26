@@ -2,7 +2,6 @@
 events that must not repeat. No network: the forge is a stand-in."""
 
 import contextlib
-import importlib.util
 import io
 import json
 import os
@@ -13,10 +12,11 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-SCRIPT = Path(__file__).resolve().parents[1] / "skills/pr-babysit/scripts/watch_pr.py"
-spec = importlib.util.spec_from_file_location("watch_pr", SCRIPT)
-w = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(w)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from babysit_harness import SCRIPTS, load_watch_pr
+
+w = load_watch_pr()
+SCRIPT = SCRIPTS / "watch_pr.py"
 
 URL = "https://github.com/u/gad/pull/91"
 

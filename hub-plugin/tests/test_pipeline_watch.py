@@ -6,9 +6,7 @@ fails, re-arming without repeats, and bad input. Nothing reaches the network,
 the real CLIs, or the user's notes and cache."""
 
 import copy
-import importlib.util
 import json
-import os
 import subprocess
 import sys
 import unittest
@@ -17,14 +15,11 @@ from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from babysit_harness import NOWHERE, Sandbox
+from babysit_harness import Sandbox, load
 
 SCRIPT = HERE.parent / "skills/pipeline-watch/scripts/watch_pipeline.py"
 
-with mock.patch.dict(os.environ, NOWHERE):
-    spec = importlib.util.spec_from_file_location("watch_pipeline", SCRIPT)
-    wp = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(wp)
+wp = load("watch_pipeline", SCRIPT)
 
 SHA = "c0ffee0011223344556677889900aabbccddeeff"
 
@@ -353,9 +348,9 @@ class Polls(unittest.TestCase):
                          [("pipeline-watch gitlab.com/grp/app@gone", "Watch stopped: no pipeline on gone in gitlab.com/grp/app")])
 
     def test_a_second_watcher_on_the_same_session_is_busy(self):
-        base = wp.base_path(wp.GitHub("github.com", "o/app"), 7001, None)
+        base = wp.base_path(wp.hub_forge.GitHub("github.com", "o/app"), 7001, None)
         base.parent.mkdir(parents=True)
-        held = wp.files.try_lock(f"{base}.s1.lock")
+        held = wp.hub_watch.take_lock(f"{base}.s1.lock")
         self.addCleanup(held.close)
         code, lines = self.watch(GH_URL, gh_routes())
         self.assertEqual((code, lines), (2, [f"[busy] {GH_URL} is already being watched by session s1"]))

@@ -138,7 +138,7 @@ test('Python and Node read the same file differently where their checks differ',
 function forgeBox(name) {
   const box = sandbox(name)
   const bin = stubDir(box)
-  for (const cli of ['gh', 'glab']) writeFileSync(join(bin, cli), `#!/bin/sh\nexec python3 -I ${JSON.stringify(join(FIXTURES, 'fake_forge.py'))} "$@"\n`, { mode: 0o755 })
+  for (const cli of ['gh', 'glab']) writeFileSync(join(bin, cli), `#!/bin/sh\nexec python3 -I ${JSON.stringify(join(REPO, 'hub-plugin/tests/fixtures/pr_babysit/fake_gh_argv.py'))} "$@"\n`, { mode: 0o755 })
   Object.assign(box.env, {
     FAKE_LOG: join(box.root, 'forge.log'),
     FAKE_REPLIES: join(box.root, 'replies.json'),

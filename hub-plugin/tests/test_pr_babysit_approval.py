@@ -3,7 +3,6 @@ and ask, and what the watcher hears back. GitHub is a fake `gh` on PATH that
 logs its calls; pushes go to a real bare repo in a temp folder."""
 
 import contextlib
-import importlib.util
 import io
 import json
 import os
@@ -15,32 +14,19 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "skills/pr-babysit/scripts"
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from babysit_harness import SCRIPTS, load
+
 sys.path.insert(0, str(SCRIPTS))
-spec = importlib.util.spec_from_file_location("approval", SCRIPTS / "approval.py")
-ap = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(ap)
+ap = load("approval", SCRIPTS / "approval.py")
 w = ap.w
 
 URL = "https://github.com/u/gad/pull/91"
 KEY = "github.com/u/gad#91"
 
-FAKE_GH = """#!/usr/bin/env python3
-import json, os, sys
-args = sys.argv[1:]
-with open(os.environ["FAKE_LOG"], "a") as f:
-    f.write(json.dumps(args) + "\\n")
-path = next(a for a in args[1:] if not a.startswith("-") and a not in ("api", "POST", "GET") and "/" in a)
-replies = json.load(open(os.environ["FAKE_REPLIES"])) if os.path.exists(os.environ["FAKE_REPLIES"]) else {}
-r = replies.get(("POST " if "POST" in args else "GET ") + path, replies.get(path, {}))
-if r == "fail":
-    print("HTTP 422: Unprocessable", file=sys.stderr)
-    sys.exit(1)
-if r == "forbidden":
-    print("gh: Resource not accessible by personal access token (HTTP 403)", file=sys.stderr)
-    sys.exit(1)
-print(json.dumps(r))
-"""
+# Logs argv and answers from $FAKE_REPLIES.
+FAKE_GH = (HERE / "fixtures/pr_babysit/fake_gh_argv.py").read_text()
 
 
 def git(cwd, *args):

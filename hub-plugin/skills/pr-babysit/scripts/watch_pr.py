@@ -35,6 +35,7 @@ from agent_hub import files, stops
 from agent_hub import forge as hub_forge
 from agent_hub import notes as tray_notes
 from agent_hub import settings as hub_settings
+from agent_hub import watch as hub_watch
 from agent_hub.forge import (
     UNFINISHED,
     ApiError,
@@ -113,14 +114,11 @@ def approval_outcomes(forge, number, session):
 TOLD = set()
 
 
-def emit(tag, msg):
-    print(f"[{tag}] {msg}", flush=True)
-    LOG.info("event", tag=tag, text=msg)
+emit = hub_watch.emitter(LOG)
 
 
 def flat(text, limit=240):
-    text = " ".join((text or "").split())
-    return text if len(text) <= limit else text[: limit - 1] + "…"
+    return hub_watch.flat(text, limit)
 
 
 def run(cmd, cwd=None):
@@ -366,8 +364,7 @@ def find_remote(forge, cwd):
 
 
 def take_lock(base):
-    base.parent.mkdir(parents=True, exist_ok=True)
-    return files.try_lock(f"{base}.lock")
+    return hub_watch.take_lock(f"{base}.lock")
 
 
 def preflight(forge):
@@ -378,19 +375,14 @@ def preflight(forge):
 
 
 def pr_base(forge, number):
-    root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "pr-babysit"
-    return root / re.sub(r"[^A-Za-z0-9_.-]", "_", f"{forge.host}_{forge.project}_{number}")
+    return hub_watch.cache_base("pr-babysit", f"{forge.host}_{forge.project}_{number}")
 
 
 def session_state(base, session):
     """State file for this session. Other sessions' files for the PR (state and
     notes) are removed, so a new session starts clean and reports everything
     still open."""
-    keep = (Path(f"{base}.{session}.json"), notes_path(base, session))
-    for old in base.parent.glob(f"{base.name}.*.json"):
-        if old not in keep:
-            old.unlink(missing_ok=True)
-    return keep[0]
+    return hub_watch.session_state(base, session, keep=(notes_path(base, session),))
 
 
 # What the agent records with --set. A file apart from the state, because the
@@ -429,27 +421,18 @@ def show_notes(notes):
     return ", ".join(f"{k} {notes[k]}" for k in NOTE_KEYS if k in notes)
 
 
+SETS = ("comments", "events")
+
+
 def load_state(path):
-    try:
-        data = json.loads(path.read_text())
-    except (OSError, ValueError):
-        return None
-    data["comments"] = set(data["comments"])
-    data["events"] = set(data["events"])
-    return data
+    return hub_watch.load_state(path, SETS)
 
 
 def save_state(path, state):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    out = dict(state, comments=sorted(state["comments"]), events=sorted(state["events"]))
-    files.write_atomic(path, json.dumps(files.with_session(out)))
+    hub_watch.save_state(path, state, SETS)
 
 
-def once(state, key):
-    if key in state["events"]:
-        return False
-    state["events"].add(key)
-    return True
+once = hub_watch.once
 
 
 def report(snap, state, me, stuck_after):
@@ -626,8 +609,7 @@ def main():
             return 2
         # A body of an unexpected shape (None, a list) or a state file that
         # can't be written is retried like a failed call, not a crash.
-        except (ApiError, subprocess.TimeoutExpired, ValueError, KeyError, IndexError, TypeError,
-                AttributeError, OSError) as e:
+        except hub_watch.RETRYABLE as e:
             failures += 1
             log.warning("poll failed", failures=failures, err=e)
             if failures == error_after:

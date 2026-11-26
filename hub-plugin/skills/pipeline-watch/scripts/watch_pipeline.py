@@ -24,9 +24,7 @@ A [manual] wait, a finished pipeline, and the failure that ends an
 """
 
 import argparse
-import json
 import math
-import os
 import re
 import subprocess
 import sys
@@ -35,10 +33,11 @@ from pathlib import Path
 
 # The skills share the plugin's lib/py, found from this file's real path.
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib" / "py"))
-from agent_hub import files, stops
 from agent_hub import forge as hub_forge
 from agent_hub import notes as tray_notes
 from agent_hub import settings as hub_settings
+from agent_hub import stops
+from agent_hub import watch as hub_watch
 from agent_hub.forge import ApiError, AuthError, duration, progress, stages
 from agent_hub.log import logger
 
@@ -52,24 +51,14 @@ def setting(key, default, low, high):
     return hub_settings.number(SETTINGS, key, default, low, high)
 
 
-class GitHub(hub_forge.GitHub):
-    log = LOG
-
-
-class GitLab(hub_forge.GitLab):
-    log = LOG
-
-
-FORGES = {"github": GitHub, "gitlab": GitLab}
+FORGES = {"github": hub_forge.GitHub, "gitlab": hub_forge.GitLab}
 
 
 class SetupError(Exception):
     pass
 
 
-def emit(tag, msg):
-    print(f"[{tag}] {msg}", flush=True)
-    LOG.info("event", tag=tag, text=msg)
+emit = hub_watch.emitter(LOG)
 
 
 def give_up(args, tag, msg):
@@ -83,8 +72,7 @@ def give_up(args, tag, msg):
 
 
 def flat(text, limit=120):
-    text = " ".join((text or "").split())
-    return text if len(text) <= limit else text[: limit - 1] + "…"
+    return hub_watch.flat(text, limit)
 
 
 def parse_target(text, kind=None):
@@ -103,18 +91,18 @@ def parse_target(text, kind=None):
         project = project.strip("/")
         if "/" not in project or not ref or "/-/" in project:
             raise SetupError(f"not a pipeline URL or host/project@ref: {text}")
-        cls = FORGES.get(kind) or {hub_forge.GitHub: GitHub, hub_forge.GitLab: GitLab}.get(hub_forge.for_host(host))
+        cls = FORGES.get(kind) or hub_forge.for_host(host)
         if cls is None:
             raise SetupError(f"can't tell whether {host} is GitHub or GitLab: give the pipeline's URL, "
                              "or pass --forge github|gitlab")
-        return cls(host, project), None, ref
+        return cls(host, project, log=LOG), None, ref
 
     m = re.match(r"(.+?)/actions/runs/(\d+)(?:/|$)", path)
     if m:
-        return GitHub(host, m.group(1)), int(m.group(2)), None
+        return hub_forge.GitHub(host, m.group(1), log=LOG), int(m.group(2)), None
     m = re.match(r"(.+?)/-/pipelines/(\d+)(?:/|$)", path)
     if m:
-        return GitLab(host, m.group(1)), int(m.group(2)), None
+        return hub_forge.GitLab(host, m.group(1), log=LOG), int(m.group(2)), None
     if re.search(r"/pull/\d+|/-/merge_requests/\d+", path):
         raise SetupError(f"{text} is a PR or MR, not a pipeline: watch it with /pr-babysit, "
                          "or give its pipeline's URL")
@@ -165,11 +153,7 @@ def snapshot(forge, pid):
     }
 
 
-def once(state, key):
-    if key in state["events"]:
-        return False
-    state["events"].add(key)
-    return True
+once = hub_watch.once
 
 
 def title(forge, snap):
@@ -234,33 +218,13 @@ def report(forge, snap, state, until, note):
 # ------------------------------------------------------------------ state
 
 def base_path(forge, pid, ref):
-    root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "pipeline-watch"
     target = str(pid) if pid else f"@{ref}"
-    return root / re.sub(r"[^A-Za-z0-9_.@-]", "_", f"{forge.host}_{forge.project}_{target}")
+    return hub_watch.cache_base("pipeline-watch", f"{forge.host}_{forge.project}_{target}", safe="A-Za-z0-9_.@-")
 
 
-def session_state(base, session):
-    """State file for this session. Other sessions' files for the same target
-    are removed, so a new session starts clean."""
-    keep = Path(f"{base}.{session}.json")
-    for old in base.parent.glob(f"{base.name}.*.json"):
-        if old != keep:
-            old.unlink(missing_ok=True)
-    return keep
-
-
-def load_state(path):
-    try:
-        data = json.loads(path.read_text())
-        data["events"] = set(data["events"])
-        return data
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
-
-
-def save_state(path, state):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    files.write_atomic(path, json.dumps(files.with_session(dict(state, events=sorted(state["events"])))))
+session_state = hub_watch.session_state
+load_state = hub_watch.load_state
+save_state = hub_watch.save_state
 
 
 # ------------------------------------------------------------------ main
@@ -294,10 +258,9 @@ def main(argv=None):
     if args.once:
         return watch(args, forge, pid, ref, None)
     base = base_path(forge, pid, ref)
-    base.parent.mkdir(parents=True, exist_ok=True)
     # One watcher per session, so a re-arm that overlaps the old one can't
     # tell an event twice.
-    lock = files.try_lock(f"{base}.{args.session}.lock")
+    lock = hub_watch.take_lock(f"{base}.{args.session}.lock")
     if lock is None:
         emit("busy", f"{args.target} is already being watched by session {args.session}")
         return 2
@@ -367,8 +330,7 @@ def watch(args, forge, pid, ref, path):
             log.error("token refused", err=e)
             return give_up(args, "auth", f"{forge.login_hint()} ({e})")
         # Off the network, a 5xx, or a body of an unexpected shape: retried.
-        except (ApiError, subprocess.TimeoutExpired, ValueError, KeyError, IndexError, TypeError,
-                AttributeError, OSError) as e:
+        except hub_watch.RETRYABLE as e:
             snap = None
             failures += 1
             log.warning("poll failed", failures=failures, err=e)

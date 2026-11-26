@@ -96,12 +96,14 @@ def age_minutes(iso):
 
 class Forge:
     cli = ""
-    # Whose log a failed call goes to; a script sets its own.
+    # Whose log a failed call goes to: the calling script's, when it says.
     log = LOG
 
-    def __init__(self, host, project):
+    def __init__(self, host, project, log=None):
         self.host = host
         self.project = project
+        if log is not None:
+            self.log = log
 
     def api(self, path):
         out = run([self.cli, "api", "--hostname", self.host, path], log=self.log)
