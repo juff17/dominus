@@ -36,7 +36,7 @@ until every case passes, then screenshot its output as proof.
 | Side effects | A follow-up GET or DB read shows the write landed |
 | Validation | Missing and bad fields give a 4xx with a useful message |
 | Auth, only when the diff changes auth (login, tokens, sessions, roles or permissions, auth middleware or guards) | No token → 401; another user's resource → 403/404 |
-| Concurrent requests | Many requests at once (10 parallel creates or updates on one resource, two users at once): no 5xx, no lost or duplicate writes, and the final state matches one valid order |
+| Concurrent requests, only when they could surface a bug: the change writes shared state (counters, balances, stock, status moves), checks then writes, enforces uniqueness, or takes a lock, queue or cache. Skip it for plain reads and writes scoped to one caller's own new row | Many requests at once (10 parallel creates or updates on one resource, two users at once): no 5xx, no lost or duplicate writes, and the final state matches one valid order |
 | Not found and conflicts | An unknown id, a duplicate create, a stale update |
 | Repeat and order | The same request twice (idempotency); events out of order, from review's state machine |
 | Limits | Pagination edges, empty lists, large payloads |
