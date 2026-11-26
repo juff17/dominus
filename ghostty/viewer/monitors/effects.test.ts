@@ -9,7 +9,8 @@ import { test } from 'node:test'
 
 process.env.AGENT_HUB_SETTINGS = '/nonexistent/agent-hub/settings.json'
 
-const { monitorsEffects, readCache, configuredHosts } = await import('./effects.ts')
+const { monitorsEffects } = await import('./effects.ts')
+const { readCache, configuredHosts } = await import('./cache.ts')
 const { onKey, start, setAgents } = await import('./state.ts')
 const { load } = await import('../../settings/settings.ts')
 type World = import('./effects.ts').World
@@ -288,7 +289,7 @@ test('a session the hub can’t open says why and stays open', async () => {
 
 // ------------------------------------------------------------ Pipelines and Logs
 
-const { pipeQueries } = await import('./effects.ts')
+const { pipeQueries } = await import('./cache.ts')
 const { allRunning } = await import('./state.ts')
 type Pipe = import('./pipelines.ts').Pipe
 

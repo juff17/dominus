@@ -11,7 +11,6 @@ import { type Agent, type MonitorSpec, launch } from '../../agents/model.ts'
 import { type StopResult, type StopTarget, describeStop, stopMonitor, stopWorld } from '../../agents/stop.ts'
 import { pluginInstalled, pluginMissing } from '../../core/hub-skills.ts'
 import type { Image } from '../../core/images.ts'
-import { isRecord, readJsonFile, writeAtomic } from '../../core/json.ts'
 import { errorMessage, logger } from '../../core/log.ts'
 import { TABS_SOCKET, claudeBin } from '../../core/paths.ts'
 import { type Runner, openUrl, run } from '../../core/proc.ts'
@@ -25,16 +24,16 @@ import type { State as ApprovalsState } from '../approvals/approvals.ts'
 import { type ApprovalsWorld, approvalEffects, world as approvalsWorld } from '../approvals/effects.ts'
 import { type AttachOptions, BRIEF_LABEL, attachLine, attachedFile, monitorsDir, readAttached, recordAttached } from './attach.ts'
 import { findCheckouts, repoKey } from './checkout.ts'
-import type { ForgeId } from '../../core/forge.ts'
 import { type ForgeClient, type HostResult, type Pr, forgeClient } from './forge.ts'
 import { type Blocked, blockedSources, kubeconfigs } from './sources.ts'
 import { type LogsSpec, WATCH_FOR_LABEL, logsLines, logsName, setWorld } from './logs-state.ts'
 import { keptDismissed, keptSkips } from './pipe-state.ts'
-import { type Gate, type Pipe, type PipeHost, type PipeQuery, type PipelinesClient, type PrSource, parsePipeTarget, pipelinesClient, targetLabel } from './pipelines.ts'
-import { type RunRow, matchName, matchTarget, parsePrUrl, refLabel } from './rows.ts'
+import { type Gate, type Pipe, type PipelinesClient, parsePipeTarget, pipelinesClient, targetLabel } from './pipelines.ts'
+import { matchName, matchTarget, refLabel } from './rows.ts'
 import { type Act, type MonitorsState, allRunning, panelEmptied, panelRow, setAgents, setHosts, setProposals, started, startedOne } from './state.ts'
 import { startBg } from '../../agents/launch.ts'
 import { paneFolderArgs } from '../../core/tmux.ts'
+import { configuredHosts, pipeQueries, readCache, writeCache } from './cache.ts'
 
 const log = logger('monitors')
 
@@ -67,8 +66,6 @@ export type World = {
 
 // outside runs a program on the whole terminal (the panel's $EDITOR).
 export type ViewIo = { draw: () => void; quit: () => void; outside: (cmd: string, args: string[]) => SpawnSyncReturns<Buffer> }
-
-
 
 // The tab session of layout session layout-<n> is ghostty-<n>; its active
 // pane's folder is the tab's.
@@ -109,70 +106,6 @@ export const world = (runner: Runner = run): World => ({
   home: homedir(),
   now: Date.now,
 })
-
-// ------------------------------------------------------------ the cache
-
-export const configuredHosts = (v: Pick<Settings, 'monitors.githubHosts' | 'monitors.gitlabHosts'>): { forge: ForgeId; host: string }[] => [
-  ...v['monitors.githubHosts'].map(host => ({ forge: 'gh' as const, host })),
-  ...v['monitors.gitlabHosts'].map(host => ({ forge: 'gl' as const, host })),
-]
-
-// What the popup keeps between openings, in one file: the PR list, and the
-// pipelines with the gates you skipped and the pipelines you dismissed.
-export type PipesCache = { hosts: PipeHost[]; skipped: Record<string, string>; dismissed: string[] }
-export type Cache = { prs: HostResult[]; pipes: PipesCache }
-
-// We wrote the cache, so only its outline is checked: one that parses to
-// something else is from another version, and the next fetch replaces it.
-const isHostResult = (v: unknown): v is HostResult => isRecord(v) && (v.forge === 'gh' || v.forge === 'gl') && typeof v.host === 'string' && Array.isArray(v.prs) && typeof v.ok === 'boolean'
-const isPipeHost = (v: unknown): v is PipeHost => isRecord(v) && (v.forge === 'gh' || v.forge === 'gl') && typeof v.host === 'string' && Array.isArray(v.pipes) && typeof v.ok === 'boolean'
-
-export function readCache(file: string): Cache {
-  const none: Cache = { prs: [], pipes: { hosts: [], skipped: {}, dismissed: [] } }
-  const v = readJsonFile(file, log, 'cache unreadable')
-  if (!isRecord(v)) return none
-  const p = isRecord(v.pipelines) ? v.pipelines : {}
-  const skipped = isRecord(p.skipped) ? Object.fromEntries(Object.entries(p.skipped).filter((e): e is [string, string] => typeof e[1] === 'string')) : {}
-  const dismissed = Array.isArray(p.dismissed) ? p.dismissed.filter((k): k is string => typeof k === 'string') : []
-  return {
-    prs: Array.isArray(v.prs) ? v.prs.filter(isHostResult) : [],
-    pipes: { hosts: Array.isArray(p.hosts) ? p.hosts.filter(isPipeHost) : [], skipped, dismissed },
-  }
-}
-
-function writeCache(file: string, s: Pick<MonitorsState, 'hosts' | 'pipes'>): void {
-  const value = { v: 1, prs: s.hosts, pipelines: { hosts: s.pipes.hosts, skipped: s.pipes.skipped, dismissed: [...s.pipes.dismissed] } }
-  try {
-    writeAtomic(file, `${JSON.stringify(value)}\n`)
-  } catch (err) {
-    log.warn('cache not written', { path: file, err: errorMessage(err) })
-  }
-}
-
-// With no projects in Settings, a host's are those of the open PRs it
-// lists. The PRs a running pr-babysit monitor watches are added on top.
-export function pipeQueries(
-  v: Pick<Settings, 'monitors.githubHosts' | 'monitors.gitlabHosts' | 'monitors.pipelines.projects' | 'monitors.pipelines.refs'>,
-  prHosts: readonly HostResult[],
-  running: readonly RunRow[],
-  fromPrs: boolean,
-): PipeQuery[] {
-  const configured = v['monitors.pipelines.projects']
-  const watched: PrSource[] = fromPrs
-    ? running.flatMap(r => {
-        const ref = r.kind === 'pr' && r.m.state !== 'ended' && !r.standIn && r.url ? parsePrUrl(r.url) : null
-        return ref ? [{ forge: ref.forge, host: ref.host, project: ref.repo, number: ref.number, url: r.url }] : []
-      })
-    : []
-  return configuredHosts(v).flatMap(({ forge, host }) => {
-    const projects = configured.length
-      ? configured.filter(p => p.toLowerCase().startsWith(`${host.toLowerCase()}/`)).map(p => p.slice(host.length + 1))
-      : [...new Set(prHosts.filter(h => h.forge === forge && h.host === host).flatMap(h => h.prs.map(pr => pr.repo)))]
-    const prs = watched.filter(p => p.forge === forge && p.host === host.toLowerCase())
-    const unique = [...new Map(prs.map(p => [p.url, p])).values()]
-    return projects.length || unique.length ? [{ forge, host, projects, refs: v['monitors.pipelines.refs'], prs: unique }] : []
-  })
-}
 
 // ------------------------------------------------------------ the effects
 
