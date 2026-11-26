@@ -14,6 +14,7 @@ import { frame as screenFrame } from '../../tui/screen.ts'
 import { type Span, render } from '../../tui/term.ts'
 import { fit, visible, wrapText as wrap } from '../../tui/text.ts'
 import { type Arranged, CATEGORIES, type Filing, type Item, TYPES, age, categoryName, categoryShort, colorOf, filingState, imagesOf, typeColorOf, typeName } from './todo.ts'
+import * as tabs from './tabs.ts'
 import * as ui from './todo-ui.ts'
 import { type AddStep, type ConfirmPrompt, EDIT_FIELDS, type EditField, type EditPrompt, FIELDS, type HandoffPrompt, type Prompt, fieldName } from './todo-ui.ts'
 import { type State, cursorItem, selectable, shown } from './state.ts'
@@ -58,7 +59,7 @@ export type BodyRow = { text: string; item?: Item; header?: boolean; done?: bool
 // `settings` loads only if a row needs them.
 type Frame = { s: State; cols: number; now: number; settings: () => Settings }
 
-const tabOf = (f: Frame, pane: string | undefined, server: string | undefined): string => ui.tabOf(pane, f.s.panes, f.s.config.win, server)
+const tabOf = (f: Frame, pane: string | undefined, server: string | undefined): string => tabs.tabOf(pane, f.s.panes, f.s.config.win, server)
 
 function header({ s, cols }: Frame): string[] {
   const { popup, pane, modes } = s.config
@@ -126,7 +127,7 @@ function cardRows(f: Frame, item: Item): string[] {
   if (item.note) for (const line of wrap(item.note, w)) rows.push(pad(`${C.text}${line}${C.reset}`))
   const images = imagesOf(item).length
   if (images) rows.push(pad(`${C.sub}${fit(t('images.attached', { n: images }), w).trimEnd()}${C.reset}`))
-  const go = ui.goLabel(item, s.panes, s.agents)
+  const go = tabs.goLabel(item, s.panes, s.agents)
   const keys: Hint[] = [
     ...(go ? [['↵', go] as const] : []),
     ['e', t('hints.edit')],

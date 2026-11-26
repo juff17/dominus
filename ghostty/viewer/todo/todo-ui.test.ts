@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { type Agent, launch } from '../../agents/model.ts'
 import type { Hint } from '../../tui/chrome.ts'
 import { type Here, type Item, arrange, handoffPlace, handoffSpec } from './todo.ts'
+import * as tabs from './tabs.ts'
 import * as ui from './todo-ui.ts'
 
 // No settings file, so every setting reads as its default.
@@ -503,12 +504,12 @@ const panes = new Map([
 ])
 
 test('where an item’s tab is, in words, from this window', () => {
-  assert.equal(ui.tabOf('', panes, 2), '')
-  assert.equal(ui.tabOf('%1', panes, 2), 'tab 1')
-  assert.equal(ui.tabOf('%2', panes, 2), 'w3 · tab 4')
-  assert.equal(ui.tabOf('%2', panes, 0), 'tab 4', 'outside a layout window no window is named')
-  assert.equal(ui.tabOf('%3', panes, 2), 'a hub tab')
-  assert.equal(ui.tabOf('%9', panes, 2), 'a tab now closed')
+  assert.equal(tabs.tabOf('', panes, 2), '')
+  assert.equal(tabs.tabOf('%1', panes, 2), 'tab 1')
+  assert.equal(tabs.tabOf('%2', panes, 2), 'w3 · tab 4')
+  assert.equal(tabs.tabOf('%2', panes, 0), 'tab 4', 'outside a layout window no window is named')
+  assert.equal(tabs.tabOf('%3', panes, 2), 'a hub tab')
+  assert.equal(tabs.tabOf('%9', panes, 2), 'a tab now closed')
 })
 
 test('↵ goes to the agent while the hub lists it, else the tab, else reopens', () => {
@@ -517,20 +518,20 @@ test('↵ goes to the agent while the hub lists it, else the tab, else reopens',
     { kind: 'bg', title: 'fix-it-k2x' },
   ] as Agent[]
   const bgItem = { pane: '%1', handoff: { name: 'fix-it-k2x', where: 'bg', pane: '' } } as Item
-  assert.equal(ui.hubAgent(bgItem, agents), agents[1])
-  assert.equal(ui.goLabel(bgItem, panes, agents), 'go to agent')
+  assert.equal(tabs.hubAgent(bgItem, agents), agents[1])
+  assert.equal(tabs.goLabel(bgItem, panes, agents), 'go to agent')
   const tabItem = { pane: '%1', handoff: { name: 'n', where: 'tab', pane: '%7' } } as Item
-  assert.equal(ui.hubAgent(tabItem, agents), agents[0], 'a tab agent by its pane, not its name')
-  assert.equal(ui.hubAgent({ handoff: { name: 'x', pane: '%8' } } as Item, agents), null, 'a tab agent the hub lost, even with a matching title')
-  assert.equal(ui.hubAgent({ handoff: { name: 'x', pane: '' } } as Item, agents), null, 'a background name only matches a background agent')
-  assert.equal(ui.hubAgent({}, agents), null)
+  assert.equal(tabs.hubAgent(tabItem, agents), agents[0], 'a tab agent by its pane, not its name')
+  assert.equal(tabs.hubAgent({ handoff: { name: 'x', pane: '%8' } } as Item, agents), null, 'a tab agent the hub lost, even with a matching title')
+  assert.equal(tabs.hubAgent({ handoff: { name: 'x', pane: '' } } as Item, agents), null, 'a background name only matches a background agent')
+  assert.equal(tabs.hubAgent({}, agents), null)
   const openTab = { pane: '%9', handoff: { name: 'n', where: 'tab', pane: '%1' } } as Item
-  assert.equal(ui.agentPane(openTab, panes), '%1')
-  assert.equal(ui.goLabel(openTab, panes, []), 'go to agent', 'its agent’s tab is still open')
-  assert.equal(ui.agentPane({ handoff: { pane: '%9' } } as Item, panes), '')
-  assert.equal(ui.goLabel({ pane: '%1' }, panes, []), 'go to tab')
-  assert.equal(ui.goLabel({ pane: '%9' }, panes, []), 'reopen')
-  assert.equal(ui.goLabel({ pane: '' }, panes, []), '', 'added here: nowhere to go')
+  assert.equal(tabs.agentPane(openTab, panes), '%1')
+  assert.equal(tabs.goLabel(openTab, panes, []), 'go to agent', 'its agent’s tab is still open')
+  assert.equal(tabs.agentPane({ handoff: { pane: '%9' } } as Item, panes), '')
+  assert.equal(tabs.goLabel({ pane: '%1' }, panes, []), 'go to tab')
+  assert.equal(tabs.goLabel({ pane: '%9' }, panes, []), 'reopen')
+  assert.equal(tabs.goLabel({ pane: '' }, panes, []), '', 'added here: nowhere to go')
 })
 
 test('a pane id recorded under an earlier tab server is a closed tab, whoever has that id now', () => {
@@ -538,29 +539,29 @@ test('a pane id recorded under an earlier tab server is a closed tab, whoever ha
     ['%1', { session: 'ghostty-2', window: '@1', index: '1', win: 2, hub: false, server: '200' }],
     ['%3', { session: 'hubtabs-2', window: '@9', index: '2', win: 2, hub: true, server: '200' }],
   ])
-  assert.equal(ui.serverOf(live), '200')
-  assert.equal(ui.serverOf(new Map()), '')
-  assert.equal(ui.serverOf(null), '')
-  assert.equal(ui.paneAt(live, '%1', '200'), live.get('%1'))
-  assert.equal(ui.paneAt(live, '%1', '100'), undefined)
-  assert.equal(ui.paneAt(live, '%1', undefined), live.get('%1'), 'an item that has no server recorded is taken as this one')
-  assert.equal(ui.paneAt(panes, '%1', '100'), panes.get('%1'), 'a server tmux didn’t say is taken as the same')
-  assert.equal(ui.tabOf('%1', live, 2, '100'), 'a tab now closed')
-  assert.equal(ui.tabOf('%1', live, 2, '200'), 'tab 1')
-  assert.equal(ui.goLabel({ pane: '%1', paneServer: '100' }, live, []), 'reopen', 'so its session can be resumed')
-  assert.equal(ui.goLabel({ pane: '%1', paneServer: '200' }, live, []), 'go to tab')
+  assert.equal(tabs.serverOf(live), '200')
+  assert.equal(tabs.serverOf(new Map()), '')
+  assert.equal(tabs.serverOf(null), '')
+  assert.equal(tabs.paneAt(live, '%1', '200'), live.get('%1'))
+  assert.equal(tabs.paneAt(live, '%1', '100'), undefined)
+  assert.equal(tabs.paneAt(live, '%1', undefined), live.get('%1'), 'an item that has no server recorded is taken as this one')
+  assert.equal(tabs.paneAt(panes, '%1', '100'), panes.get('%1'), 'a server tmux didn’t say is taken as the same')
+  assert.equal(tabs.tabOf('%1', live, 2, '100'), 'a tab now closed')
+  assert.equal(tabs.tabOf('%1', live, 2, '200'), 'tab 1')
+  assert.equal(tabs.goLabel({ pane: '%1', paneServer: '100' }, live, []), 'reopen', 'so its session can be resumed')
+  assert.equal(tabs.goLabel({ pane: '%1', paneServer: '200' }, live, []), 'go to tab')
   const agents = [{ kind: 'tab', title: 'x', pane: { pane: '%1' } }] as Agent[]
   const old = { handoff: { name: 'n', where: 'tab', pane: '%1', at: 0, server: '100' } } as Item
-  assert.equal(ui.hubAgent(old, agents, '200'), null, 'another server’s agent in a pane with the same id')
-  assert.equal(ui.hubAgent(old, agents, ''), agents[0], 'with the server unknown, the pane decides')
-  assert.equal(ui.agentPane(old, live), '')
-  assert.equal(ui.goLabel(old, live, agents), '')
+  assert.equal(tabs.hubAgent(old, agents, '200'), null, 'another server’s agent in a pane with the same id')
+  assert.equal(tabs.hubAgent(old, agents, ''), agents[0], 'with the server unknown, the pane decides')
+  assert.equal(tabs.agentPane(old, live), '')
+  assert.equal(tabs.goLabel(old, live, agents), '')
 })
 
 test('why ↵ has nowhere to go', () => {
-  assert.equal(ui.noTabText({ handoff: { where: 'bg', name: 'fix-k2x' } } as Item), 'fix-k2x ran in the background and the hub no longer lists it')
-  assert.equal(ui.noTabText({ by: 'you' }), 'You added this one here, so it has no tab to go to')
-  assert.equal(ui.noTabText({ by: 'claude' }), 'This one was added outside the layout’s tabs')
+  assert.equal(tabs.noTabText({ handoff: { where: 'bg', name: 'fix-k2x' } } as Item), 'fix-k2x ran in the background and the hub no longer lists it')
+  assert.equal(tabs.noTabText({ by: 'you' }), 'You added this one here, so it has no tab to go to')
+  assert.equal(tabs.noTabText({ by: 'claude' }), 'This one was added outside the layout’s tabs')
 })
 
 test('a closed tab reopens in its worktree, folder or repo, whichever is on disk', () => {
@@ -720,7 +721,7 @@ test('the scope is the repo, or this repo outside git', () => {
 })
 
 test('with the tabs unread, no tab reads as closed', () => {
-  assert.equal(ui.tabOf('%9', null, 2), '')
-  assert.equal(ui.agentPane({ handoff: { pane: '%1' } } as Item, null), '')
-  assert.equal(ui.goLabel({ pane: '%9' }, null, []), 'go to tab')
+  assert.equal(tabs.tabOf('%9', null, 2), '')
+  assert.equal(tabs.agentPane({ handoff: { pane: '%1' } } as Item, null), '')
+  assert.equal(tabs.goLabel({ pane: '%9' }, null, []), 'go to tab')
 })

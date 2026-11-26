@@ -39,6 +39,7 @@ import {
   repoOf,
   stamp,
 } from './todo.ts'
+import * as tabs from './tabs.ts'
 import * as ui from './todo-ui.ts'
 import { startBg } from '../../agents/launch.ts'
 import { paneFolderArgs } from '../../core/tmux.ts'
@@ -556,14 +557,14 @@ async function goTo(c: Ctx, item: Item): Promise<void> {
   // A prompt opened while tmux answered has the keys now; going anywhere,
   // or asking to reopen, would take them from it.
   if (s.prompt) return log.debug('go dropped for an open prompt', { id: item.id })
-  const agent = ui.hubAgent(item, s.agents, ui.serverOf(s.panes))
+  const agent = tabs.hubAgent(item, s.agents, tabs.serverOf(s.panes))
   if (agent) return goToAgent(c, item, agent)
-  const agentTab = ui.agentPane(item, s.panes)
+  const agentTab = tabs.agentPane(item, s.panes)
   const pane = agentTab || item.pane
-  if (!pane) return io.say(ui.noTabText(item))
+  if (!pane) return io.say(tabs.noTabText(item))
   // Unread, an open tab would look closed and be offered for reopening.
   if (!s.panes) return io.say(t('todo.go.tabsUnread'), P.red)
-  const at = agentTab ? s.panes.get(agentTab) : ui.paneAt(s.panes, pane, item.paneServer)
+  const at = agentTab ? s.panes.get(agentTab) : tabs.paneAt(s.panes, pane, item.paneServer)
   if (at?.hub) return goToHubTab(c, at)
   if (at) return goToTab(c, item, pane, at)
   offerReopen(c, item)
@@ -582,7 +583,7 @@ async function reopen(c: Ctx, item: Item, folder: string): Promise<void> {
     return io.say(t('todo.go.noClaude', { err: typed }), P.red)
   }
   // Its server replaces the old pane's, which may have been another's.
-  write(c, () => change(item.id, { pane, paneServer: ui.serverOf(s.panes) }))
+  write(c, () => change(item.id, { pane, paneServer: tabs.serverOf(s.panes) }))
   log.info('tab reopened', { id: item.id, pane, path: folder })
   const tabsPane = await tabsPaneOf(c)
   if (tabsPane) await c.outer('select-pane', '-t', tabsPane)
