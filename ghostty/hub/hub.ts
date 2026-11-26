@@ -43,7 +43,8 @@ import { recents as recentsOf, remember as rememberIn, storePaths } from '../set
 import { BOARD } from '../tui/gear-art.ts'
 import { BOARD_ID, type Cell, type GearCells, fit, gearFile, gearRow, sendGear } from '../tui/gear.ts'
 import type { Mouse } from '../tui/input.ts'
-import { ACCENT, P, enter, leave, out, paint, tokens } from '../tui/term.ts'
+import { ACCENT, P, leave, out, paint, tokens } from '../tui/term.ts'
+import { needTerminal, startPane } from '../tui/screen.ts'
 
 const log = logger('hub')
 logCrashes(log)
@@ -379,12 +380,8 @@ function draw() {
   if (started) log.debug('redraw', { list, ms: Math.round((performance.now() - started) * 100) / 100 })
 }
 
-if (!process.stdin.isTTY) {
-  console.error('hub.ts needs a terminal.')
-  process.exit(1)
-}
-process.stdin.setRawMode(true)
-process.stdin.on('data', data => {
+needTerminal('hub.ts')
+function onData(data: Buffer) {
   for (const t of tokens(data)) {
     // tmux drops what a hidden pane sends the terminal, so the gear is sent
     // again each time the hub comes into view. Focus reports are never keys.
@@ -412,30 +409,27 @@ process.stdin.on('data', data => {
     else if (t.key) onKey(t.key)
   }
   draw()
-})
-// After the new size is read; a SIGWINCH handler can run before that.
+}
 // Beside an open session the list keeps its width: tmux shares a window
 // resize out between the panes, so the hub puts its own width back, as the
 // rail does. Not once the session's pane is gone, when the hub should widen.
-process.stdout.on('resize', async () => {
+async function onResize() {
   // A font size change resizes the pane too.
   void readCell()
   draw()
   const p = peek.current
   if (p && cols() !== listCols() && (await peek.paneAlive(p.pane)))
     await outer('resize-pane', '-t', process.env.TMUX_PANE ?? '', '-x', String(listCols()))
-})
+}
 const bye = (signal: NodeJS.Signals) => {
   log.info('stopped', { signal })
   out(FOCUS_OFF)
   leave()
   process.exit(0)
 }
-process.on('SIGTERM', bye)
-process.on('SIGHUP', bye)
 log.info('started', { win: WIN })
 pruneResults(RUN, Date.now(), log)
-enter({}, FOCUS_ON)
+startPane({ onData, onResize: () => void onResize(), quit: bye, onEnter: FOCUS_ON })
 void readCell()
 follow(s => {
   agents = s.agents

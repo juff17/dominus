@@ -9,19 +9,18 @@
 // This file wires the keys and the terminal; state.ts holds the state,
 // draw.ts draws it and effects.ts does what touches the world.
 
-import { mkdirSync, watch } from 'node:fs'
+import { mkdirSync, } from 'node:fs'
 import { basename, dirname } from 'node:path'
 
 import { imageFiles } from '../../core/images.ts'
-import { errorMessage, logger } from '../../core/log.ts'
+import { logger } from '../../core/log.ts'
 import { t } from '../../core/text.ts'
-import { TAB_CHANGED } from '../../core/paths.ts'
 import { load as loadSettings } from '../../settings/settings.ts'
 import type { Hint } from '../../tui/chrome.ts'
 import type { Mouse } from '../../tui/input.ts'
 import { openOverlay } from '../../tui/overlay.ts'
 import { P } from '../../tui/palette.ts'
-import { enter, leave, out } from '../../tui/screen.ts'
+import { leave, needTerminal, out, startPane } from '../../tui/screen.ts'
 import { logCrashes } from '../logging.ts'
 import { SPIN_MS, TITLE, bodyHeight, frame, listTop, paint, sayMs } from './draw.ts'
 import { todoEffects, world } from './effects.ts'
@@ -29,6 +28,7 @@ import { config, confirmPrompt, createState, cursorItem, moveCursor as move, pin
 import { type Item, STORE, filingState, knownRepos, moveOldStoreOnce } from './todo.ts'
 import * as ui from './todo-ui.ts'
 import { type EditPrompt, type HandoffPrompt, KEYS, type KeyAction, type Prompt } from './todo-ui.ts'
+import { onTabChanged, watchName } from '../tab.ts'
 
 const log = logger('todo')
 logCrashes(log)
@@ -339,18 +339,11 @@ function startScreen(): void {
     ov.start(onInput, draw)
     return
   }
-  process.stdin.setRawMode(true)
-  process.stdin.on('data', (data: Buffer) => onInput(data))
-  process.stdout.on('resize', draw)
-  process.on('SIGTERM', () => quit())
-  enter(SCREEN)
+  startPane({ onData: onInput, onResize: draw, quit: () => quit(), screen: SCREEN })
   draw()
 }
 
-if (!process.stdin.isTTY) {
-  console.error('todo-view needs a terminal.')
-  process.exit(1)
-}
+needTerminal('todo-view')
 moveOldStoreOnce()
 mkdirSync(dirname(STORE), { recursive: true })
 fx.readStore(true)
@@ -362,17 +355,5 @@ setInterval(() => void fx.refresh(), REFRESH_MS)
 setInterval(() => {
   if (s.items.some(i => filingState(i) === 'filing')) draw()
 }, SPIN_MS)
-const WATCHED: [folder: string, name: string][] = [
-  [dirname(STORE), basename(STORE)],
-  [dirname(TAB_CHANGED), 'tab-changed'],
-]
-for (const [folder, name] of WATCHED) {
-  try {
-    watch(folder, (_, changed) => {
-      if (changed === name) void fx.refresh()
-    })
-  } catch (error) {
-    // No such folder yet: the interval catches up.
-    log.warn('not watching a folder', { path: folder, err: errorMessage(error) })
-  }
-}
+watchName(dirname(STORE), basename(STORE), () => void fx.refresh(), log)
+onTabChanged(() => void fx.refresh(), log)

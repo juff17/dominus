@@ -67,6 +67,35 @@ export const leave = (opts: ScreenModes = {}): boolean => {
   return out(leaveSeq(opts))
 }
 
+// A view that runs in a pane of its own (the hub, the rail, the viewer's
+// modes) refuses to start without a terminal.
+export function needTerminal(name: string): void {
+  if (process.stdin.isTTY) return
+  console.error(`${name} needs a terminal.`)
+  process.exit(1)
+}
+
+export type PaneSpec = {
+  onData: (data: Buffer) => void
+  // After the new size is read: a SIGWINCH handler can run before that.
+  onResize: () => void
+  quit: (signal: NodeJS.Signals) => void
+  screen?: ScreenModes
+  // Sent as the screen is entered (focus reports, size queries).
+  onEnter?: string
+}
+
+// Raw keys to onData, a resize to onResize, SIGTERM and SIGHUP to quit, then
+// the screen entered.
+export function startPane({ onData, onResize, quit, screen = {}, onEnter = '' }: PaneSpec): void {
+  process.stdin.setRawMode(true)
+  process.stdin.on('data', onData)
+  process.stdout.on('resize', onResize)
+  process.on('SIGTERM', quit)
+  process.on('SIGHUP', quit)
+  enter(screen, onEnter)
+}
+
 // Runs a program on the whole terminal (an $EDITOR): the screen is given
 // back for it and taken again after.
 export function outside(cmd: string, args: string[], opts: ScreenModes = {}): SpawnSyncReturns<Buffer> {

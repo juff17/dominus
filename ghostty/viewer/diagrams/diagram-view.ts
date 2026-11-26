@@ -11,19 +11,18 @@
 // draw.ts draws it and effects.ts does what touches the world.
 
 import { existsSync, mkdirSync, watch } from 'node:fs'
-import { dirname } from 'node:path'
 
 import { errorMessage, logger } from '../../core/log.ts'
-import { TAB_CHANGED } from '../../core/paths.ts'
 import { runSync } from '../../core/proc.ts'
 import type { Mouse } from '../../tui/input.ts'
-import { enter, leave, out, paint } from '../../tui/screen.ts'
+import { leave, needTerminal, out, paint, startPane } from '../../tui/screen.ts'
 import { logCrashes } from '../logging.ts'
 import { type View, panBy, zoomAt } from '../view.ts'
 import { type Diagram, type Point, dropPicture, keyAction, parseInput, resendPicture } from './diagram.ts'
 import { frame } from './draw.ts'
 import { diagramEffects } from './effects.ts'
 import { type Size, config, createState, diagram, middle, mouseAction, panPixels, region, select as selectIn, zoomStep } from './state.ts'
+import { onTabChanged } from '../tab.ts'
 
 const log = logger('diagrams')
 logCrashes(log)
@@ -208,37 +207,27 @@ function quit(code = 0): never {
   process.exit(code)
 }
 
-if (!process.stdin.isTTY) {
-  console.error('diagram-view needs a terminal.')
-  process.exit(1)
-}
+needTerminal('diagram-view')
 
 mkdirSync(PANES, { recursive: true })
 fx.readCell()
 fx.captureBackdrop(size())
-process.stdin.setRawMode(true)
-process.stdin.on('data', onInput)
-process.stdout.on('resize', () => {
-  out('\x1b[16t')
-  resend()
-})
-process.on('SIGTERM', () => quit())
-process.on('SIGHUP', () => quit())
 // Asks for the cell size and whether pixel mouse positions took, and turns
 // on focus reports.
-enter(SCREEN, `\x1b[16t\x1b[?1016$p${FOCUS_ON}`)
+startPane({
+  onData: onInput,
+  onResize: () => {
+    out('\x1b[16t')
+    resend()
+  },
+  quit: () => quit(),
+  screen: SCREEN,
+  onEnter: `\x1b[16t\x1b[?1016$p${FOCUS_ON}`,
+})
 
 watch(PANES, (_, name) => {
   if (!FOLLOWS || `${PANES}/${name}` === s.paneFile) setTimeout(fx.readState, 30)
 })
-// The tab session touches TAB_CHANGED when its active tab changes (tmux.conf).
-try {
-  watch(dirname(TAB_CHANGED), (_, name) => {
-    if (name === 'tab-changed') setTimeout(fx.readState, 30)
-  })
-} catch (err) {
-  // No layout state folder: outside the layout, nothing changes tabs.
-  log.warn('not watching a folder', { path: dirname(TAB_CHANGED), err: errorMessage(err) })
-}
+onTabChanged(() => setTimeout(fx.readState, 30), log)
 fx.readState()
 schedule()

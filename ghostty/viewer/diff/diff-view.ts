@@ -1,22 +1,12 @@
 #!/usr/bin/env node
-// gv: the viewer pane's Diff mode. Shows the uncommitted changes (staged,
-// unstaged and untracked) of the git repository around the active tmux tab's
-// folder, checking git every second.
-//   diff-view.ts [dir]
-// DV_TABS names the window's tab session as `socket:session`
-// (bin/ghostty-claude-start); without it, dir is the folder.
-// effects.ts reads git and the tab; this file draws and takes the keys.
 
-import { watch } from 'node:fs'
-import { dirname } from 'node:path'
-
-import { errorMessage, logger } from '../../core/log.ts'
-import { TAB_CHANGED, tilde } from '../../core/paths.ts'
+import { logger } from '../../core/log.ts'
+import { tilde } from '../../core/paths.ts'
 import { t } from '../../core/text.ts'
 import { keyHints as hint, modeHeader, switchCol } from '../../tui/chrome.ts'
 import { frameBottom, frameRow, frameTop, spanWidth } from '../../tui/controls.ts'
 import { type Mouse, leftPress } from '../../tui/input.ts'
-import { enter, leave, paint } from '../../tui/screen.ts'
+import { leave, needTerminal, paint, startPane } from '../../tui/screen.ts'
 import { BOLD, P, type Span, width as cells, fg } from '../../tui/term.ts'
 import { fit } from '../../tui/text.ts'
 import { logCrashes } from '../logging.ts'
@@ -24,6 +14,7 @@ import { type BodyRow, type DiffFile, type DiffRow, addShare, bodyRows as listRo
 import { C, diffRow as drawDiff, fileRow as drawFile, scaleOf } from './diff-rows.ts'
 import { createState, diffEffects, world } from './effects.ts'
 import { paneModes, tabs as modeTabs } from '../modes.ts'
+import { onTabChanged } from '../tab.ts'
 
 const log = logger('diff')
 logCrashes(log)
@@ -188,27 +179,12 @@ function onInput(data: Buffer): void {
   }
 }
 
-if (!process.stdin.isTTY) {
-  console.error('diff-view needs a terminal.')
-  process.exit(1)
-}
-
-process.stdin.setRawMode(true)
-process.stdin.on('data', onInput)
-process.stdout.on('resize', draw)
-process.on('SIGTERM', () => quit())
+needTerminal('diff-view')
 // On every exit, a crash too: otherwise the alt screen and mouse reporting
 // stay on, and a click answers bin/ghostty-viewer's "press any key".
 process.on('exit', () => leave(SCREEN))
-enter(SCREEN)
+startPane({ onData: onInput, onResize: draw, quit: () => quit(), screen: SCREEN })
 draw()
 void fx.refresh()
 setInterval(() => void fx.refresh(), REFRESH_MS)
-try {
-  watch(dirname(TAB_CHANGED), (_, name) => {
-    if (name === 'tab-changed') void fx.refresh()
-  })
-} catch (err) {
-  // No layout state folder: outside the layout, the tab never changes.
-  log.warn('not watching a folder', { path: dirname(TAB_CHANGED), err: errorMessage(err) })
-}
+onTabChanged(() => void fx.refresh(), log)

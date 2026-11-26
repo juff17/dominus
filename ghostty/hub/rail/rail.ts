@@ -16,11 +16,12 @@ import { type Mark, type Pressable, type RailActs, type RailView, frame, pressed
 import { load as settings } from '../../settings/settings.ts'
 import { type Cell, RAIL_IDS, fit, gearFile, gearRow, sendGear } from '../../tui/gear.ts'
 import { RAIL_REST, RAIL_TURNED } from '../../tui/gear-art.ts'
-import { ACCENT, enter, leave, paint, tokens } from '../../tui/term.ts'
+import { ACCENT, leave, paint, tokens } from '../../tui/term.ts'
 import { logger } from '../../core/log.ts'
 import { RUN, conf } from '../../core/paths.ts'
 import { run } from '../../core/proc.ts'
 import { CELL_ARGS, parseCell, tmuxOf } from '../../core/tmux.ts'
+import { needTerminal, startPane } from '../../tui/screen.ts'
 
 const log = logger('rail')
 logCrashes(log)
@@ -143,16 +144,7 @@ function draw() {
   setup = ''
 }
 
-if (!process.stdin.isTTY) {
-  console.error('rail.ts needs a terminal.')
-  process.exit(1)
-}
-process.stdin.setRawMode(true)
-process.stdin.on('data', data => {
-  for (const t of tokens(data)) {
-    if (t.mouse) void pressed(buttons, t.mouse)?.act()
-  }
-})
+needTerminal('rail.ts')
 // tmux shares a resize out between the panes, the rail included, and the
 // layout's window-resized hook only reaches the window being resized, so the
 // rail puts its own width back. It checks on every update too, so a change in
@@ -162,17 +154,21 @@ const want = () => Number(process.env.GHOSTTY_RAIL_COLS) || settings()['layout.r
 function fitWidth() {
   if (cols() !== want() && process.env.TMUX_PANE) void tmux('resize-pane', '-t', process.env.TMUX_PANE, '-x', String(want()))
 }
-process.stdout.on('resize', () => {
-  fitWidth()
-  draw()
+startPane({
+  onData: data => {
+    for (const t of tokens(data)) {
+      if (t.mouse) void pressed(buttons, t.mouse)?.act()
+    }
+  },
+  onResize: () => {
+    fitWidth()
+    draw()
+  },
+  quit: () => {
+    leave()
+    process.exit(0)
+  },
 })
-const bye = () => {
-  leave()
-  process.exit(0)
-}
-process.on('SIGTERM', bye)
-process.on('SIGHUP', bye)
-enter()
 follow(s => {
   c = counts(s.agents)
   fitWidth()
