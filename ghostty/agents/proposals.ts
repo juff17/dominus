@@ -23,7 +23,8 @@ export const APPROVALS = join(RUN, 'approvals')
 // Which fields a proposal has depends on its kind; id, kind and status are
 // all readApprovals checks.
 export type ProposalStatus = 'pending' | 'failed'
-export type ProposalPr = { url?: string; project?: string; forge?: string; repo?: string; ref?: string }
+// `number` is the PR's, or a Jira ticket's key where a tester's comment goes.
+export type ProposalPr = { url?: string; project?: string; forge?: string; repo?: string; ref?: string; number?: string | number }
 // GitHub's job ids are numbers in some places and strings in others, and a
 // deployment's is `run:<run id>`.
 export type ProposalJob = { id?: string | number; run_id?: string | number; name?: string; stage?: string; reason?: string }
@@ -49,6 +50,8 @@ export type Proposal = {
   body?: string
   // A review comment's place in the PR's diff, at the head it was read on.
   comment?: { path: string; line: number; side?: string; sha?: string }
+  // A tester's Jira comment's screenshots, in order.
+  images?: string[]
   briefing?: string
   commit?: ProposalCommit
   // A push's. `removes` are the commits it takes off the remote.
@@ -72,8 +75,8 @@ export type Proposal = {
 }
 
 // The kinds whose text you can edit before it's posted: a babysit's reply and
-// a reviewer's comment.
-export const EDITABLE: ReadonlySet<string> = new Set(['reply', 'comment'])
+// a reviewer's comment and a tester's Jira comment.
+export const EDITABLE: ReadonlySet<string> = new Set(['reply', 'comment', 'jira'])
 export const editable = (p: Pick<Proposal, 'kind'>): boolean => EDITABLE.has(p.kind)
 
 const isProposal = (v: unknown): v is Proposal =>

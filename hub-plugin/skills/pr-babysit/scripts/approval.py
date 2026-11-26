@@ -11,6 +11,7 @@ auto.
   approval.py propose deploy <url> --session S --job ID --name NAME
   approval.py propose move   <url> --session S --onto SHA
   approval.py propose comment <url> --session S --path FILE --line N [--side RIGHT|LEFT] --body TEXT
+  approval.py propose jira   <ticket-url> --session S --body TEXT [--image FILE]...
   approval.py approve <id> [--body-file FILE] [--drop SHA]...
   approval.py reject <id>
   approval.py dismiss <id>
@@ -48,7 +49,9 @@ LOGGER = logger("approval")
 
 ROOT = files.runtime_dir() / "approvals"
 LOG = ROOT / "log.jsonl"
-KINDS = ("reply", "push", "retry", "manual", "deploy", "move", "comment")
+KINDS = ("reply", "push", "retry", "manual", "deploy", "move", "comment", "jira")
+# A Jira ticket's key, from its link.
+TICKET = re.compile(r"/browse/([A-Z][A-Z0-9_]*-\d+)")
 # A manual job whose name or stage says it deploys always waits for the user,
 # whatever Settings say.
 DEPLOYS = re.compile(r"deploy|release|prod", re.IGNORECASE)
@@ -63,8 +66,9 @@ def policy(kind):
     """'auto', 'ask' or 'off' for a kind of action, from Settings > Approvals."""
     if kind == "reply":
         return {"post": "auto", "draft": "ask", "off": "off"}[w.choice("approvals.reply", "draft", ("off", "draft", "post"))]
-    # A review comment on someone else's PR always waits for the user.
-    if kind in ("deploy", "comment"):
+    # A review comment on someone else's PR, and a tester's evidence on the
+    # ticket, always wait for the user.
+    if kind in ("deploy", "comment", "jira"):
         return "ask"
     return w.choice(f"approvals.{kind}", "ask", ("ask", "auto"))
 
@@ -291,17 +295,38 @@ def fetch_comment(url, cid):
             "body": c.get("body") or "", "url": c.get("html_url") or c.get("url") or url}
 
 
+def ticket_info(url):
+    """A Jira ticket where a PR would be, so the tray and the store read it
+    the same way."""
+    m = TICKET.search(url)
+    if not m:
+        raise SystemExit(f"Not a Jira ticket link: {url}")
+    return {"key": f"jira:{m.group(1)}", "url": url, "number": m.group(1), "forge": "jira", "repo": m.group(1), "ref": ""}
+
+
 def build(args):
-    pr = pr_info(args.url)
-    notes = saved(args.url, args.session)
+    jira = args.kind == "jira"
+    pr = ticket_info(args.url) if jira else pr_info(args.url)
+    notes = {} if jira else saved(args.url, args.session)
     p = {"id": f"{int(time.time() * 1000)}-{args.kind}-{secrets.token_hex(3)}", "kind": args.kind,
          "at": int(time.time() * 1000), "session": args.session, "pr": pr, "status": "pending",
          "claude_session": os.environ.get("CLAUDE_CODE_SESSION_ID", ""), "pane": os.environ.get("TMUX_PANE", ""),
          # Which tmux server the pane is on: pane ids are unique only per server.
          "tmux": os.environ.get("TMUX", ""),
          "script": str(Path(__file__).resolve())}
-    where = f"{pr['repo']} {pr['ref']}"
-    if args.kind == "reply":
+    where = f"{pr['repo']} {pr['ref']}".strip()
+    if jira:
+        if args.body is None:
+            raise SystemExit("A Jira comment needs --body")
+        images = [str(Path(i).expanduser().resolve()) for i in args.image or []]
+        gone = [i for i in images if not Path(i).is_file()]
+        if gone:
+            raise SystemExit(f"No such screenshot: {', '.join(gone)}")
+        p["body"], p["images"] = args.body, images
+        n = len(images)
+        p["title"] = f"Comment on {pr['number']}" + (f" with {n} screenshot{'s' if n != 1 else ''}" if n else "")
+        p["key"] = "jira"
+    elif args.kind == "reply":
         if not args.comment or args.body is None:
             raise SystemExit("A reply needs --comment and --body")
         c = fetch_comment(args.url, args.comment)
@@ -609,8 +634,12 @@ def approve(pid, body=None, drop=(), auto=False):
             return {"ok": False, "message": "That approval is gone"}
         if p["status"] not in ("pending", "failed"):
             return {"ok": False, "message": f"Already {p['status']}"}
-        if body is not None and p["kind"] in ("reply", "comment") and body != p["body"]:
+        if body is not None and p["kind"] in ("reply", "comment", "jira") and body != p["body"]:
             p["body"], p["edited"] = body, True
+        # The hub's Jira token only reads, so the tester posts it, exactly as
+        # approved, through the tracker's MCP.
+        if p["kind"] == "jira":
+            return finish(p, "handed", True, f"Approved: the tester posts it to {p['pr']['number']}")
         if p["kind"] == "move":
             return finish(p, "handed", True, f"Approved: the session moves its commits onto {p['onto'][:7]}")
         if drop and p["kind"] == "push":
@@ -758,6 +787,8 @@ def outcome(p):
         event = f"{what} failed: {r.get('message', '')}. Work out why, fix what you can, and propose it again"
     elif p["status"] == "rejected":
         event = f"{what} rejected by the user; keep it for the briefing"
+    elif p["status"] == "handed" and p["kind"] == "jira":
+        event = f"{what} approved: post its body, exactly, to {p['pr']['number']} through the tracker's MCP"
     elif p["status"] == "handed" and p["kind"] == "move":
         event = (f"{what} approved: rebase {p['local']} onto {p['onto']} (git rebase --onto {p['onto']} {p['lease']}), "
                  "run lint and tests, save the new lease_sha, then propose the push")
@@ -783,7 +814,7 @@ def main(argv=None):
     pr.add_argument("url")
     pr.add_argument("--session", required=True, help="the babysit's session id, as given to watch_pr.py")
     pr.add_argument("--comment", help="reply: the comment's id from its [comment] event (rc:, ic:, rv: or note:)")
-    pr.add_argument("--body", help="reply, comment: the text to post, exactly")
+    pr.add_argument("--body", help="reply, comment, jira: the text to post, exactly")
     pr.add_argument("--commit", help="reply: the commit that addressed it")
     pr.add_argument("--briefing", help="reply: why it needs the user's call; such a reply always waits for them")
     pr.add_argument("--check", action="append", help="push: a check you ran, NAME=ok or NAME=failed")
@@ -796,9 +827,10 @@ def main(argv=None):
     pr.add_argument("--path", help="comment: the file, as the diff names it")
     pr.add_argument("--line", type=int, help="comment: the line in that file the comment is on")
     pr.add_argument("--side", help="comment: RIGHT, the new file (the default), or LEFT, the old one")
+    pr.add_argument("--image", action="append", help="jira: a screenshot the comment carries, in order")
     ok = sub.add_parser("approve", help="run an approval as proposed")
     ok.add_argument("id")
-    ok.add_argument("--body-file", help="reply, comment: post this file's text instead")
+    ok.add_argument("--body-file", help="reply, comment, jira: post this file's text instead")
     ok.add_argument("--drop", action="append", default=[], help="push: leave this commit out; hands the push back")
     no = sub.add_parser("reject", help="turn a proposal down")
     no.add_argument("id")

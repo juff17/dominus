@@ -193,8 +193,9 @@ export function approval(s: State, p: Proposal, always = false): Approve {
   return e
 }
 
-// A deployment and a review comment on someone else's PR always ask.
-export const canAlways = (p: Proposal): boolean => p.status === 'pending' && p.kind !== 'deploy' && p.kind !== 'comment'
+// A deployment, a review comment on someone else's PR and a tester's Jira
+// comment always ask.
+export const canAlways = (p: Proposal): boolean => p.status === 'pending' && p.kind !== 'deploy' && p.kind !== 'comment' && p.kind !== 'jira'
 
 // The Settings key and value A turns on for each kind.
 export type AlwaysSetting = readonly ['approvals.reply', 'post'] | readonly ['approvals.push' | 'approvals.retry' | 'approvals.manual' | 'approvals.move', 'auto']
@@ -351,7 +352,7 @@ const KEYS: Record<string, ProposalKey> = {
   a: (s, p) => (ready(s) ? approval(s, p) : undefined),
   A: (s, p) => {
     if (canAlways(p)) return ready(s) ? approval(s, p, true) : undefined
-    const why = p.kind === 'deploy' ? 'approvals.notes.deployAsks' : p.kind === 'comment' ? 'approvals.notes.commentAsks' : 'approvals.notes.tryAgain'
+    const why = p.kind === 'deploy' ? 'approvals.notes.deployAsks' : p.kind === 'comment' || p.kind === 'jira' ? 'approvals.notes.commentAsks' : 'approvals.notes.tryAgain'
     s.note = { text: t(why), tone: 'peach' }
     return undefined
   },

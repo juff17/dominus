@@ -4,12 +4,12 @@ import { t } from '../core/text.ts'
 import { proposalLink } from './links.ts'
 import { type Action, type ApprovalRow, agentOf, row } from './rows.ts'
 
-export const APPROVE = { reply: 'post', comment: 'post', push: 'push', manual: 'run', deploy: 'approve', retry: 'retry', move: 'move' } as const satisfies Record<string, Action>
+export const APPROVE = { reply: 'post', comment: 'post', jira: 'post', push: 'push', manual: 'run', deploy: 'approve', retry: 'retry', move: 'move' } as const satisfies Record<string, Action>
 // approval.py may write a kind the tray doesn't know yet.
 export type ProposalKind = keyof typeof APPROVE
 const isKind = (kind: string): kind is ProposalKind => Object.hasOwn(APPROVE, kind)
 export const APPROVE_ACTIONS: ReadonlySet<string> = new Set<Action>([...Object.values(APPROVE), 'again'])
-const GLYPH: Record<ProposalKind, string> = { reply: '↩', comment: '✎', push: '↑', manual: '▶', deploy: '▶', retry: '✗', move: '⇅' }
+const GLYPH: Record<ProposalKind, string> = { reply: '↩', comment: '✎', jira: '✎', push: '↑', manual: '▶', deploy: '▶', retry: '✗', move: '⇅' }
 export const glyphOf = (kind: string): string => (isKind(kind) ? GLYPH[kind] : '▲')
 // The longest reply the inbox's three-line preview shows whole.
 export const PREVIEW_MOST = 200
@@ -22,6 +22,7 @@ const lines = (commits: readonly ProposalCommit[] = [], key: 'added' | 'removed'
 const DETAIL: Record<ProposalKind, (p: Proposal) => string[]> = {
   reply: () => [t('tray.approval.reply')],
   comment: () => [t('tray.approval.comment')],
+  jira: p => [t('tray.approval.jira', { n: p.images?.length ?? 0 })],
   push: p => [`${p.local} → ${p.branch}`, `+${lines(p.commits, 'added')} −${lines(p.commits, 'removed')}`],
   manual: p => [p.job?.stage ? t('tray.approval.stage', { stage: p.job.stage }) : t('tray.approval.manualJob')],
   deploy: () => [t('tray.approval.deployment')],
@@ -32,6 +33,7 @@ const DETAIL: Record<ProposalKind, (p: Proposal) => string[]> = {
 const OWN_ACTIONS: Record<ProposalKind, Action[]> = {
   reply: ['post', 'edit', 'skip'],
   comment: ['post', 'edit', 'skip'],
+  jira: ['post', 'edit', 'skip'],
   push: ['push', 'review', 'go'],
   retry: ['retry', 'go'],
   manual: [APPROVE.manual, 'skip'],

@@ -121,7 +121,7 @@ Follow the track's reference file. A failure is fixed (`--fix`) or recorded
 ## 7. Evidence
 
 Follow `references/evidence.md`. Proof goes to Jira only when every track
-passes, and only after the user says yes.
+passes, and only after the user approves it in the Agents tray or Alt+A.
 
 ## 8. Finish
 
@@ -142,7 +142,8 @@ Then ask one AskUserQuestion:
 ## Hard rules
 
 - **Tracker:** never move, edit or assign the ticket. Add at most one Jira
-  comment per session (a hook allows one), and only after "Post it".
+  comment per session (a hook allows one), and only once the user approved
+  it in the Agents tray or Alt+A (`evidence.md`).
 - **Failing runs:** never post their screenshots or output.
 - **Secrets:** never print a token, password or auth header. Blank them in
   every file and screenshot.

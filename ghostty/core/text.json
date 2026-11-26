@@ -1780,7 +1780,11 @@
       "scriptGone": "The babysit script that proposed this is gone",
       "scriptSlow": "The approval script took too long and was stopped",
       "scriptFailed": "The approval script failed",
-      "comment": "review · comment"
+      "comment": "review · comment",
+      "jira": {
+        "one": "test · Jira comment · {n} screenshot",
+        "other": "test · Jira comment · {n} screenshots"
+      }
     },
     "links": {
       "comment": "Comment",
@@ -2293,7 +2297,7 @@
       "noOpener": "Couldn't open {url}: no xdg-open",
       "opened": "Opened {url}",
       "closesWhenDone": "Closes when this is done; press again to close now",
-      "commentAsks": "A review comment always asks"
+      "commentAsks": "A comment always asks"
     },
     "busy": {
       "reply": "Posting…",
@@ -2304,7 +2308,8 @@
       "approve": "Approving…",
       "reject": "Rejecting…",
       "dismiss": "Dismissing…",
-      "comment": "Posting…"
+      "comment": "Posting…",
+      "jira": "Approving…"
     },
     "diff": {
       "badge": "DIFF",
@@ -2326,7 +2331,11 @@
       "job": "job {id}",
       "proposed": "proposed {ago} ago",
       "failed": "✗ Failed: {message}",
-      "at": "at {sha}"
+      "at": "at {sha}",
+      "screenshots": {
+        "one": "{n} screenshot",
+        "other": "{n} screenshots"
+      }
     },
     "labels": {
       "theirComment": "THEIR COMMENT",
@@ -2343,7 +2352,10 @@
       },
       "whatApproving": "WHAT APPROVING DOES",
       "comment": "COMMENT THAT WILL BE POSTED",
-      "commentEditing": "COMMENT THAT WILL BE POSTED · editing"
+      "commentEditing": "COMMENT THAT WILL BE POSTED · editing",
+      "jira": "COMMENT THAT WILL BE POSTED TO JIRA",
+      "jiraEditing": "COMMENT THAT WILL BE POSTED TO JIRA · editing",
+      "screenshots": "SCREENSHOTS · in this order"
     },
     "reply": {
       "posted": "Posted as you, exactly as shown.",
@@ -2382,7 +2394,8 @@
       "notYet": "Not yet",
       "reject": "Reject",
       "goToSession": "Go to session",
-      "comment": "Post comment"
+      "comment": "Post comment",
+      "jira": "Post to Jira"
     },
     "keys": {
       "file": "file",

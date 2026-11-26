@@ -211,6 +211,29 @@ class Approvals(unittest.TestCase):
         for field in ("commit_id=abc1234def", "path=src/auth.py", "side=RIGHT", "line=42", "body=[nit] `Car.Ferrari`, not `'ferrari'`."):
             self.assertIn(field, post)
 
+    def test_a_jira_comment_waits_then_is_handed_back_with_the_approved_text(self):
+        shot = self.tmp / "01-upload.png"
+        shot.write_bytes(b"png")
+        code, out = self.run_cli("propose", "jira", "https://acme.atlassian.net/browse/ENG-412", "--session", "test-ENG-412",
+                                 "--body", "Tested on 3f9a1c2: 12/12 pass.", "--image", str(shot))
+        self.assertEqual(code, 0, out)
+        pid = out.split()[1]
+        p = ap.load(pid)
+        self.assertEqual((p["title"], p["images"], p["pr"]["key"]), ("Comment on ENG-412 with 1 screenshot", [str(shot)], "jira:ENG-412"))
+        edit = self.tmp / "edit.txt"
+        edit.write_text("Tested on 3f9a1c2: all 12 cases pass.\n")
+        code, out = self.run_cli("approve", pid, "--body-file", str(edit))
+        self.assertEqual(code, 0, out)
+        self.assertFalse(self.calls(), "the hub posts nothing to Jira itself")
+        p = ap.load(pid)
+        self.assertEqual((p["status"], p["body"]), ("handed", "Tested on 3f9a1c2: all 12 cases pass."))
+
+    def test_a_jira_comment_needs_a_ticket_and_its_screenshots(self):
+        with self.assertRaises(SystemExit):
+            self.run_cli("propose", "jira", URL, "--session", "t", "--body", "x")
+        with self.assertRaises(SystemExit):
+            self.run_cli("propose", "jira", "https://acme.atlassian.net/browse/ENG-412", "--session", "t", "--body", "x", "--image", str(self.tmp / "gone.png"))
+
     def test_a_review_comment_needs_its_place(self):
         with self.assertRaises(SystemExit):
             self.propose("comment", "--path", "src/auth.py", "--body", "x")

@@ -60,7 +60,7 @@ type Verb = 'approve' | 'reject' | 'dismiss'
 const SETTLED: Record<Verb, string> = { approve: 'proposal approved', reject: 'proposal rejected', dismiss: 'proposal dismissed' }
 const UNSETTLED: Record<Verb, string> = { approve: 'proposal approve failed', reject: 'proposal reject failed', dismiss: 'proposal dismiss failed' }
 // The kinds with a busy text of their own.
-const BUSY_KINDS = new Set(['reply', 'comment', 'push', 'retry', 'manual'])
+const BUSY_KINDS = new Set(['reply', 'comment', 'jira', 'push', 'retry', 'manual'])
 
 export function approvalEffects(s: State, io: ApprovalsIo) {
   let closeAfter = false

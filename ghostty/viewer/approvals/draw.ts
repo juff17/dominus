@@ -3,6 +3,7 @@
 // to keep. It reads nothing but the state and $EDITOR, so a test can draw
 // any state.
 
+import { tilde } from '../../core/paths.ts'
 import { t } from '../../core/text.ts'
 import { type ButtonSpec, buttons as buttonRow } from '../../tui/controls.ts'
 import { CARET_MARK, caretParts, length, withCaret } from '../../tui/line.ts'
@@ -85,6 +86,7 @@ function metaOf(p: Proposal): (string | number | undefined)[] {
   const where = `${p.pr?.repo ?? ''} ${p.pr?.ref ?? ''}`.trim()
   if (p.kind === 'reply') return [where, p.thread?.where, p.thread?.id && t('approvals.meta.thread', { id: p.thread.id })]
   if (p.kind === 'comment') return [where, p.comment && `${p.comment.path}:${p.comment.line}`, p.comment?.sha && t('approvals.meta.at', { sha: short(p.comment.sha) })]
+  if (p.kind === 'jira') return [p.pr?.number, t('approvals.meta.screenshots', { n: p.images?.length ?? 0 })]
   if (p.kind === 'push') return [where, `${p.local} → ${p.remote}/${p.branch}`]
   if (p.kind === 'move') return [where, t('approvals.meta.onto', { local: p.local ?? '', sha: short(p.onto) })]
   return [where, p.job?.stage && t('approvals.meta.stage', { stage: p.job.stage }), p.job?.id && t('approvals.meta.job', { id: p.job.id })]
@@ -101,8 +103,9 @@ function heading(p: Proposal, w: number): string[] {
   return [...out, blank(w)]
 }
 
-// A reply under their comment, or a review comment of the user's own, which
-// answers nothing.
+// A reply under their comment, or a comment of the user's own, which answers
+// nothing: a reviewer's on a PR's line, or a tester's on the Jira ticket, with
+// the screenshots it carries.
 function replyBody(s: State, p: Proposal, w: number, env: Env): Body {
   const reply = p.kind === 'reply'
   const out = reply ? [label(p.thread?.author ? t('approvals.labels.theirCommentBy', { author: p.thread.author }) : t('approvals.labels.theirComment'), w)] : []
@@ -116,7 +119,11 @@ function replyBody(s: State, p: Proposal, w: number, env: Env): Body {
     ]
     out.push(blank(w), label(t('approvals.labels.whatIDid'), w), render(commit, w, BASE))
   }
-  const which = reply ? 'reply' : 'comment'
+  if (p.images?.length) {
+    out.push(label(t('approvals.labels.screenshots'), w))
+    for (const image of p.images) out.push(said(`  ${tilde(image)}`, w, P.text))
+  }
+  const which = reply ? 'reply' : p.kind === 'jira' ? 'jira' : 'comment'
   if (out.length) out.push(blank(w))
   out.push(label(t(s.editing ? `approvals.labels.${which}Editing` : `approvals.labels.${which}`), w, P.peach))
   let caret: number | undefined
@@ -230,7 +237,7 @@ export function keysFor(s: State, p: Proposal | null): [key: string, what: strin
   // d isn't here: the Open diff button shows it.
   if (p.kind === 'push') return [step, ['↑ ↓', K('commits')], ['enter', K('itsDiff')], ['space', K('keepDrop')], ['A', K('always')]]
   if (p.kind === 'reply') return [step, ['e', H('edit')], ['A', K('alwaysReplies')]]
-  if (p.kind === 'comment') return [step, ['e', H('edit')], ['r', K('reject')]]
+  if (p.kind === 'comment' || p.kind === 'jira') return [step, ['e', H('edit')], ['r', K('reject')]]
   if (p.kind === 'deploy') return [step, ['r', K('reject')], ['g', K('goToSession')]]
   return [step, ['A', K(p.kind === 'retry' ? 'alwaysRetries' : 'alwaysKind')]]
 }
