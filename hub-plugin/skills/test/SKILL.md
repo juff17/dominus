@@ -36,8 +36,8 @@ From the Tickets popup, the prompt holds the same lines as review's:
 
 - `Ticket:`, `Link:`, `Site:`, `Board:`;
 - `Repo:` or `Folder:`;
-- a `From the hub:` paragraph with the user's
-  `~/.config/dominus/prompts/test.md`, which may be missing.
+- a `From the hub:` paragraph, which may hold the user's own instructions
+  for testers. The hub pastes them in; there's no file to look for.
 
 The user's instructions there come first: test accounts, URLs, what to skip.
 
@@ -104,9 +104,10 @@ from:
 
 ## 5. Log in
 
-- **Credentials:** use the test account the user's `test.md` or the repo
-  names. Credentials are env var **names**. Read the value into the request
-  or the browser; never print it, log it or put it in a file.
+- **Credentials:** use the test account the user's instructions in the
+  prompt or the repo's docs name. Credentials are env var **names**. Read the
+  value into the request or the browser; never print it, log it or put it in
+  a file.
 - **No account named, or login fails:** ask with AskUserQuestion, giving the
   URL and the account you tried. Options:
   - "Use another env var";

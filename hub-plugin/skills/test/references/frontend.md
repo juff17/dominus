@@ -9,7 +9,7 @@ go to Jira.
 | Use | Tools | When |
 | --- | --- | --- |
 | Playwright | `mcp__plugin_playwright_playwright__*` (plugin `playwright@claude-plugins-official`) | First choice |
-| Claude in Chrome | `mcp__claude-in-chrome__*` (test sessions start with `--chrome`) | When Playwright isn't available |
+| Claude in Chrome | `mcp__claude-in-chrome__*` (test sessions start with `--chrome`); read the `chrome-browser` skill first when it’s listed | When Playwright isn't available |
 
 Look for both with ToolSearch. Call them as installed; never copy them.
 Neither available → ask with AskUserQuestion: "Neither Playwright nor Claude

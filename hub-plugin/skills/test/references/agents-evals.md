@@ -20,8 +20,8 @@ Yes when the diff touches any of these:
 | --- | --- |
 | The change reaches a prompt and evals exist | The evals must run: on the base branch and on this branch, compared |
 | The evals cover the changed behaviour well | The evals, plus a few real runs of the ticket's case |
-| The evals miss the changed behaviour | The evals, plus new scenario files for the gap, run many times |
-| No evals | New scenario files for the ticket's behaviour, run many times; propose adding them as evals |
+| The evals miss the changed behaviour | The evals, plus new scenario files for the gap, run many times with different data |
+| No evals | New scenario files for the ticket's behaviour, run many times; surface what is missing from the evals as a sentence or two |
 | The change doesn't reach an agent | This track is skipped |
 
 ## Rules
@@ -30,8 +30,8 @@ Yes when the diff touches any of these:
   must not repeat them.
 - **Real behaviour:** the app running, real inputs, its real output; no
   mocks.
-- **Repeat runs:** run each scenario 5 times, unless the user's `test.md`
-  says otherwise. Report the pass rate, not one run.
+- **Repeat runs:** run each scenario 5 times, unless the user's
+  instructions in the prompt say otherwise. Report the pass rate, not one run.
 - **Test files:** write missing ones in the repo's eval format when it has
   one. Otherwise put them in the run folder. Offer to commit them, as
   `backend.md` does with its script.
@@ -46,8 +46,8 @@ Yes when the diff touches any of these:
 
 - **Compare** the branch with the base, per eval and overall.
 - **A drastic drop stops the run:** more than 5 points overall, or any case
-  that passed every base run now failing. The user's `test.md` can set
-  other limits.
+  that passed every base run now failing. The user's instructions in the
+  prompt can set other limits.
 - **`--fix`:** try to fix it and re-run. If the fix needs the user's call,
   ask with AskUserQuestion, giving the before and after scores. Options:
   "I'll look", "Keep fixing", "Stop".

@@ -31,8 +31,9 @@ adds what it lacks, from `references/`:
 
 `/dominus:review <ticket link | PR/MR link | branch> [--fix|--feedback]`
 
-From the Tickets popup the prompt holds these lines (the last one is the
-user's `~/.config/dominus/prompts/review.md` and may be missing):
+From the Tickets popup the prompt holds these lines. The last one holds the
+user's own instructions for reviewers, which the hub pastes in, and may be
+missing; there's no file to look for:
 
 ```
 /dominus:review https://acme.atlassian.net/browse/ENG-412 --fix

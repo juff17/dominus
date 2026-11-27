@@ -45,4 +45,4 @@ until every case passes, then screenshot its output as proof.
 - **Test data:** make your own, and clean it up at the end of the script
   where the API allows.
 - **Shared environments:** never run against one unless the user's
-  `test.md` names it.
+  instructions in the prompt name it.
