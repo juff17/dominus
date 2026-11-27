@@ -226,8 +226,11 @@ pre-commit run it too). The settings are in `tsconfig.json`, with `strict` on.
   `tracker.ts`'s types, a value of `tickets.provider`, and a reference file
   for the ticket-work skill (`hub-plugin/skills/ticket-work/references/`).
   The popup, the hand-off and the skill read only the neutral types.
-- **A babysit proposal kind:** a kind in pr-babysit's `approval.py`, and
-  a row in `tray/approvals.ts`'s `APPROVE` table. `ProposalKind` is that
+- **A proposal kind:** a kind in the proposing skill's own
+  `scripts/approval.py` (pr-babysit's replies, pushes and jobs; review's
+  `comment`; test's `jira`), each built on `hub-plugin/lib/py/agent_hub/approvals.py`,
+  which holds the store, the locking, the time limit and the command line the
+  tray calls; and a row in `tray/approvals.ts`'s `APPROVE` table. `ProposalKind` is that
   table's keys, so tsc then points at each other table (`GLYPH`, `DETAIL`,
   `OWN_ACTIONS`) that needs a row for it. Its body goes in
   `viewer/approvals/draw.ts`. The

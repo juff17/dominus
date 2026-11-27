@@ -62,7 +62,7 @@ class Cache(unittest.TestCase):
         self.addCleanup(settings.stop)
         # A watch that ends expires proposals; never the real ones.
         self.approvals = Path(tmp.name) / "approvals"
-        root = mock.patch.object(w.approval_module(), "ROOT", self.approvals)
+        root = mock.patch.object(w.approval_module().A, "ROOT", self.approvals)
         root.start()
         self.addCleanup(root.stop)
         self.base = w.pr_base(Forge(), 91)

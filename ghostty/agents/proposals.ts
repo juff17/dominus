@@ -1,5 +1,5 @@
-// Babysit proposals as files: pr-babysit's approval.py writes them and runs
-// them, and every part reads them here (agentd too, to drop the ones whose
+// Proposals as files: each skill's approval.py (pr-babysit's, review's,
+// test's) writes them and runs them, and every part reads them here (agentd too, to drop the ones whose
 // session ended: orphans.ts). The rows and buttons made of them are the
 // tray's (tray/approvals.ts).
 
@@ -15,7 +15,7 @@ import { t } from '../core/text.ts'
 // Logged as the tray's, whichever program runs it, as it always was.
 const log = logger('tray')
 
-// Written by pr-babysit's approval.py, one JSON file each. A failed one stays
+// Written by a skill's approval.py, one JSON file each, naming that script. A failed one stays
 // until it's tried again, proposed again or dismissed, or until its session
 // has ended (orphans.ts).
 export const APPROVALS = join(RUN, 'approvals')

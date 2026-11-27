@@ -10,54 +10,51 @@ auto.
   approval.py propose manual <url> --session S --job ID --name NAME [--stage STAGE]
   approval.py propose deploy <url> --session S --job ID --name NAME
   approval.py propose move   <url> --session S --onto SHA
-  approval.py propose comment <url> --session S --path FILE --line N [--side RIGHT|LEFT] --body TEXT
-  approval.py propose jira   <ticket-url> --session S --body TEXT [--image FILE]...
   approval.py approve <id> [--body-file FILE] [--drop SHA]...
   approval.py reject <id>
   approval.py dismiss <id>
   approval.py list
 
-A proposal is one JSON file in $XDG_RUNTIME_DIR/agent-hub/approvals/, holding
-exactly what will run: the reply's text and thread, the commits and the
-lease, the job. Approving runs that and nothing else, so what leaves the
-machine is what the user saw. What happened is written back into the file;
-the babysit's watcher (watch_pr.py) reports it to the session as an
-[approval] event. Anything a script can't do safely (dropping commits,
-moving commits onto a new head) is handed back to the session that way
-instead of run.
+A proposal holds exactly what will run: the reply's text and thread, the
+commits and the lease, the job. Approving runs that and nothing else, so what
+leaves the machine is what the user saw. What happened is written back into
+the file; the babysit's watcher (watch_pr.py) reports it to the session as an
+[approval] event. Anything a script can't do safely (dropping commits, moving
+commits onto a new head) is handed back to the session that way instead of
+run. The store, the locking, the time limit and the command line are
+agent_hub.approvals', shared with the review and test skills' own approval.py.
 """
 
-import argparse
-import contextlib
-import json
-import os
 import re
-import secrets
-import signal
-import subprocess
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import watch_pr as w
-from agent_hub import files
-from agent_hub import watch as hub_watch
-from agent_hub.log import logger
+from agent_hub import approvals as A
+from agent_hub.approvals import (  # noqa: F401  (the babysit's tests and watch_pr read them here)
+    LOGGER,
+    RUNNING,
+    Stopped,
+    _stopped,
+    emit,
+    every,
+    finish,
+    git,
+    history,
+    in_time,
+    load,
+    locked,
+    reject,
+    remove,
+    save,
+    token_hint,
+)
 
-LOGGER = logger("approval")
-
-ROOT = files.runtime_dir() / "approvals"
-LOG = ROOT / "log.jsonl"
-KINDS = ("reply", "push", "retry", "manual", "deploy", "move", "comment", "jira")
-# A Jira ticket's key, from its link.
-TICKET = re.compile(r"/browse/([A-Z][A-Z0-9_]*-\d+)")
+KINDS = ("reply", "push", "retry", "manual", "deploy", "move")
 # A manual job whose name or stage says it deploys always waits for the user,
 # whatever Settings say.
 DEPLOYS = re.compile(r"deploy|release|prod", re.IGNORECASE)
-
-
-emit = hub_watch.emitter(LOGGER)
 
 
 # ------------------------------------------------------------ settings
@@ -66,150 +63,12 @@ def policy(kind):
     """'auto', 'ask' or 'off' for a kind of action, from Settings > Approvals."""
     if kind == "reply":
         return {"post": "auto", "draft": "ask", "off": "off"}[w.choice("approvals.reply", "draft", ("off", "draft", "post"))]
-    # A review comment on someone else's PR, and a tester's evidence on the
-    # ticket, always wait for the user.
-    if kind in ("deploy", "comment", "jira"):
+    if kind == "deploy":
         return "ask"
     return w.choice(f"approvals.{kind}", "ask", ("ask", "auto"))
 
 
-# ------------------------------------------------------------ the store
-
-def path_of(pid):
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", pid or ""):
-        raise SystemExit(f"Not an approval id: {pid!r}")
-    return ROOT / f"{pid}.json"
-
-
-def load(pid):
-    try:
-        return json.loads(path_of(pid).read_text())
-    except (OSError, ValueError):
-        return None
-
-
-def save(p):
-    ROOT.mkdir(parents=True, exist_ok=True)
-    files.write_atomic(path_of(p["id"]), json.dumps(p, indent=2), tmp=ROOT / f".{p['id']}.tmp")
-
-
-def remove(pid):
-    """Removes a proposal, unless an approval of it is running."""
-    with locked(pid) as mine:
-        if mine:
-            path_of(pid).unlink(missing_ok=True)
-        return mine
-
-
-def every():
-    out = []
-    with contextlib.suppress(OSError):
-        for f in sorted(ROOT.glob("*.json")):
-            with contextlib.suppress(OSError, ValueError):
-                out.append(json.loads(f.read_text()))
-    return out
-
-
-@contextlib.contextmanager
-def locked(pid):
-    """One approval runs once, however many buttons were pressed. Yields
-    False when another process holds the proposal."""
-    proposal = path_of(pid)
-    ROOT.mkdir(parents=True, exist_ok=True)
-    lock = ROOT / f"{pid}.lock"
-    handle = files.try_lock(lock)
-    if handle is None:
-        LOGGER.warning("approval already running", id=pid)
-        yield False
-        return
-    with handle:
-        try:
-            yield True
-        finally:
-            # files.try_lock lets the holder unlink it, so a lock outlives
-            # its proposal only while held.
-            if not proposal.exists():
-                lock.unlink(missing_ok=True)
-
-
-RUNNING = "Already running"
-
-# The tray and the Alt+A popup stop an approval at 180 s (APPROVAL_MS in
-# ghostty/tray/approvals.ts) by killing its process group. Every step here
-# fits inside this deadline instead, so none is cut off half way by that.
-DEADLINE_S = 170
-# What a step that sends something needs left to start: gh's own timeout
-# (watch_pr.run), which also covers a push.
-SEND_S = 90
-_deadline = None
-
-
-def time_left():
-    """Seconds until the running approval's deadline; plenty outside one."""
-    return 3600 if _deadline is None else _deadline - time.monotonic()
-
-
-def in_time(what):
-    """Refuses to start a step that sends something unless it can finish
-    before the deadline, so nothing goes out after the tray said it stopped."""
-    if time_left() < SEND_S:
-        raise RuntimeError(f"Ran out of time before {what}; nothing was sent")
-
-
-class Stopped(Exception):
-    """SIGTERM: the tray's time limit, or the popup closed."""
-
-
-def _stopped(signum, frame):
-    raise Stopped()
-
-
-def log(p, result):
-    ROOT.mkdir(parents=True, exist_ok=True)
-    job = p.get("job") or {}
-    entry = {"at": int(time.time() * 1000), "pr": p["pr"]["key"], "kind": p["kind"],
-             "job": job.get("id"), "name": job.get("name"), "ok": result["ok"], "auto": result.get("auto", False),
-             "claude_session": p.get("claude_session", "")}
-    with open(LOG, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-
-
-def history():
-    """The log's entries. A line that doesn't parse (half written, edited by
-    hand) is skipped alone, so the rest still limit auto retries."""
-    try:
-        lines = LOG.read_text().splitlines()
-    except FileNotFoundError:
-        return []
-    except OSError as e:
-        LOGGER.warning("history unreadable", path=str(LOG), err=e)
-        return []
-    out, bad = [], 0
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            entry = json.loads(line)
-        except ValueError:
-            entry = None
-        if isinstance(entry, dict):
-            out.append(entry)
-        else:
-            bad += 1
-    if bad:
-        LOGGER.warning("history lines skipped", path=str(LOG), count=bad)
-    return out
-
-
-# ------------------------------------------------------------ git and the forge
-
-def git(cwd, *args):
-    p = subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True, timeout=min(120, max(1, time_left())))
-    if p.returncode != 0:
-        err = (p.stderr or p.stdout).strip()
-        raise RuntimeError(err.splitlines()[-1] if err else f"git {args[0]} failed")
-    return p.stdout.strip()
-
+# ------------------------------------------------------------ the forge
 
 def forge_of(p):
     forge, _ = w.parse_url(p["pr"]["url"])
@@ -217,35 +76,17 @@ def forge_of(p):
 
 
 def api(forge, path, method="GET", fields=None, typed=None):
-    if method != "GET":
-        in_time("sending it")
-    cmd = [forge.cli, "api", "--hostname", forge.host, "-X", method, path]
-    for k, v in (fields or {}).items():
-        cmd += ["-f", f"{k}={v}"]
-    for k, v in (typed or {}).items():
-        cmd += ["-F", f"{k}={v}"]
-    out = w.run(cmd)
-    return json.loads(out) if out.strip() else None
+    return A.api(forge, path, method, fields, typed)
 
 
 def pr_info(url):
-    forge, number = w.parse_url(url)
-    github = isinstance(forge, w.GitHub)
-    return {
-        "key": f"{forge.host}/{forge.project}#{number}",
-        "url": url,
-        "host": forge.host,
-        "project": forge.project,
-        "number": number,
-        "forge": "github" if github else "gitlab",
-        "repo": forge.project.rsplit("/", 1)[-1],
-        "ref": f"{'#' if github else '!'}{number}",
-    }
+    return A.pr_info(url, parse=w.parse_url)
 
 
 def saved(url, session):
     forge, number = w.parse_url(url)
     return w.load_notes(w.notes_path(w.pr_base(forge, number), session))
+
 
 
 def commit_info(cwd, sha):
@@ -262,9 +103,11 @@ def commit_info(cwd, sha):
     return {"sha": full, "subject": subject, "added": added, "removed": removed, "files": files}
 
 
+
 def remote_head(cwd, remote, branch):
     out = git(cwd, "ls-remote", remote, f"refs/heads/{branch}")
     return out.split()[0] if out else ""
+
 
 
 # ------------------------------------------------------------ proposing
@@ -295,38 +138,13 @@ def fetch_comment(url, cid):
             "body": c.get("body") or "", "url": c.get("html_url") or c.get("url") or url}
 
 
-def ticket_info(url):
-    """A Jira ticket where a PR would be, so the tray and the store read it
-    the same way."""
-    m = TICKET.search(url)
-    if not m:
-        raise SystemExit(f"Not a Jira ticket link: {url}")
-    return {"key": f"jira:{m.group(1)}", "url": url, "number": m.group(1), "forge": "jira", "repo": m.group(1), "ref": ""}
-
 
 def build(args):
-    jira = args.kind == "jira"
-    pr = ticket_info(args.url) if jira else pr_info(args.url)
-    notes = {} if jira else saved(args.url, args.session)
-    p = {"id": f"{int(time.time() * 1000)}-{args.kind}-{secrets.token_hex(3)}", "kind": args.kind,
-         "at": int(time.time() * 1000), "session": args.session, "pr": pr, "status": "pending",
-         "claude_session": os.environ.get("CLAUDE_CODE_SESSION_ID", ""), "pane": os.environ.get("TMUX_PANE", ""),
-         # Which tmux server the pane is on: pane ids are unique only per server.
-         "tmux": os.environ.get("TMUX", ""),
-         "script": str(Path(__file__).resolve())}
-    where = f"{pr['repo']} {pr['ref']}".strip()
-    if jira:
-        if args.body is None:
-            raise SystemExit("A Jira comment needs --body")
-        images = [str(Path(i).expanduser().resolve()) for i in args.image or []]
-        gone = [i for i in images if not Path(i).is_file()]
-        if gone:
-            raise SystemExit(f"No such screenshot: {', '.join(gone)}")
-        p["body"], p["images"] = args.body, images
-        n = len(images)
-        p["title"] = f"Comment on {pr['number']}" + (f" with {n} screenshot{'s' if n != 1 else ''}" if n else "")
-        p["key"] = "jira"
-    elif args.kind == "reply":
+    pr = pr_info(args.url)
+    notes = saved(args.url, args.session)
+    p = A.new(args.kind, args.session, pr, Path(__file__).resolve())
+    where = f"{pr['repo']} {pr['ref']}"
+    if args.kind == "reply":
         if not args.comment or args.body is None:
             raise SystemExit("A reply needs --comment and --body")
         c = fetch_comment(args.url, args.comment)
@@ -340,21 +158,6 @@ def build(args):
                 raise SystemExit("--commit needs the worktree saved with watch_pr.py --set worktree=...")
             p["commit"] = commit_info(notes["worktree"], args.commit)
         p["key"] = f"reply:{c['id']}"
-    elif args.kind == "comment":
-        if not args.path or not args.line or args.body is None:
-            raise SystemExit("A comment needs --path, --line and --body")
-        if args.line < 1:
-            raise SystemExit("--line is a line number in the file, from 1")
-        side = (args.side or "RIGHT").upper()
-        if side not in ("RIGHT", "LEFT"):
-            raise SystemExit("--side is RIGHT (the new file) or LEFT (the old one)")
-        forge, number = w.parse_url(args.url)
-        # Pinned to the head the reviewer read, so the comment lands on the
-        # line it was written about.
-        p["comment"] = {"path": args.path, "line": args.line, "side": side, "sha": head_now(forge, number)}
-        p["body"] = args.body
-        p["title"] = f"Comment on {args.path}:{args.line}"
-        p["key"] = f"comment:{side}:{args.path}:{args.line}"
     elif args.kind in ("push", "move"):
         need = [k for k in ("worktree", "lease_sha", "branch", "remote") if not notes.get(k)]
         if need:
@@ -413,7 +216,9 @@ def build(args):
     return p
 
 
+
 NO_ACCESS = re.compile(r"Resource not accessible by (personal access token|integration)|HTTP 403", re.IGNORECASE)
+
 
 
 def job_facts(url, jid, kind):
@@ -454,15 +259,15 @@ def job_facts(url, jid, kind):
     return {k: v for k, v in facts.items() if v not in (None, "") or k == "stage"}
 
 
+
 def head_now(forge, number):
-    if isinstance(forge, w.GitHub):
-        return forge.api(f"repos/{forge.project}/pulls/{number}")["head"]["sha"]
-    return forge.api(f"{forge.proj()}/merge_requests/{number}")["sha"]
+    return A.head_now(forge, number)
 
 
 def push_command(p, head=None):
     return (f"git push --force-with-lease={p['branch']}:{p['lease']} {p['remote']} "
             f"{head or p['local']}:{p['branch']}")
+
 
 
 def propose(args):
@@ -484,11 +289,7 @@ def propose(args):
         mode = "ask"
     if p.get("removes") or p.get("briefing"):
         mode = "ask"
-    # A new proposal replaces an older one about the same thing.
-    for old in every():
-        if old.get("pr", {}).get("key") == p["pr"]["key"] and old.get("key") == p["key"] and old.get("status") in ("pending", "failed") \
-                and not remove(old["id"]):
-            raise SystemExit(f"{old['id']} is being approved right now; wait for its [approval] event")
+    A.replace_older(p)
     save(p)
     LOGGER.info("proposed", id=p["id"], kind=p["kind"], mode=mode, pr=p["pr"]["key"])
     if mode == "auto":
@@ -500,25 +301,8 @@ def propose(args):
     return 0
 
 
+
 # ------------------------------------------------------------ approving
-
-def finish(p, status, ok, message, auto=False, **extra):
-    fields = {"id": p["id"], "kind": p["kind"], "status": status, "ok": ok, "auto": auto, "text": message}
-    if ok:
-        LOGGER.info("proposal settled", **fields)
-    else:
-        LOGGER.error("proposal failed", **fields)
-    p["status"] = status
-    p.pop("running", None)
-    p["result"] = {"ok": ok, "message": message, "at": int(time.time() * 1000), "auto": auto, **extra}
-    # The session already heard about what it ran itself.
-    p["reported"] = auto
-    if path_of(p["id"]).exists():
-        save(p)
-    if status in ("done", "failed"):
-        log(p, p["result"])
-    return {"ok": ok, "message": message, "id": p["id"], "status": status}
-
 
 def run_reply(p, forge):
     t, body = p["thread"], p["body"]
@@ -541,24 +325,6 @@ def run_reply(p, forge):
     return f"Posted the reply to @{t['author']}"
 
 
-def run_comment(p, forge):
-    """One review comment on one line of the PR's diff, as the user."""
-    c, body, number = p["comment"], p["body"], p["pr"]["number"]
-    if isinstance(forge, w.GitHub):
-        api(forge, f"repos/{forge.project}/pulls/{number}/comments", "POST",
-            {"body": body, "commit_id": c["sha"], "path": c["path"], "side": c["side"]}, {"line": c["line"]})
-    else:
-        refs = forge.api(f"{forge.proj()}/merge_requests/{number}").get("diff_refs") or {}
-        if not refs.get("head_sha"):
-            raise RuntimeError("GitLab gave no diff refs for the MR; nothing was posted")
-        line = "new_line" if c["side"] == "RIGHT" else "old_line"
-        api(forge, f"{forge.proj()}/merge_requests/{number}/discussions", "POST",
-            {"body": body, "position[position_type]": "text", "position[base_sha]": refs["base_sha"],
-             "position[start_sha]": refs["start_sha"], "position[head_sha]": refs["head_sha"],
-             "position[new_path]": c["path"], "position[old_path]": c["path"]},
-            {f"position[{line}]": c["line"]})
-    return f"Posted the comment on {c['path']}:{c['line']}"
-
 
 def run_push(p):
     wt = p["worktree"]
@@ -575,6 +341,7 @@ def run_push(p):
     git(wt, "push", f"--force-with-lease={p['branch']}:{p['lease']}", p["remote"], f"{p['head']}:refs/heads/{p['branch']}")
     n = len(p["commits"])
     return f"Pushed {n} commit{'s' if n != 1 else ''} to {p['branch']}, now at {p['head'][:7]}", {"head": p["head"]}
+
 
 
 def run_job(p, forge):
@@ -625,21 +392,9 @@ def run_job(p, forge):
     return f"{'Retried' if action == 'retry' else 'Started'} {job['name']}"
 
 
+
 def approve(pid, body=None, drop=(), auto=False):
-    with locked(pid) as mine:
-        if not mine:
-            return {"ok": False, "message": RUNNING, "id": pid}
-        p = load(pid)
-        if not p:
-            return {"ok": False, "message": "That approval is gone"}
-        if p["status"] not in ("pending", "failed"):
-            return {"ok": False, "message": f"Already {p['status']}"}
-        if body is not None and p["kind"] in ("reply", "comment", "jira") and body != p["body"]:
-            p["body"], p["edited"] = body, True
-        # The hub's Jira token only reads, so the tester posts it, exactly as
-        # approved, through the tracker's MCP.
-        if p["kind"] == "jira":
-            return finish(p, "handed", True, f"Approved: the tester posts it to {p['pr']['number']}")
+    def before(p):
         if p["kind"] == "move":
             return finish(p, "handed", True, f"Approved: the session moves its commits onto {p['onto'][:7]}")
         if drop and p["kind"] == "push":
@@ -647,62 +402,17 @@ def approve(pid, body=None, drop=(), auto=False):
             if gone:
                 return finish(p, "handed", True, f"Approved without {len(gone)} commit(s): the session drops them, checks and asks again",
                               drop=gone)
-        # `running` is cleared by finish(). Found here, with the lock now
-        # ours, the run that wrote it was killed before it could say how far
-        # it got, so it may have sent something: running it again blind could
-        # post a reply twice.
-        if p.get("running"):
-            LOGGER.warning("approval was cut off", id=pid, started=p["running"].get("at"))
-            return finish(p, "failed", False, "An earlier approval of this was cut off part way; check the PR, then try again", auto)
-        p["running"] = {"at": int(time.time() * 1000), "pid": os.getpid()}
-        save(p)
-        global _deadline
-        _deadline = time.monotonic() + DEADLINE_S
-        # SIGTERM (the tray's limit, which signals the whole group, so git
-        # and gh go too) is recorded as a failure rather than left `running`.
-        before = signal.signal(signal.SIGTERM, _stopped)
-        extra, failed = {}, None
-        try:
-            forge = forge_of(p)
-            if p["kind"] == "reply":
-                message = run_reply(p, forge)
-            elif p["kind"] == "comment":
-                message = run_comment(p, forge)
-            elif p["kind"] == "push":
-                message, extra = run_push(p)
-            else:
-                message = run_job(p, forge)
-        except Stopped:
-            failed = "Stopped part way, past its time limit or with the popup closed; check the PR, then try again"
-        except w.AuthError as e:
-            failed = f"{token_hint(p)} ({e})"
-        except (w.ApiError, RuntimeError, subprocess.TimeoutExpired, OSError) as e:
-            failed = str(e)
-        # Whatever else goes wrong must still reach the tray and the session.
-        except Exception as e:
-            failed = f"{type(e).__name__}: {e}"
-        finally:
-            signal.signal(signal.SIGTERM, before)
-            _deadline = None
-        if failed is not None:
-            return finish(p, "failed", False, failed, auto)
-        return finish(p, "done", True, message, auto, **extra)
+        return None
 
+    def run(p):
+        forge = forge_of(p)
+        if p["kind"] == "reply":
+            return run_reply(p, forge)
+        if p["kind"] == "push":
+            return run_push(p)
+        return run_job(p, forge)
 
-def token_hint(p):
-    return (w.GitHub if p["pr"]["forge"] == "github" else w.GitLab)(p["pr"].get("host", ""), "").login_hint()
-
-
-def reject(pid):
-    with locked(pid) as mine:
-        if not mine:
-            return {"ok": False, "message": RUNNING, "id": pid}
-        p = load(pid)
-        if not p:
-            return {"ok": False, "message": "That approval is gone"}
-        if p["status"] != "pending":
-            return {"ok": False, "message": f"Already {p['status']}"}
-        return finish(p, "rejected", True, "Rejected")
+    return A.approve(pid, run, body=body, editable=("reply",), before=before, auto=auto)
 
 
 # ------------------------------------------------------------ the watcher's side
@@ -738,6 +448,7 @@ def outcomes(key, session):
     return events
 
 
+
 def expire(key, why):
     """Removes the PR's pending and failed proposals, from every babysit
     session, once the PR merged or closed and none of them can still apply.
@@ -758,9 +469,11 @@ def expire(key, why):
     return gone
 
 
+
 # What outcomes() has warned about, for the watcher's life, as it checks
 # every couple of seconds.
 WARNED = set()
+
 
 
 def first_time(*what):
@@ -768,6 +481,7 @@ def first_time(*what):
         return False
     WARNED.add(what)
     return True
+
 
 
 def outcome(p):
@@ -787,8 +501,6 @@ def outcome(p):
         event = f"{what} failed: {r.get('message', '')}. Work out why, fix what you can, and propose it again"
     elif p["status"] == "rejected":
         event = f"{what} rejected by the user; keep it for the briefing"
-    elif p["status"] == "handed" and p["kind"] == "jira":
-        event = f"{what} approved: post its body, exactly, to {p['pr']['number']} through the tracker's MCP"
     elif p["status"] == "handed" and p["kind"] == "move":
         event = (f"{what} approved: rebase {p['local']} onto {p['onto']} (git rebase --onto {p['onto']} {p['lease']}), "
                  "run lint and tests, save the new lease_sha, then propose the push")
@@ -804,17 +516,12 @@ def outcome(p):
     return event
 
 
+
 # ------------------------------------------------------------ command line
 
-def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    pr = sub.add_parser("propose", help="ask the user to approve an action")
-    pr.add_argument("kind", choices=KINDS)
-    pr.add_argument("url")
-    pr.add_argument("--session", required=True, help="the babysit's session id, as given to watch_pr.py")
+def propose_args(pr):
     pr.add_argument("--comment", help="reply: the comment's id from its [comment] event (rc:, ic:, rv: or note:)")
-    pr.add_argument("--body", help="reply, comment, jira: the text to post, exactly")
+    pr.add_argument("--body", help="reply: the text to post, exactly")
     pr.add_argument("--commit", help="reply: the commit that addressed it")
     pr.add_argument("--briefing", help="reply: why it needs the user's call; such a reply always waits for them")
     pr.add_argument("--check", action="append", help="push: a check you ran, NAME=ok or NAME=failed")
@@ -824,39 +531,15 @@ def main(argv=None):
     pr.add_argument("--reason", help="retry: why it looks flaky")
     pr.add_argument("--stage", help="manual: the job's stage")
     pr.add_argument("--onto", help="move: the PR's new head")
-    pr.add_argument("--path", help="comment: the file, as the diff names it")
-    pr.add_argument("--line", type=int, help="comment: the line in that file the comment is on")
-    pr.add_argument("--side", help="comment: RIGHT, the new file (the default), or LEFT, the old one")
-    pr.add_argument("--image", action="append", help="jira: a screenshot the comment carries, in order")
-    ok = sub.add_parser("approve", help="run an approval as proposed")
-    ok.add_argument("id")
-    ok.add_argument("--body-file", help="reply, comment, jira: post this file's text instead")
-    ok.add_argument("--drop", action="append", default=[], help="push: leave this commit out; hands the push back")
-    no = sub.add_parser("reject", help="turn a proposal down")
-    no.add_argument("id")
-    gone = sub.add_parser("dismiss", help="forget a failed or pending proposal")
-    gone.add_argument("id")
-    sub.add_parser("list", help="every proposal, as JSON")
-    args = ap.parse_args(argv)
 
-    if args.cmd == "propose":
-        return propose(args)
-    if args.cmd == "approve":
-        body = Path(args.body_file).read_text().rstrip("\n") if args.body_file else None
-        result = approve(args.id, body, args.drop)
-    elif args.cmd == "reject":
-        result = reject(args.id)
-    elif args.cmd == "dismiss":
-        if not path_of(args.id).exists():
-            result = {"ok": False, "message": "That approval is gone"}
-        else:
-            gone = remove(args.id)
-            result = {"ok": gone, "message": "Dismissed" if gone else "It's being approved right now"}
-    else:
-        print(json.dumps(every(), indent=2))
-        return 0
-    print(json.dumps(result))
-    return 0 if result["ok"] else 1
+
+def approve_args(ok):
+    ok.add_argument("--drop", action="append", default=[], help="push: leave this commit out; hands the push back")
+
+
+def main(argv=None):
+    return A.cli(argv, __doc__, KINDS, propose_args, propose,
+                 lambda pid, body, args: approve(pid, body, args.drop), approve_args)
 
 
 if __name__ == "__main__":

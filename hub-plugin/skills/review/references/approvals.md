@@ -8,7 +8,7 @@ a comment any other way.
 ## Propose each comment
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/pr-babysit/scripts/approval.py propose comment <pr-url> \
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/approval.py propose comment <pr-url> \
   --session review-<KEY or branch> --path <file> --line <n> [--side RIGHT|LEFT] --body <text>
 ```
 

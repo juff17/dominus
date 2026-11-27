@@ -21,6 +21,7 @@ from babysit_harness import SCRIPTS, load
 sys.path.insert(0, str(SCRIPTS))
 ap = load("approval", SCRIPTS / "approval.py")
 w = ap.w
+A = ap.A
 
 URL = "https://github.com/u/gad/pull/91"
 KEY = "github.com/u/gad#91"
@@ -56,7 +57,7 @@ class Approvals(unittest.TestCase):
         env.start()
         self.addCleanup(env.stop)
         for name, value in (("ROOT", self.tmp / "approvals"), ("LOG", self.tmp / "approvals" / "log.jsonl")):
-            p = mock.patch.object(ap, name, value)
+            p = mock.patch.object(A, name, value)
             p.start()
             self.addCleanup(p.stop)
         self.settings = self.tmp / "settings.json"
@@ -150,7 +151,7 @@ class Approvals(unittest.TestCase):
 
     def test_a_step_that_could_outrun_the_trays_limit_sends_nothing(self):
         _, _, pid = self.propose("reply", "--comment", "rc:55", "--body", "Fixed.")
-        with mock.patch.object(ap, "DEADLINE_S", ap.SEND_S - 1):
+        with mock.patch.object(A, "DEADLINE_S", A.SEND_S - 1):
             code, out = self.run_cli("approve", pid)
         self.assertEqual(code, 1)
         self.assertEqual(json.loads(out)["message"], "Ran out of time before sending it; nothing was sent")
@@ -190,55 +191,6 @@ class Approvals(unittest.TestCase):
         _, _, pid = self.propose("reply", "--comment", "ic:9", "--body", "@bob because.")
         self.run_cli("approve", pid)
         self.assertIn("repos/u/gad/issues/91/comments", self.posts()[0])
-
-    # -------------------------------------------------------- review comments
-
-    def test_a_review_comment_waits_then_posts_on_its_line_at_the_head_it_was_read_on(self):
-        self.reply({"repos/u/gad/pulls/91": {"head": {"sha": "abc1234def"}}})
-        # Even with replies posting on their own, a review comment waits.
-        self.set(**{"approvals.reply": "post"})
-        code, out, pid = self.propose("comment", "--path", "src/auth.py", "--line", "42", "--body", "[nit] Use `Car.Ferrari`.")
-        self.assertEqual(code, 0)
-        self.assertTrue(out.startswith("[proposed] "), out)
-        p = ap.load(pid)
-        self.assertEqual((p["title"], p["comment"]), ("Comment on src/auth.py:42", {"path": "src/auth.py", "line": 42, "side": "RIGHT", "sha": "abc1234def"}))
-        self.assertFalse(self.posts())
-        edit = self.tmp / "edit.txt"
-        edit.write_text("[nit] `Car.Ferrari`, not `'ferrari'`.\n")
-        self.assertEqual(self.run_cli("approve", pid, "--body-file", str(edit))[0], 0)
-        post = self.posts()[0]
-        self.assertIn("repos/u/gad/pulls/91/comments", post)
-        for field in ("commit_id=abc1234def", "path=src/auth.py", "side=RIGHT", "line=42", "body=[nit] `Car.Ferrari`, not `'ferrari'`."):
-            self.assertIn(field, post)
-
-    def test_a_jira_comment_waits_then_is_handed_back_with_the_approved_text(self):
-        shot = self.tmp / "01-upload.png"
-        shot.write_bytes(b"png")
-        code, out = self.run_cli("propose", "jira", "https://acme.atlassian.net/browse/ENG-412", "--session", "test-ENG-412",
-                                 "--body", "Tested on 3f9a1c2: 12/12 pass.", "--image", str(shot))
-        self.assertEqual(code, 0, out)
-        pid = out.split()[1]
-        p = ap.load(pid)
-        self.assertEqual((p["title"], p["images"], p["pr"]["key"]), ("Comment on ENG-412 with 1 screenshot", [str(shot)], "jira:ENG-412"))
-        edit = self.tmp / "edit.txt"
-        edit.write_text("Tested on 3f9a1c2: all 12 cases pass.\n")
-        code, out = self.run_cli("approve", pid, "--body-file", str(edit))
-        self.assertEqual(code, 0, out)
-        self.assertFalse(self.calls(), "the hub posts nothing to Jira itself")
-        p = ap.load(pid)
-        self.assertEqual((p["status"], p["body"]), ("handed", "Tested on 3f9a1c2: all 12 cases pass."))
-
-    def test_a_jira_comment_needs_a_ticket_and_its_screenshots(self):
-        with self.assertRaises(SystemExit):
-            self.run_cli("propose", "jira", URL, "--session", "t", "--body", "x")
-        with self.assertRaises(SystemExit):
-            self.run_cli("propose", "jira", "https://acme.atlassian.net/browse/ENG-412", "--session", "t", "--body", "x", "--image", str(self.tmp / "gone.png"))
-
-    def test_a_review_comment_needs_its_place(self):
-        with self.assertRaises(SystemExit):
-            self.propose("comment", "--path", "src/auth.py", "--body", "x")
-        with self.assertRaises(SystemExit):
-            self.propose("comment", "--path", "src/auth.py", "--line", "3", "--side", "UP", "--body", "x")
 
     def test_replies_off_refuses_and_post_runs_without_asking(self):
         self.set(**{"approvals.reply": "off"})

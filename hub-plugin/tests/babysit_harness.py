@@ -24,7 +24,7 @@ GH_URL = "https://github.com/u/gad/pull/91"
 GL_URL = "https://gitlab.com/grp/sub/gad/-/merge_requests/91"
 GL_PROJ = "projects/grp%2Fsub%2Fgad"
 
-# Module-level paths in the scripts (SETTINGS, approval.ROOT) are read as they
+# Module-level paths in the scripts (SETTINGS, agent_hub.approvals.ROOT) are read as they
 # load, so they load against paths that don't exist; tests patch them anyway.
 NOWHERE = {"AGENT_HUB_SETTINGS": "/nonexistent/agent-hub/settings.json",
            "XDG_RUNTIME_DIR": "/nonexistent/run", "XDG_CACHE_HOME": "/nonexistent/cache",
@@ -105,12 +105,13 @@ class Sandbox:
         p = mock.patch.dict(os.environ, self.env(**extra), clear=True)
         p.start()
         testcase.addCleanup(p.stop)
-        # watch_pr imports approval.py once per process, so its ROOT is from
-        # whichever test imported it first, possibly the user's real folder.
-        ap = load_watch_pr().approval_module()
+        # The approvals store's paths are read once per process, by
+        # agent_hub.approvals, so its ROOT is from whichever test imported it
+        # first, possibly the user's real folder.
+        store = load_watch_pr().approval_module().A
         folder = self.run_dir / "agent-hub" / "approvals"
         for name, value in (("ROOT", folder), ("LOG", folder / "log.jsonl")):
-            q = mock.patch.object(ap, name, value)
+            q = mock.patch.object(store, name, value)
             q.start()
             testcase.addCleanup(q.stop)
 

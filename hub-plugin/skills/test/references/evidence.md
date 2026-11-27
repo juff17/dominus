@@ -38,7 +38,7 @@ Only when every track passes, and nothing is open in `design-escalation.md`.
    rejects it:
 
    ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/skills/pr-babysit/scripts/approval.py propose jira <ticket link> \
+   python3 ${CLAUDE_PLUGIN_ROOT}/skills/test/scripts/approval.py propose jira <ticket link> \
      --session test-<KEY> --body <the comment> [--image <screenshot>]...
    ```
 

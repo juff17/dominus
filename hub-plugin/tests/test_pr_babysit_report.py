@@ -50,8 +50,8 @@ class Case(unittest.TestCase):
         self.box = Sandbox(self)
         self.box.patch_env(self)
         for target, name, value in ((w, "SETTINGS", self.box.settings),
-                                    (approval, "ROOT", self.box.run_dir / "agent-hub" / "approvals"),
-                                    (approval, "LOG", self.box.run_dir / "agent-hub" / "approvals" / "log.jsonl")):
+                                    (approval.A, "ROOT", self.box.run_dir / "agent-hub" / "approvals"),
+                                    (approval.A, "LOG", self.box.run_dir / "agent-hub" / "approvals" / "log.jsonl")):
             p = mock.patch.object(target, name, value)
             p.start()
             self.addCleanup(p.stop)
@@ -383,7 +383,7 @@ class Loop(Case):
         self.assertEqual(lines[1], "[stuck] e2e (stage t) has waited 10 min for a runner id=4 https://ci/4 | t ⏳")
 
     def propose_file(self, pid, **fields):
-        root = approval.ROOT
+        root = approval.A.ROOT
         root.mkdir(parents=True, exist_ok=True)
         p = {"id": pid, "kind": "reply", "session": "s1", "pr": {"key": "github.com/u/gad#91"}, "status": "done",
              "title": "Reply to @alice", "result": {"message": "Posted the reply to @alice"}, "reported": False}

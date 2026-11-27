@@ -27,6 +27,7 @@ from babysit_harness import (
 
 ap = load("approval", SCRIPTS / "approval.py")
 w = ap.w
+A = ap.A
 
 GH_KEY = "github.com/u/gad#91"
 GL_KEY = "gitlab.com/grp/sub/gad#91"
@@ -38,7 +39,7 @@ class Case(unittest.TestCase):
         self.box = Sandbox(self)
         self.box.patch_env(self, CLAUDE_CODE_SESSION_ID="claude-1", TMUX_PANE="%7")
         root = self.box.run_dir / "agent-hub" / "approvals"
-        for target, name, value in ((ap, "ROOT", root), (ap, "LOG", root / "log.jsonl"), (w, "SETTINGS", self.box.settings)):
+        for target, name, value in ((A, "ROOT", root), (A, "LOG", root / "log.jsonl"), (w, "SETTINGS", self.box.settings)):
             p = mock.patch.object(target, name, value)
             p.start()
             self.addCleanup(p.stop)
@@ -299,16 +300,16 @@ class Lock(Case):
         p = {"id": "2-reply-abc", "kind": "reply", "session": "s1", "pr": {"key": GH_KEY}, "status": "failed", "title": "Reply"}
         ap.save(p)
         self.cli("reject", "2-reply-abc")
-        self.assertEqual(sorted(f.name for f in ap.ROOT.iterdir()), ["2-reply-abc.json", "2-reply-abc.lock"])
+        self.assertEqual(sorted(f.name for f in A.ROOT.iterdir()), ["2-reply-abc.json", "2-reply-abc.lock"])
         self.assertEqual(self.cli("dismiss", "2-reply-abc")[0], 0)
-        self.assertEqual([f.name for f in ap.ROOT.iterdir()], [])
+        self.assertEqual([f.name for f in A.ROOT.iterdir()], [])
 
     def test_a_lock_unlinked_while_waited_on_is_not_shared(self):
         # A second process that opened the lock file before its holder
         # removed it must not think it holds the lock the next one takes.
-        ap.ROOT.mkdir(parents=True)
-        path = ap.ROOT / "3-a-b.lock"
-        real, calls = ap.files.fcntl.flock, []
+        A.ROOT.mkdir(parents=True)
+        path = A.ROOT / "3-a-b.lock"
+        real, calls = A.files.fcntl.flock, []
 
         def flock(f, op):
             if not calls:
@@ -316,12 +317,12 @@ class Lock(Case):
             calls.append(op)
             return real(f, op)
 
-        with mock.patch.object(ap.files.fcntl, "flock", flock):
-            held = ap.files.try_lock(path)
+        with mock.patch.object(A.files.fcntl, "flock", flock):
+            held = A.files.try_lock(path)
         self.addCleanup(held.close)
         self.assertEqual(len(calls), 2, "the lock on the unlinked file was let go and taken again")
         self.assertEqual(os.fstat(held.fileno()).st_ino, os.stat(path).st_ino)
-        self.assertIsNone(ap.files.try_lock(path), "the file at the path is the one held")
+        self.assertIsNone(A.files.try_lock(path), "the file at the path is the one held")
 
     def test_approve_and_reject_of_a_missing_proposal(self):
         self.assertEqual(self.cli("approve", "1-x-y"), (1, '{"ok": false, "message": "That approval is gone"}'))
@@ -346,7 +347,7 @@ class Dismiss(Case):
         pid = self.proposal()
         self.assertEqual(self.cli("dismiss", pid), (0, '{"ok": true, "message": "Dismissed"}'))
         self.assertIsNone(ap.load(pid))
-        self.assertFalse((ap.ROOT / f"{pid}.lock").exists())
+        self.assertFalse((A.ROOT / f"{pid}.lock").exists())
 
     def test_dismissing_one_being_approved_is_refused(self):
         pid = self.proposal()
@@ -365,7 +366,7 @@ class Dismiss(Case):
     def test_list_prints_every_proposal(self):
         self.proposal("1-a-b")
         self.proposal("2-c-d", status="pending")
-        (ap.ROOT / "3-broken.json").write_text("{")
+        (A.ROOT / "3-broken.json").write_text("{")
         code, out = self.cli("list")
         self.assertEqual((code, [p["id"] for p in json.loads(out)]), (0, ["1-a-b", "2-c-d"]))
 
@@ -425,7 +426,7 @@ class History(Case):
         self.serve(**{"repos/u/gad/actions/jobs/77": {"name": "unit"}})
         self.assertTrue(self.propose("retry", GH_URL, "--job", "77", "--name", "unit")[1].startswith("[auto] "))
         self.assertTrue(self.propose("retry", GH_URL, "--job", "77", "--name", "unit")[1].startswith("[proposed] "))
-        with open(ap.LOG, "a") as f:
+        with open(A.LOG, "a") as f:
             f.write("{half a line\n[1, 2]\n")
         self.assertEqual([e["name"] for e in ap.history()], ["unit"])
         self.assertTrue(self.propose("retry", GH_URL, "--job", "77", "--name", "unit")[1].startswith("[proposed] "),
@@ -433,8 +434,8 @@ class History(Case):
 
     def test_an_auto_retry_from_another_pr_does_not_count(self):
         self.set(**{"approvals.retry": "auto"})
-        ap.ROOT.mkdir(parents=True)
-        ap.LOG.write_text(json.dumps({"pr": "github.com/u/gad#92", "kind": "retry", "job": "77", "name": "unit", "ok": True,
+        A.ROOT.mkdir(parents=True)
+        A.LOG.write_text(json.dumps({"pr": "github.com/u/gad#92", "kind": "retry", "job": "77", "name": "unit", "ok": True,
                                       "auto": True}) + "\n")
         self.serve(**{"repos/u/gad/actions/jobs/77": {"name": "unit"}})
         self.assertTrue(self.propose("retry", GH_URL, "--job", "77", "--name", "unit")[1].startswith("[auto] "))
