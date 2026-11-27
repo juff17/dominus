@@ -24,7 +24,7 @@ adds what it lacks, from `references/`:
 - coding standards: `${CLAUDE_PLUGIN_ROOT}/references/standards.md`;
 - comment cleanup: `comments.md`;
 - the implicit state machine: `state-machine.md`;
-- tenant isolation: `tenant-isolation.md`;
+- tenant isolation, when the diff touches data access: `tenant-isolation.md`;
 - comments to another engineer: `peer-comments.md` and `approvals.md`.
 
 ## The hand-off
@@ -108,7 +108,10 @@ In this order, each over the diff and the code it touches:
 1. `${CLAUDE_PLUGIN_ROOT}/references/standards.md`
 2. `references/comments.md`
 3. `references/state-machine.md`
-4. `references/tenant-isolation.md`
+4. `references/tenant-isolation.md`, only when the diff adds or changes
+   data access: a query, a fetch, update or delete by id, a list, search,
+   count or export, a background job, a webhook or a cache key. Otherwise
+   skip it and don't read the file.
 
 ## 6. Merge and rank
 
