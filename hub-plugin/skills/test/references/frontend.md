@@ -1,42 +1,41 @@
 # Frontend testing
 
-Walk the ticket's workflow in the running app, then go past it the way a UI
-QA tester would. Take screenshots all along. Only a clean run's screenshots
-go to Jira.
+Walk the ticket's flow in the running app, then check what a UI QA tester
+would for what the change touched. Take screenshots as you go. Only a clean
+run's screenshots go to Jira.
 
 ## The browser
 
 | Use | Tools | When |
 | --- | --- | --- |
-| Playwright | `mcp__plugin_playwright_playwright__*` (plugin `playwright@claude-plugins-official`) | First choice |
-| Claude in Chrome | `mcp__claude-in-chrome__*` (test sessions start with `--chrome`); read the `chrome-browser` skill first when it’s listed | When Playwright isn't available |
+| Playwright | `mcp__plugin_playwright_playwright__*`, from the plugin `playwright@claude-plugins-official` | First choice |
+| Claude in Chrome | `mcp__claude-in-chrome__*`, since test sessions start with `--chrome`. Read the `chrome-browser` skill first when it's listed | When Playwright isn't there |
 
-Look for both with ToolSearch. Call them as installed; never copy them.
-Neither available → ask with AskUserQuestion: "Neither Playwright nor Claude
-in Chrome is connected. Install the playwright plugin (the dominus install
-script adds it) or connect Chrome, then start a new session." Options: "I've
-connected one", "Stop".
+Find both with ToolSearch, and call them as installed. If neither is there,
+ask with AskUserQuestion: "Neither Playwright nor Claude in Chrome is
+connected. Install the playwright plugin (the dominus install script adds
+it) or connect Chrome, then start a new session." Options: "I've connected
+one", "Stop".
 
 ## Workflow
 
-1. **Walk the flow.** Go through the ticket's flow end to end. Take a
-   screenshot at each step, and one of each component the change adds or
-   touches. Save them to `screens/NN-<step>.png` in the run folder.
-2. **Checklist.** Run `ui-qa-checklist.md` on every screen in the flow.
-3. **Figma.** If the ticket links a Figma frame and the Figma MCP is
-   connected, compare each screen with its frame: layout, spacing, type,
-   colours, states. If the ticket links Figma but the MCP isn't connected,
-   say so in the report and go on.
-4. **Failures.** Read the console and the failed network requests after
-   each step; an error there is a failure too. For each failure, decide
-   with `design-escalation.md`: fix it, or ask.
-5. **Re-run.** After any fix, re-run from step 1 so the screenshots show the
-   fixed app.
-6. **Clean run.** Pick the screenshots that show the flow working, in
-   order, with a caption each, for `evidence.md`.
+1. Walk the ticket's flow end to end. Screenshot each step, and each
+   component the change adds or touches, to `screens/NN-<step>.png` in the
+   run folder. Shoot the component or the viewport, not a full page every
+   time.
+2. Run the checks from `ui-qa-checklist.md` that fit what the change
+   touched.
+3. If the ticket links a Figma frame and the Figma MCP is connected, compare
+   each changed screen with its frame for layout, spacing, type, colour and
+   states. If the MCP isn't connected, say so in the report and go on.
+4. After each step, read the console and the failed network requests. An
+   error there is a failure too. Decide each failure with
+   `design-escalation.md`.
+5. After any fix, walk the flow again, so the screenshots show the fixed
+   app.
+6. From the clean run, pick the screenshots that show the flow working, in
+   order, each with a caption, for `evidence.md`.
 
-- Screenshot what matters: the component, or the viewport at that step.
-  Don't take a full page every time.
-- Use real interactions (click, type, resize). Don't set state with
-  `evaluate`, except to throttle the network or resize.
-- **Never post** a screenshot of a failing or broken screen.
+Use real interactions: click, type, resize. Don't set state with `evaluate`,
+except to throttle the network or resize. Never post a screenshot of a
+failing or broken screen.

@@ -1,25 +1,25 @@
 # UI QA checklist
 
-Run it on every screen in the ticket's flow, not only the ones the ticket
-names. Note each check as pass, fail or not applicable in `report.md`.
+Pick the checks that fit what the change touched, the way a QA tester
+would. A copy change needs a look at overflow and little else. A new form
+needs most of this. Run the picked checks on the screens the change touches,
+and say in `report.md` which you ran and why you skipped the rest.
 
-| Area | Checks |
-| --- | --- |
-| Window size | Common widths (390 mobile, 768 tablet, 1280 laptop, 1920 wide); shrink the window live from wide to narrow; the minimum width; 200% zoom |
-| Overflow | Long text and names, many items, huge numbers, no items; text clipped, wrapped or given an ellipsis as designed; nothing spills out of its container |
-| Alignment | Components line up on the grid; spacing is consistent; icons are centred; nothing shifts when content loads |
-| Scrolling | Scroll containers, sticky headers, nested scroll, the scroll position after navigating back |
-| Loading | Skeletons and spinners; a slow network (throttled); refresh mid-load; a hard refresh keeps the state it should |
-| States | Empty, loading, error, disabled, success: each one can be reached and is styled |
-| Interaction | Double click; keyboard only; tab order; visible focus; Esc closes dialogs; hover and active states |
-| Forms | Validation messages, paste, very long input, submit twice, submit with the network off |
-| Navigation | Back and forward, deep links, refresh on every route, an unsaved-changes prompt |
-| Errors | Console errors and warnings, failed network requests, 4xx/5xx from the API shown sensibly |
-| Visual | Fonts load; dark mode if the app has it; images are sized; no layout shift |
-| Accessibility basics | Labels on inputs and icon buttons, contrast, alt text |
+| Area | Run it when the change | Checks |
+| --- | --- | --- |
+| Window size | Adds or changes layout | The widths the app supports (390 mobile, 1280 laptop, 1920 wide), and shrinking the window live from wide to narrow |
+| Overflow | Adds or changes text, lists or numbers | Long text and names, many items, no items, and huge numbers clip, wrap or get an ellipsis as designed, with nothing spilling out |
+| Alignment | Adds or moves components | Components line up, spacing is consistent, and nothing shifts as content loads |
+| Scrolling | Adds a scroll area, sticky header or long list | Scroll containers, sticky headers, and the scroll position after going back |
+| Loading | Fetches data | Skeletons or spinners, a throttled network, and a refresh mid-load |
+| States | Adds a view of data | Empty, loading, error, disabled and success can each be reached, and each is styled |
+| Interaction | Adds controls | Double click, keyboard only, visible focus, and Esc closing dialogs |
+| Forms | Adds or changes a form | Validation messages, paste, very long input, submitting twice, and submitting offline |
+| Navigation | Adds or changes routes | Back and forward, deep links, and a refresh on each new route |
+| Errors | Always | Console errors and failed requests, and API errors shown sensibly |
+| Accessibility | Adds controls or images | Labels on inputs and icon buttons, contrast, and alt text |
 
-- Make the data for a check where you can: a long name, many items. Use the
-  app's own UI or a seed script. Data you make is cleaned up after the run,
-  or left marked as test data.
-- A check that can't be done here, such as a real mobile device, goes in
-  the report as not tested, with the reason.
+Make the data a check needs where you can, like a long name or many items,
+through the app's own UI or a seed script. Clean it up after the run, or
+leave it marked as test data. A check that can't be done here, such as one
+on a real phone, goes in the report as not tested, with the reason.
