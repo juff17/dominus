@@ -136,13 +136,25 @@ cause, not one per line. Rank them:
 
 ## 8. Finish
 
-Report in a few bullets:
+**Write the report to a file:**
+`~/.local/state/agent-hub/runs/<KEY or branch>/review-<YYYYmmdd-HHMMSS>/report.md`,
+outside the repo. Its first line is the verdict (below). Then:
 
-- the target and mode;
-- the counts per rank;
-- what was fixed (commit shas) or proposed (how many, how many posted);
+- the target, branch@sha and mode;
+- every finding: rank, file:line, what's wrong, and what was done (fixed in
+  `<sha>`, proposed as a comment, posted, rejected, or left and why);
 - the state machines found, with their diagrams;
-- what's left and why.
+- the test gaps left for the test skill.
+
+**Then sum it up in the chat**, in a few lines. The first words are the
+verdict, so the main point reads at a glance:
+
+- "No findings" or "All fixed: 6 findings, 6 fixed";
+- "2 blocking, 3 should-fix, 4 nits", then what was fixed or proposed;
+- "4 comments posted, 1 rejected, 2 waiting".
+
+Then the counts per rank, what was fixed (commit shas) or proposed, what's
+left and why, and the report's path. Don't paste the whole report.
 
 Then ask one AskUserQuestion:
 

@@ -126,13 +126,19 @@ passes, and only after the user approves it in the Agents tray or Alt+A.
 
 ## 8. Finish
 
-Report in a few bullets:
+**The report is a file:** the run folder's `report.md` (`evidence.md`),
+written before this step, with the verdict on its first line.
 
-- the tracks run and the cases passed;
-- what was fixed (commit shas);
-- what's left;
-- the run folder's path;
-- whether the Jira comment was posted.
+**Then sum it up in the chat**, in a few lines. The first words are the
+verdict, so the main point reads at a glance:
+
+- "All 23 passed";
+- "3 of 23 failing: …", naming them;
+- "Blocked: the app won't boot", when it couldn't finish.
+
+Then the tracks run, what was fixed (commit shas), what's left, whether the
+Jira comment was posted, and the run folder's path. Don't paste the whole
+report.
 
 Then ask one AskUserQuestion:
 

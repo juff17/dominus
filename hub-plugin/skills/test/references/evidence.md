@@ -20,8 +20,8 @@ repo. With no ticket, `<KEY>` is the branch name.
 
 - **Write as you go:** a run cut short still shows what was tested.
 - **Secrets:** blanked in every file.
-- **`report.md` first line:** the verdict, `PASS` or `FAIL`, with the counts
-  (`PASS 23/23`, `FAIL 19/23`).
+- **`report.md` first line:** the verdict, `PASS`, `FAIL` or `BLOCKED`, with the counts
+  (`PASS 23/23`, `FAIL 19/23`, `BLOCKED 4/23: the app won't boot`).
 
 ## The Jira comment
 
